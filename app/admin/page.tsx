@@ -37,22 +37,33 @@ export default function AdminPage() {
   }
 
   async function uploadImage(file: File) {
-    const fileName = `${uuidv4()}-${file.name}`;
+    try {
+      const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+      const safeExt = ext.replace(/[^a-z0-9]/g, "") || "jpg";
+      const fileName = `${uuidv4()}.${safeExt}`;
 
-    const { error } = await supabase.storage
-      .from("products")
-      .upload(fileName, file);
+      const { error } = await supabase.storage
+        .from("products")
+        .upload(fileName, file, {
+          cacheControl: "3600",
+          upsert: true,
+          contentType: file.type || "image/jpeg",
+        });
 
-    if (error) {
-      alert("圖片上傳失敗：" + error.message);
+      if (error) {
+        alert("圖片上傳失敗：" + error.message);
+        return null;
+      }
+
+      const { data } = supabase.storage
+        .from("products")
+        .getPublicUrl(fileName);
+
+      return data.publicUrl;
+    } catch (err) {
+      alert("圖片上傳失敗");
       return null;
     }
-
-    const { data } = supabase.storage
-      .from("products")
-      .getPublicUrl(fileName);
-
-    return data.publicUrl;
   }
 
   async function addProduct() {
@@ -120,10 +131,7 @@ export default function AdminPage() {
   async function deleteProduct(id: number) {
     if (!confirm("確定要刪除這個商品嗎？")) return;
 
-    const { error } = await supabase
-      .from("products")
-      .delete()
-      .eq("id", id);
+    const { error } = await supabase.from("products").delete().eq("id", id);
 
     if (error) {
       alert("刪除失敗：" + error.message);
@@ -144,10 +152,7 @@ export default function AdminPage() {
           </p>
         </div>
 
-        <a
-          href="/"
-          className="rounded-full border px-4 py-2 text-sm"
-        >
+        <a href="/" className="rounded-full border px-4 py-2 text-sm">
           回首頁
         </a>
       </div>
@@ -203,11 +208,7 @@ export default function AdminPage() {
             disabled={loading}
             className="w-full rounded-full bg-black py-4 text-white disabled:opacity-50"
           >
-            {loading
-              ? "處理中..."
-              : editingId
-              ? "儲存修改"
-              : "新增商品"}
+            {loading ? "處理中..." : editingId ? "儲存修改" : "新增商品"}
           </button>
 
           {editingId && (
@@ -242,12 +243,8 @@ export default function AdminPage() {
 
                 <div>
                   <p className="font-bold">{product.name}</p>
-                  <p className="text-sm text-gray-500">
-                    NT$ {product.price}
-                  </p>
-                  <p className="text-xs text-[#b58b6b]">
-                    {product.category}
-                  </p>
+                  <p className="text-sm text-gray-500">NT$ {product.price}</p>
+                  <p className="text-xs text-[#b58b6b]">{product.category}</p>
                 </div>
               </div>
 
