@@ -9,9 +9,10 @@ export default function AdminPage() {
   const [price, setPrice] = useState("");
   const [category, setCategory] = useState("");
   const [description, setDescription] = useState("");
-  const [image, setImage] = useState<any>(null);
+  const [image, setImage] = useState<File | null>(null);
   const [products, setProducts] = useState<any[]>([]);
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [loading, setLoading] = useState(false);
 
   async function fetchProducts() {
     const { data } = await supabase
@@ -26,59 +27,6 @@ export default function AdminPage() {
     fetchProducts();
   }, []);
 
-  async function addProduct() {
-    if (!image) return alert("請選擇圖片");
-
-    const fileName = `${uuidv4()}`;
-    const { error: uploadError } = await supabase.storage
-      .from("products")
-      .upload(fileName, image);
-
-    if (uploadError) return alert("圖片上傳失敗：" + uploadError.message);
-
-    const { data } = supabase.storage.from("products").getPublicUrl(fileName);
-
-    const { error } = await supabase.from("products").insert([
-      {
-        name,
-        price,
-        category,
-        description,
-        image: data.publicUrl,
-      },
-    ]);
-
-    if (error) return alert("新增失敗：" + error.message);
-
-    alert("新增成功！");
-    resetForm();
-    fetchProducts();
-  }
-
-  async function updateProduct() {
-    if (!editingId) return;
-
-    const { error } = await supabase
-      .from("products")
-      .update({ name, price, category, description })
-      .eq("id", editingId);
-
-    if (error) return alert("修改失敗：" + error.message);
-
-    alert("修改成功！");
-    resetForm();
-    fetchProducts();
-  }
-
-  async function deleteProduct(id: number) {
-    const { error } = await supabase.from("products").delete().eq("id", id);
-
-    if (error) return alert("刪除失敗：" + error.message);
-
-    alert("刪除成功");
-    fetchProducts();
-  }
-
   function resetForm() {
     setName("");
     setPrice("");
@@ -88,21 +36,155 @@ export default function AdminPage() {
     setEditingId(null);
   }
 
+  async function uploadImage(file: File) {
+    const fileName = `${uuidv4()}-${file.name}`;
+
+    const { error } = await supabase.storage
+      .from("products")
+      .upload(fileName, file);
+
+    if (error) {
+      alert("圖片上傳失敗：" + error.message);
+      return null;
+    }
+
+    const { data } = supabase.storage
+      .from("products")
+      .getPublicUrl(fileName);
+
+    return data.publicUrl;
+  }
+
+  async function addProduct() {
+    if (!name) return alert("請輸入商品名稱");
+    if (!price) return alert("請輸入價格");
+    if (!image) return alert("請選擇圖片");
+
+    setLoading(true);
+
+    const imageUrl = await uploadImage(image);
+    if (!imageUrl) {
+      setLoading(false);
+      return;
+    }
+
+    const { error } = await supabase.from("products").insert([
+      {
+        name,
+        price,
+        category,
+        description,
+        image: imageUrl,
+      },
+    ]);
+
+    setLoading(false);
+
+    if (error) {
+      alert("新增失敗：" + error.message);
+      return;
+    }
+
+    alert("新增成功！");
+    resetForm();
+    fetchProducts();
+  }
+
+  async function updateProduct() {
+    if (!editingId) return;
+
+    setLoading(true);
+
+    const { error } = await supabase
+      .from("products")
+      .update({
+        name,
+        price,
+        category,
+        description,
+      })
+      .eq("id", editingId);
+
+    setLoading(false);
+
+    if (error) {
+      alert("修改失敗：" + error.message);
+      return;
+    }
+
+    alert("修改成功！");
+    resetForm();
+    fetchProducts();
+  }
+
+  async function deleteProduct(id: number) {
+    if (!confirm("確定要刪除這個商品嗎？")) return;
+
+    const { error } = await supabase
+      .from("products")
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      alert("刪除失敗：" + error.message);
+      return;
+    }
+
+    alert("刪除成功");
+    fetchProducts();
+  }
+
   return (
-    <main className="min-h-screen bg-[#f8f5f2] px-6 py-10 text-[#3d3d3d]">
-      <h1 className="mb-2 text-3xl font-bold">管理後台</h1>
-      <p className="mb-8 text-gray-500">手機上架商品、改價格、管理商品。</p>
+    <main className="min-h-screen bg-[#f8f5f2] px-5 py-8 text-[#3d3d3d]">
+      <div className="mb-8 flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">管理後台</h1>
+          <p className="mt-2 text-sm text-gray-500">
+            Argent Nest 商品管理
+          </p>
+        </div>
+
+        <a
+          href="/"
+          className="rounded-full border px-4 py-2 text-sm"
+        >
+          回首頁
+        </a>
+      </div>
 
       <div className="rounded-3xl bg-white p-6 shadow-sm">
-        <h2 className="mb-4 text-xl font-bold">
+        <h2 className="mb-5 text-xl font-bold">
           {editingId ? "編輯商品" : "新增商品"}
         </h2>
 
         <div className="space-y-4">
-          <input className="w-full rounded-2xl border p-4" placeholder="商品名稱" value={name} onChange={(e) => setName(e.target.value)} />
-          <input className="w-full rounded-2xl border p-4" placeholder="價格" value={price} onChange={(e) => setPrice(e.target.value)} />
-          <input className="w-full rounded-2xl border p-4" placeholder="商品分類" value={category} onChange={(e) => setCategory(e.target.value)} />
-          <textarea className="w-full rounded-2xl border p-4" placeholder="商品描述" value={description} onChange={(e) => setDescription(e.target.value)} />
+          <input
+            className="w-full rounded-2xl border p-4"
+            placeholder="商品名稱"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+
+          <input
+            className="w-full rounded-2xl border p-4"
+            placeholder="價格"
+            value={price}
+            onChange={(e) => setPrice(e.target.value)}
+          />
+
+          <input
+            className="w-full rounded-2xl border p-4"
+            placeholder="商品分類"
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+          />
+
+          <textarea
+            className="w-full rounded-2xl border p-4"
+            placeholder="商品描述"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+          />
 
           {!editingId && (
             <input
@@ -118,13 +200,21 @@ export default function AdminPage() {
 
           <button
             onClick={editingId ? updateProduct : addProduct}
-            className="w-full rounded-full bg-black py-4 text-white"
+            disabled={loading}
+            className="w-full rounded-full bg-black py-4 text-white disabled:opacity-50"
           >
-            {editingId ? "儲存修改" : "新增商品"}
+            {loading
+              ? "處理中..."
+              : editingId
+              ? "儲存修改"
+              : "新增商品"}
           </button>
 
           {editingId && (
-            <button onClick={resetForm} className="w-full rounded-full border py-4 text-gray-600">
+            <button
+              onClick={resetForm}
+              className="w-full rounded-full border py-4 text-gray-600"
+            >
               取消編輯
             </button>
           )}
@@ -132,14 +222,33 @@ export default function AdminPage() {
       </div>
 
       <div className="mt-8 rounded-3xl bg-white p-6 shadow-sm">
-        <h2 className="mb-4 text-xl font-bold">商品清單</h2>
+        <h2 className="mb-5 text-xl font-bold">商品清單</h2>
 
         <div className="space-y-4">
           {products.map((product) => (
-            <div key={product.id} className="flex items-center justify-between rounded-2xl border p-4">
-              <div>
-                <p className="font-bold">{product.name}</p>
-                <p className="text-sm text-gray-500">NT$ {product.price}</p>
+            <div
+              key={product.id}
+              className="flex items-center justify-between gap-4 rounded-2xl border p-4"
+            >
+              <div className="flex items-center gap-4">
+                <div className="h-16 w-16 overflow-hidden rounded-xl bg-gray-100">
+                  {product.image ? (
+                    <img
+                      src={product.image}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : null}
+                </div>
+
+                <div>
+                  <p className="font-bold">{product.name}</p>
+                  <p className="text-sm text-gray-500">
+                    NT$ {product.price}
+                  </p>
+                  <p className="text-xs text-[#b58b6b]">
+                    {product.category}
+                  </p>
+                </div>
               </div>
 
               <div className="flex gap-2">
@@ -150,6 +259,7 @@ export default function AdminPage() {
                     setPrice(product.price);
                     setCategory(product.category);
                     setDescription(product.description);
+                    window.scrollTo({ top: 0, behavior: "smooth" });
                   }}
                   className="rounded-full bg-[#b58b6b] px-4 py-2 text-sm text-white"
                 >
