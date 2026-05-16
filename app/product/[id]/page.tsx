@@ -117,12 +117,12 @@ export default function ProductPage() {
           </div>
 
           <a
-            href="https://line.me"
+           href={`https://line.me/R/oaMessage/@929santn/?我想詢問：${product.name}`}
             target="_blank"
             rel="noopener noreferrer"
             className="mb-6 block rounded-full bg-[#06C755] py-4 text-center font-semibold text-white shadow-[0_8px_25px_rgba(6,199,85,0.25)] transition hover:scale-[1.02]"
           >
-            私訊 LINE 詢問 / 下單
+            立即詢問 / 下單 ☁️
           </a>
 
           <div className="rounded-[2rem] border border-[#e8ddd4] bg-[#fdf9f6] p-6">
