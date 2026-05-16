@@ -149,33 +149,96 @@ export default async function Home() {
   </div>
 </section>
 
-      <section id="categories" className="px-5 pb-20 md:px-10">
-        <div className="mx-auto max-w-6xl">
-          <h3 className="mb-10 text-2xl font-bold tracking-tight md:text-3xl">精選分類</h3>
+      <section id="categories" className="px-5 pb-24 md:px-10">
+  <div className="mx-auto max-w-6xl">
+    
+    <div className="mb-10">
+      <p className="mb-2 text-xs uppercase tracking-[0.35em] text-[#a08060]">
+        Categories
+      </p>
 
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
-            <a href="#hot" className="rounded-[1.5rem] bg-[#fdf3ec] px-4 py-8 text-center shadow-sm">
-              <span className="mb-3 block text-4xl">🧸</span>
-              <p className="text-sm font-semibold">療癒娃娃</p>
-            </a>
+      <h3 className="text-3xl font-bold tracking-tight">
+        逛逛屬於妳的小世界 ☁️
+      </h3>
 
-            <a href="#hot" className="rounded-[1.5rem] bg-[#f0ece8] px-4 py-8 text-center shadow-sm">
-              <span className="mb-3 block text-4xl">👗</span>
-              <p className="text-sm font-semibold">韓系穿搭</p>
-            </a>
+      <p className="mt-3 text-sm leading-7 text-[#8b7b6e]">
+        從療癒萌物到微辣穿搭，把日常變得可愛一點。
+      </p>
+    </div>
 
-            <a href="#hot" className="rounded-[1.5rem] bg-[#faeef4] px-4 py-8 text-center shadow-sm">
-              <span className="mb-3 block text-4xl">🎀</span>
-              <p className="text-sm font-semibold">飾品小物</p>
-            </a>
-
-            <a href="#hot" className="rounded-[1.5rem] bg-[#fef8ec] px-4 py-8 text-center shadow-sm">
-              <span className="mb-3 block text-4xl">🍰</span>
-              <p className="text-sm font-semibold">甜點系列</p>
-            </a>
-          </div>
+    <div className="grid grid-cols-2 gap-4 md:grid-cols-4 md:gap-5">
+      
+      <a
+        href="#hot"
+        className="group overflow-hidden rounded-[2rem] bg-[#fdf3ec] p-6 transition duration-300 hover:-translate-y-1 hover:shadow-[0_10px_35px_rgba(0,0,0,0.08)]"
+      >
+        <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-white text-3xl shadow-sm">
+          🧸
         </div>
-      </section>
+
+        <h4 className="mb-2 text-lg font-bold">
+          療癒娃娃
+        </h4>
+
+        <p className="text-sm leading-7 text-[#8b7b6e]">
+          把小小快樂帶回家。
+        </p>
+      </a>
+
+      <a
+        href="#hot"
+        className="group overflow-hidden rounded-[2rem] bg-[#f3efea] p-6 transition duration-300 hover:-translate-y-1 hover:shadow-[0_10px_35px_rgba(0,0,0,0.08)]"
+      >
+        <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-white text-3xl shadow-sm">
+          👗
+        </div>
+
+        <h4 className="mb-2 text-lg font-bold">
+          微辣穿搭
+        </h4>
+
+        <p className="text-sm leading-7 text-[#8b7b6e]">
+          韓系慵懶感女孩日常。
+        </p>
+      </a>
+
+      <a
+        href="#hot"
+        className="group overflow-hidden rounded-[2rem] bg-[#faeef4] p-6 transition duration-300 hover:-translate-y-1 hover:shadow-[0_10px_35px_rgba(0,0,0,0.08)]"
+      >
+        <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-white text-3xl shadow-sm">
+          🎀
+        </div>
+
+        <h4 className="mb-2 text-lg font-bold">
+          女孩小物
+        </h4>
+
+        <p className="text-sm leading-7 text-[#8b7b6e]">
+          飾品、包包與日常可愛。
+        </p>
+      </a>
+
+      <a
+        href="#hot"
+        className="group overflow-hidden rounded-[2rem] bg-[#fff5ea] p-6 transition duration-300 hover:-translate-y-1 hover:shadow-[0_10px_35px_rgba(0,0,0,0.08)]"
+      >
+        <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-white text-3xl shadow-sm">
+          🍰
+        </div>
+
+        <h4 className="mb-2 text-lg font-bold">
+          甜點研究所
+        </h4>
+
+        <p className="text-sm leading-7 text-[#8b7b6e]">
+          屬於甜甜日常的小角落。
+        </p>
+      </a>
+
+    </div>
+  </div>
+</section>
 
       <section className="px-5 pb-20 md:px-10">
         <div className="mx-auto max-w-6xl overflow-hidden rounded-[2rem] bg-[#ede6dd] px-8 py-16 text-center md:px-16">
