@@ -1,20 +1,41 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
-interface Props {
-  params: Promise<{ id: string }>;
-}
+export default function ProductPage() {
+  const params = useParams();
+  const id = params.id as string;
 
-export default async function ProductPage({ params }: Props) {
-  const { id } = await params;
+  const [product, setProduct] = useState<any>(null);
+  const [mainImage, setMainImage] = useState("");
 
-  const { data: product } = await supabase
-    .from("products")
-    .select("*")
-    .eq("id", Number(id))
-    .single();
+  useEffect(() => {
+    async function fetchProduct() {
+      const { data } = await supabase
+        .from("products")
+        .select("*")
+        .eq("id", Number(id))
+        .single();
+
+      if (data) {
+        setProduct(data);
+
+        const imgs =
+          data.images && data.images.length > 0
+            ? data.images
+            : [data.image];
+
+        setMainImage(imgs[0]);
+      }
+    }
+
+    fetchProduct();
+  }, [id]);
 
   if (!product) {
-    return <div className="p-10">找不到商品</div>;
+    return <div className="p-10">商品讀取中...</div>;
   }
 
   const images =
@@ -43,7 +64,7 @@ export default async function ProductPage({ params }: Props) {
         <div>
           <div className="overflow-hidden rounded-[2.5rem] bg-[#ede6dd] shadow-[0_12px_45px_rgba(70,50,35,0.12)]">
             <img
-              src={images[0]}
+              src={mainImage}
               alt={product.name}
               className="aspect-[4/5] w-full object-cover"
             />
@@ -52,16 +73,21 @@ export default async function ProductPage({ params }: Props) {
           {images.length > 1 && (
             <div className="mt-4 grid grid-cols-4 gap-3">
               {images.map((img: string, index: number) => (
-                <div
+                <button
                   key={index}
-                  className="overflow-hidden rounded-2xl bg-[#ede6dd]"
+                  onClick={() => setMainImage(img)}
+                  className={`overflow-hidden rounded-2xl border bg-[#ede6dd] ${
+                    mainImage === img
+                      ? "border-[#8b6f5c]"
+                      : "border-transparent"
+                  }`}
                 >
                   <img
                     src={img}
                     alt={`${product.name}-${index}`}
                     className="aspect-square w-full object-cover"
                   />
-                </div>
+                </button>
               ))}
             </div>
           )}
