@@ -1,3 +1,4 @@
+import ProductQuickView from "./components/ProductQuickView";
 import { supabase } from "@/lib/supabase";
 
 interface Props {
