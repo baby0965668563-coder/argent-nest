@@ -1,10 +1,37 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { v4 as uuidv4 } from "uuid";
 import { supabase } from "@/lib/supabase";
 
 export default function AdminPage() {
+  const searchParams = useSearchParams();
+
+  const adminKey = searchParams.get("key");
+
+  const correctKey = "argentnest520";
+
+  if (adminKey !== correctKey) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-[#f8f5f2] px-5">
+        <div className="w-full max-w-md rounded-[2rem] bg-white p-10 text-center shadow-sm">
+          <p className="mb-3 text-xs uppercase tracking-[0.3em] text-[#a08060]">
+            Argent Nest
+          </p>
+
+          <h1 className="mb-4 text-3xl font-bold">
+            無權限進入 ☁️
+          </h1>
+
+          <p className="text-sm leading-8 text-[#6b5c50]">
+            請使用正確的後台連結。
+          </p>
+        </div>
+      </main>
+    );
+  }
+
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
   const [category, setCategory] = useState("");
@@ -74,7 +101,10 @@ export default function AdminPage() {
       return null;
     }
 
-    const { data } = supabase.storage.from("products").getPublicUrl(fileName);
+    const { data } = supabase.storage
+      .from("products")
+      .getPublicUrl(fileName);
+
     return data.publicUrl;
   }
 
@@ -208,7 +238,10 @@ export default function AdminPage() {
   async function deleteProduct(id: number) {
     if (!confirm("確定要刪除這個商品嗎？")) return;
 
-    const { error } = await supabase.from("products").delete().eq("id", id);
+    const { error } = await supabase
+      .from("products")
+      .delete()
+      .eq("id", id);
 
     if (error) {
       alert("刪除失敗：" + error.message);
@@ -224,10 +257,15 @@ export default function AdminPage() {
       <div className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">管理後台</h1>
-          <p className="mt-2 text-sm text-gray-500">Argent Nest 商品管理</p>
+          <p className="mt-2 text-sm text-gray-500">
+            Argent Nest 商品管理
+          </p>
         </div>
 
-        <a href="/" className="rounded-full border px-4 py-2 text-sm">
+        <a
+          href="/"
+          className="rounded-full border px-4 py-2 text-sm"
+        >
           回首頁
         </a>
       </div>
@@ -274,7 +312,10 @@ export default function AdminPage() {
 
           <textarea
             className="w-full rounded-2xl border p-4"
-            placeholder={"商品規格，例如：\n顏色|奶油白,黑色\n尺寸|S,M,L\n款式|A款,B款"}
+            placeholder={`商品規格，例如：
+顏色|奶油白,黑色
+尺寸|S,M,L
+款式|A款,B款`}
             value={options}
             onChange={(e) => setOptions(e.target.value)}
           />
@@ -312,20 +353,6 @@ export default function AdminPage() {
             />
           </label>
 
-          {editingId && editingImages.length > 0 && (
-            <div className="rounded-2xl bg-[#f8f5f2] p-4">
-              <p className="mb-3 text-sm text-gray-600">目前圖片</p>
-
-              <div className="grid grid-cols-4 gap-3">
-                {editingImages.map((img, index) => (
-                  <div key={index} className="overflow-hidden rounded-xl bg-white">
-                    <img src={img} className="aspect-square w-full object-cover" />
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
           <input
             type="file"
             accept="image/*"
@@ -337,42 +364,17 @@ export default function AdminPage() {
             }}
           />
 
-          {images.length > 0 && (
-            <div className="rounded-2xl bg-[#f8f5f2] p-4">
-              <p className="mb-3 text-sm text-gray-600">
-                已選擇 {images.length} 張新圖片
-                {editingId ? "，儲存後會取代原本圖片" : ""}
-              </p>
-
-              <div className="grid grid-cols-4 gap-3">
-                {images.map((file, index) => (
-                  <div key={index} className="overflow-hidden rounded-xl bg-white">
-                    <img
-                      src={URL.createObjectURL(file)}
-                      className="aspect-square w-full object-cover"
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
           <button
             onClick={editingId ? updateProduct : addProduct}
             disabled={loading}
             className="w-full rounded-full bg-black py-4 text-white disabled:opacity-50"
           >
-            {loading ? "處理中..." : editingId ? "儲存修改" : "新增商品"}
+            {loading
+              ? "處理中..."
+              : editingId
+              ? "儲存修改"
+              : "新增商品"}
           </button>
-
-          {editingId && (
-            <button
-              onClick={resetForm}
-              className="w-full rounded-full border py-4 text-gray-600"
-            >
-              取消編輯
-            </button>
-          )}
         </div>
       </div>
 
@@ -388,18 +390,14 @@ export default function AdminPage() {
 
         <div className="space-y-4">
           {filteredProducts.map((product) => {
-            const productImages =
-              product.images && product.images.length > 0
-                ? product.images
-                : product.image
-                ? [product.image]
-                : [];
-
             const active = product.is_active !== false;
             const soldOut = product.is_sold_out === true;
 
             return (
-              <div key={product.id} className="rounded-2xl border p-4">
+              <div
+                key={product.id}
+                className="rounded-2xl border p-4"
+              >
                 <div className="mb-3 flex flex-wrap gap-2">
                   <span
                     className={`rounded-full px-3 py-1 text-xs ${
@@ -420,52 +418,30 @@ export default function AdminPage() {
                   >
                     {soldOut ? "已售完" : "可下單"}
                   </span>
-
-                  <button
-                    onClick={() => toggleActive(product.id, active)}
-                    className="rounded-full border px-3 py-1 text-xs text-gray-600"
-                  >
-                    {active ? "下架" : "上架"}
-                  </button>
-
-                  <button
-                    onClick={() => toggleSoldOut(product.id, soldOut)}
-                    className="rounded-full border px-3 py-1 text-xs text-gray-600"
-                  >
-                    {soldOut ? "恢復販售" : "設為售完"}
-                  </button>
                 </div>
 
                 <div className="flex gap-4">
-                  <div className="h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-gray-100">
-                    {product.image ? (
+                  <div className="h-20 w-20 overflow-hidden rounded-xl bg-gray-100">
+                    {product.image && (
                       <img
                         src={product.image}
                         className="h-full w-full object-cover"
                       />
-                    ) : null}
+                    )}
                   </div>
 
-                  <div className="min-w-0 flex-1">
-                    <p className="line-clamp-2 font-bold">{product.name}</p>
+                  <div className="flex-1">
+                    <p className="font-bold">
+                      {product.name}
+                    </p>
 
                     <p className="mt-1 text-sm text-gray-500">
                       NT$ {product.price}
                     </p>
 
                     <p className="mt-1 text-xs text-[#b58b6b]">
-                      {product.category}｜排序 {product.sort_order ?? 0}
+                      {product.category}
                     </p>
-
-                    <p className="mt-1 text-xs text-gray-400">
-                      圖片 {productImages.length} 張
-                    </p>
-
-                    {product.options && (
-                      <p className="mt-1 line-clamp-2 text-xs text-gray-400">
-                        規格：{product.options}
-                      </p>
-                    )}
                   </div>
                 </div>
 
@@ -476,14 +452,24 @@ export default function AdminPage() {
                       setName(product.name || "");
                       setPrice(product.price || "");
                       setCategory(product.category || "");
-                      setSortOrder(String(product.sort_order ?? 0));
+                      setSortOrder(
+                        String(product.sort_order ?? 0)
+                      );
                       setOptions(product.options || "");
-                      setDescription(product.description || "");
-                      setIsActive(product.is_active !== false);
-                      setIsSoldOut(product.is_sold_out === true);
-                      setEditingImages(productImages);
-                      setImages([]);
-                      window.scrollTo({ top: 0, behavior: "smooth" });
+                      setDescription(
+                        product.description || ""
+                      );
+                      setIsActive(
+                        product.is_active !== false
+                      );
+                      setIsSoldOut(
+                        product.is_sold_out === true
+                      );
+
+                      window.scrollTo({
+                        top: 0,
+                        behavior: "smooth",
+                      });
                     }}
                     className="rounded-full bg-[#b58b6b] py-3 text-sm text-white"
                   >
@@ -491,10 +477,34 @@ export default function AdminPage() {
                   </button>
 
                   <button
-                    onClick={() => deleteProduct(product.id)}
+                    onClick={() =>
+                      deleteProduct(product.id)
+                    }
                     className="rounded-full bg-red-500 py-3 text-sm text-white"
                   >
                     刪除
+                  </button>
+                </div>
+
+                <div className="mt-3 grid grid-cols-2 gap-3">
+                  <button
+                    onClick={() =>
+                      toggleActive(product.id, active)
+                    }
+                    className="rounded-full border py-3 text-sm"
+                  >
+                    {active ? "下架" : "上架"}
+                  </button>
+
+                  <button
+                    onClick={() =>
+                      toggleSoldOut(product.id, soldOut)
+                    }
+                    className="rounded-full border py-3 text-sm"
+                  >
+                    {soldOut
+                      ? "恢復販售"
+                      : "設為售完"}
                   </button>
                 </div>
               </div>
