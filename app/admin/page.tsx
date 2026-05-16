@@ -14,6 +14,7 @@ export default function AdminPage() {
   const [images, setImages] = useState<File[]>([]);
   const [products, setProducts] = useState<any[]>([]);
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingImages, setEditingImages] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
 
   async function fetchProducts() {
@@ -39,6 +40,7 @@ export default function AdminPage() {
     setDescription("");
     setImages([]);
     setEditingId(null);
+    setEditingImages([]);
   }
 
   async function uploadOneImage(file: File) {
@@ -117,6 +119,19 @@ export default function AdminPage() {
 
     setLoading(true);
 
+    let imageUrls = editingImages;
+
+    if (images.length > 0) {
+      const uploadedUrls = await uploadImages(images);
+
+      if (uploadedUrls.length === 0) {
+        setLoading(false);
+        return;
+      }
+
+      imageUrls = uploadedUrls;
+    }
+
     const { error } = await supabase
       .from("products")
       .update({
@@ -126,6 +141,8 @@ export default function AdminPage() {
         sort_order: Number(sortOrder) || 0,
         options,
         description,
+        image: imageUrls[0] || "",
+        images: imageUrls,
       })
       .eq("id", editingId);
 
@@ -212,7 +229,7 @@ export default function AdminPage() {
 
           <textarea
             className="w-full rounded-2xl border p-4"
-            placeholder="商品規格，例如：顏色：奶油白、黑色&#10;尺寸：S、M、L&#10;款式：A款、B款"
+            placeholder={"商品規格，例如：\n顏色|奶油白,黑色\n尺寸|S,M,L\n款式|A款,B款"}
             value={options}
             onChange={(e) => setOptions(e.target.value)}
           />
@@ -224,22 +241,41 @@ export default function AdminPage() {
             onChange={(e) => setDescription(e.target.value)}
           />
 
-          {!editingId && (
-            <input
-              type="file"
-              accept="image/*"
-              multiple
-              className="w-full rounded-2xl border p-4"
-              onChange={(e) => {
-                const files = Array.from(e.target.files || []);
-                setImages(files);
-              }}
-            />
+          {editingId && editingImages.length > 0 && (
+            <div className="rounded-2xl bg-[#f8f5f2] p-4">
+              <p className="mb-3 text-sm text-gray-600">目前圖片</p>
+
+              <div className="grid grid-cols-4 gap-3">
+                {editingImages.map((img, index) => (
+                  <div
+                    key={index}
+                    className="overflow-hidden rounded-xl bg-white"
+                  >
+                    <img
+                      src={img}
+                      className="aspect-square w-full object-cover"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
 
-          {!editingId && images.length > 0 && (
+          <input
+            type="file"
+            accept="image/*"
+            multiple
+            className="w-full rounded-2xl border p-4"
+            onChange={(e) => {
+              const files = Array.from(e.target.files || []);
+              setImages(files);
+            }}
+          />
+
+          {images.length > 0 && (
             <div className="rounded-2xl bg-[#f8f5f2] p-4 text-sm text-gray-600">
-              已選擇 {images.length} 張圖片
+              已選擇 {images.length} 張新圖片
+              {editingId && "，儲存後會取代原本圖片"}
             </div>
           )}
 
@@ -266,64 +302,77 @@ export default function AdminPage() {
         <h2 className="mb-5 text-xl font-bold">商品清單</h2>
 
         <div className="space-y-4">
-          {products.map((product) => (
-            <div
-              key={product.id}
-              className="flex items-center justify-between gap-4 rounded-2xl border p-4"
-            >
-              <div className="flex items-center gap-4">
-                <div className="h-16 w-16 overflow-hidden rounded-xl bg-gray-100">
-                  {product.image ? (
-                    <img
-                      src={product.image}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : null}
-                </div>
+          {products.map((product) => {
+            const productImages =
+              product.images && product.images.length > 0
+                ? product.images
+                : product.image
+                ? [product.image]
+                : [];
 
-                <div>
-                  <p className="font-bold">{product.name}</p>
-                  <p className="text-sm text-gray-500">NT$ {product.price}</p>
-                  <p className="text-xs text-[#b58b6b]">
-                    {product.category}｜排序 {product.sort_order ?? 0}
-                  </p>
-                  <p className="text-xs text-gray-400">
-                    圖片 {product.images?.length || 1} 張
-                  </p>
-                  {product.options && (
-                    <p className="mt-1 line-clamp-1 text-xs text-gray-400">
-                      規格：{product.options}
+            return (
+              <div
+                key={product.id}
+                className="flex items-center justify-between gap-4 rounded-2xl border p-4"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="h-16 w-16 overflow-hidden rounded-xl bg-gray-100">
+                    {product.image ? (
+                      <img
+                        src={product.image}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : null}
+                  </div>
+
+                  <div>
+                    <p className="font-bold">{product.name}</p>
+                    <p className="text-sm text-gray-500">
+                      NT$ {product.price}
                     </p>
-                  )}
+                    <p className="text-xs text-[#b58b6b]">
+                      {product.category}｜排序 {product.sort_order ?? 0}
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      圖片 {productImages.length} 張
+                    </p>
+                    {product.options && (
+                      <p className="mt-1 line-clamp-1 text-xs text-gray-400">
+                        規格：{product.options}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      setEditingId(product.id);
+                      setName(product.name || "");
+                      setPrice(product.price || "");
+                      setCategory(product.category || "");
+                      setSortOrder(String(product.sort_order ?? 0));
+                      setOptions(product.options || "");
+                      setDescription(product.description || "");
+                      setEditingImages(productImages);
+                      setImages([]);
+                      window.scrollTo({ top: 0, behavior: "smooth" });
+                    }}
+                    className="rounded-full bg-[#b58b6b] px-4 py-2 text-sm text-white"
+                  >
+                    編輯
+                  </button>
+
+                  <button
+                    onClick={() => deleteProduct(product.id)}
+                    className="rounded-full bg-red-500 px-4 py-2 text-sm text-white"
+                  >
+                    刪除
+                  </button>
                 </div>
               </div>
-
-              <div className="flex gap-2">
-                <button
-                  onClick={() => {
-                    setEditingId(product.id);
-                    setName(product.name || "");
-                    setPrice(product.price || "");
-                    setCategory(product.category || "");
-                    setSortOrder(String(product.sort_order ?? 0));
-                    setOptions(product.options || "");
-                    setDescription(product.description || "");
-                    window.scrollTo({ top: 0, behavior: "smooth" });
-                  }}
-                  className="rounded-full bg-[#b58b6b] px-4 py-2 text-sm text-white"
-                >
-                  編輯
-                </button>
-
-                <button
-                  onClick={() => deleteProduct(product.id)}
-                  className="rounded-full bg-red-500 px-4 py-2 text-sm text-white"
-                >
-                  刪除
-                </button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
 
           {products.length === 0 && (
             <div className="rounded-2xl border p-6 text-center text-gray-500">
