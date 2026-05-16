@@ -11,12 +11,12 @@ export default async function Home({ searchParams }: Props) {
   const { category, q } = await searchParams;
   const keyword = q?.trim() || "";
 
- let query = supabase
-  .from("products")
-  .select("*")
-  .eq("is_active", true)
-  .order("sort_order", { ascending: true })
-  .order("id", { ascending: false });
+  let query = supabase
+    .from("products")
+    .select("*")
+    .eq("is_active", true)
+    .order("sort_order", { ascending: true })
+    .order("id", { ascending: false });
 
   if (category && category !== "全部") {
     query = query.eq("category", category);
@@ -31,12 +31,12 @@ export default async function Home({ searchParams }: Props) {
   const { data: products } = await query;
 
   const allProductsQuery = await supabase
-  .from("products")
-  .select("*")
-  .eq("is_active", true)
-  .order("sort_order", { ascending: true })
-  .order("id", { ascending: false });
-  
+    .from("products")
+    .select("*")
+    .eq("is_active", true)
+    .order("sort_order", { ascending: true })
+    .order("id", { ascending: false });
+
   const allProducts = allProductsQuery.data || [];
   const displayProducts = products || [];
 
@@ -55,6 +55,7 @@ export default async function Home({ searchParams }: Props) {
     if (keyword) params.set("q", keyword);
 
     const queryString = params.toString();
+
     return queryString ? `/?${queryString}#hot` : "/#hot";
   }
 
@@ -70,6 +71,7 @@ export default async function Home({ searchParams }: Props) {
             <a href="#hot">新品</a>
             <a href="#hot">熱賣</a>
             <a href="#categories">分類</a>
+
             <a
               href="/admin"
               className="rounded-full border border-[#d8c5b0] px-3 py-1.5 text-xs md:px-4 md:py-2"
@@ -158,7 +160,8 @@ export default async function Home({ searchParams }: Props) {
           <div className="grid grid-cols-2 gap-4 md:grid-cols-5 md:gap-5">
             {categories.map((cat) => {
               const active =
-                (!category && cat.label === "全部") || category === cat.label;
+                (!category && cat.label === "全部") ||
+                category === cat.label;
 
               return (
                 <a
@@ -174,11 +177,15 @@ export default async function Home({ searchParams }: Props) {
                     {cat.emoji}
                   </div>
 
-                  <h4 className="mb-2 text-lg font-bold">{cat.label}</h4>
+                  <h4 className="mb-2 text-lg font-bold">
+                    {cat.label}
+                  </h4>
 
                   <p
                     className={`text-sm leading-7 ${
-                      active ? "text-white/75" : "text-[#8b7b6e]"
+                      active
+                        ? "text-white/75"
+                        : "text-[#8b7b6e]"
                     }`}
                   >
                     {cat.desc}
@@ -215,7 +222,11 @@ export default async function Home({ searchParams }: Props) {
             className="mb-8 flex flex-col gap-3 rounded-[2rem] bg-white p-4 shadow-sm md:flex-row"
           >
             {category && category !== "全部" && (
-              <input type="hidden" name="category" value={category} />
+              <input
+                type="hidden"
+                name="category"
+                value={category}
+              />
             )}
 
             <input
@@ -234,7 +245,11 @@ export default async function Home({ searchParams }: Props) {
 
             {keyword && (
               <a
-                href={category ? `/?category=${category}#hot` : "/#hot"}
+                href={
+                  category
+                    ? `/?category=${category}#hot`
+                    : "/#hot"
+                }
                 className="rounded-full border border-[#d8c5b0] px-8 py-3 text-center text-sm text-[#6b5c50]"
               >
                 清除
@@ -243,118 +258,81 @@ export default async function Home({ searchParams }: Props) {
           </form>
 
           <div className="grid grid-cols-2 gap-4 md:grid-cols-4 md:gap-5">
-           {displayProducts.map((product) => {
-  const soldOut = product.is_sold_out === true;
+            {displayProducts.map((product) => {
+              const soldOut =
+                product.is_sold_out === true;
 
-  const createdAt = product.created_at
-    ? new Date(product.created_at)
-    : null;
+              const createdAt = product.created_at
+                ? new Date(product.created_at)
+                : null;
 
-  const now = new Date();
+              const now = new Date();
 
-  const diffDays = createdAt
-    ? (now.getTime() - createdAt.getTime()) /
-      (1000 * 60 * 60 * 24)
-    : 999;
+              const diffDays = createdAt
+                ? (now.getTime() -
+                    createdAt.getTime()) /
+                  (1000 * 60 * 60 * 24)
+                : 999;
 
-  const isNew = diffDays <= 7;
+              const isNew = diffDays <= 7;
 
-  return (
-    <a
-      key={product.id}
-      href={`/product/${product.id}`}
-      className="group overflow-hidden rounded-[2.2rem] bg-white/90 shadow-[0_6px_30px_rgba(70,50,35,0.08)] ring-1 ring-[#eaded4] transition duration-300 hover:-translate-y-1.5 hover:shadow-[0_16px_50px_rgba(70,50,35,0.16)]"
-    >
-      <div className="relative aspect-[4/5] overflow-hidden bg-[#f4eee8]">
-        <div className="absolute left-3 top-3 z-10 rounded-full bg-white/85 px-3 py-1 text-[10px] text-[#8b6f5c] backdrop-blur">
-          {soldOut ? "SOLD OUT" : isNew ? "NEW" : "PREORDER"}
-        </div>
+              return (
+                <a
+                  key={product.id}
+                  href={`/product/${product.id}`}
+                  className="group overflow-hidden rounded-[2.2rem] bg-white/90 shadow-[0_6px_30px_rgba(70,50,35,0.08)] ring-1 ring-[#eaded4] transition duration-300 hover:-translate-y-1.5 hover:shadow-[0_16px_50px_rgba(70,50,35,0.16)]"
+                >
+                  <div className="relative aspect-[4/5] overflow-hidden bg-[#f4eee8]">
+                    <div className="absolute left-3 top-3 z-10 rounded-full bg-white/85 px-3 py-1 text-[10px] text-[#8b6f5c] backdrop-blur">
+                      {soldOut
+                        ? "SOLD OUT"
+                        : isNew
+                        ? "NEW"
+                        : "PREORDER"}
+                    </div>
 
-        {product.image ? (
-          <img
-            src={product.image}
-            alt={product.name}
-            className={`h-full w-full object-cover transition duration-500 group-hover:scale-105 ${
-              soldOut ? "opacity-60 grayscale" : ""
-            }`}
-          />
-        ) : (
-          <div className="flex h-full items-center justify-center text-4xl">
-            🏷️
-          </div>
-        )}
-      </div>
+                    {product.image ? (
+                      <img
+                        src={product.image}
+                        alt={product.name}
+                        className={`h-full w-full object-cover transition duration-500 group-hover:scale-105 ${
+                          soldOut
+                            ? "opacity-60 grayscale"
+                            : ""
+                        }`}
+                      />
+                    ) : (
+                      <div className="flex h-full items-center justify-center text-4xl">
+                        🏷️
+                      </div>
+                    )}
+                  </div>
 
-      <div className="space-y-2 p-4">
-        <p className="text-[11px] tracking-[0.25em] text-[#b58b6b]">
-          {product.category}
-        </p>
+                  <div className="space-y-2 p-4">
+                    <p className="text-[11px] tracking-[0.25em] text-[#b58b6b]">
+                      {product.category}
+                    </p>
 
-        <h4 className="line-clamp-2 text-sm font-semibold leading-6">
-          {product.name}
-        </h4>
+                    <h4 className="line-clamp-2 text-sm font-semibold leading-6">
+                      {product.name}
+                    </h4>
 
-        <p className="pt-1 text-lg font-bold text-[#8b6f5c]">
-          NT$ {Number(product.price).toLocaleString()}
-        </p>
+                    <p className="pt-1 text-lg font-bold text-[#8b6f5c]">
+                      NT${" "}
+                      {Number(
+                        product.price
+                      ).toLocaleString()}
+                    </p>
 
-        {soldOut && (
-          <p className="text-xs text-gray-400">
-            目前已售完 ☁️
-          </p>
-        )}
-      </div>
-    </a>
-  );
-})}
-
-  return (
-    <a
-      key={product.id}
-      href={`/product/${product.id}`}
-      className="group overflow-hidden rounded-[2.2rem] bg-white/90 shadow-[0_6px_30px_rgba(70,50,35,0.08)] ring-1 ring-[#eaded4] transition duration-300 hover:-translate-y-1.5 hover:shadow-[0_16px_50px_rgba(70,50,35,0.16)]"
-    >
-      <div className="relative aspect-[4/5] overflow-hidden bg-[#f4eee8]">
-        <div className="absolute left-3 top-3 z-10 rounded-full bg-white/85 px-3 py-1 text-[10px] text-[#8b6f5c] backdrop-blur">
-          {soldOut ? "SOLD OUT" : "NEW"}
-        </div>
-
-        {product.image ? (
-          <img
-            src={product.image}
-            alt={product.name}
-            className={`h-full w-full object-cover transition duration-500 group-hover:scale-105 ${
-              soldOut ? "opacity-60 grayscale" : ""
-            }`}
-          />
-        ) : (
-          <div className="flex h-full items-center justify-center text-4xl">
-            🏷️
-          </div>
-        )}
-      </div>
-
-      <div className="space-y-2 p-4">
-        <p className="text-[11px] tracking-[0.25em] text-[#b58b6b]">
-          {product.category}
-        </p>
-
-        <h4 className="line-clamp-2 text-sm font-semibold leading-6">
-          {product.name}
-        </h4>
-
-        <p className="pt-1 text-lg font-bold text-[#8b6f5c]">
-          NT$ {Number(product.price).toLocaleString()}
-        </p>
-
-        {soldOut && (
-          <p className="text-xs text-gray-400">
-            目前已售完 ☁️
-          </p>
-        )}
-      </div>
-    </a>
-  );
+                    {soldOut && (
+                      <p className="text-xs text-gray-400">
+                        目前已售完 ☁️
+                      </p>
+                    )}
+                  </div>
+                </a>
+              );
+            })}
 
             {displayProducts.length === 0 && (
               <div className="col-span-full rounded-[2rem] bg-white p-10 text-center text-[#8b7b6e]">
@@ -416,50 +394,13 @@ export default async function Home({ searchParams }: Props) {
         </div>
       </section>
 
-      <section className="px-5 pb-24 md:px-10">
-        <div className="mx-auto max-w-6xl">
-          <div className="mb-10 text-center">
-            <p className="mb-2 text-xs uppercase tracking-[0.35em] text-[#a08060]">
-              Today&apos;s Little Mood
-            </p>
-
-            <h3 className="text-3xl font-bold tracking-tight">
-              Argent Nest 的日常碎片 ☁️
-            </h3>
-
-            <p className="mt-3 text-sm leading-7 text-[#8b7b6e]">
-              一些讓人想停下來看看的小可愛、穿搭靈感和療癒角落。
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-4 md:gap-5">
-            {[0, 1, 2, 3].map((i) => (
-              <div
-                key={i}
-                className={`overflow-hidden rounded-[2rem] bg-white shadow-sm ${
-                  i % 2 === 1 ? "md:mt-10" : ""
-                }`}
-              >
-                <img
-                  src={
-                    allProducts?.[i]?.image ||
-                    "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=800&auto=format&fit=crop"
-                  }
-                  className="h-56 w-full object-cover"
-                  alt="Argent Nest daily mood"
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       <footer className="border-t border-[#e8ddd4] bg-[#f6f1eb] px-5 py-16 md:px-10">
         <div className="mx-auto grid max-w-6xl gap-12 md:grid-cols-4">
           <div>
             <h4 className="mb-4 text-2xl font-bold tracking-tight">
               Argent Nest 🥛🤍
             </h4>
+
             <p className="text-sm leading-8 text-[#8b7b6e]">
               韓系療癒選物 · 女孩日常 · 微辣穿搭
               <br />
@@ -471,6 +412,7 @@ export default async function Home({ searchParams }: Props) {
             <h5 className="mb-5 text-sm font-bold tracking-[0.2em] text-[#a08060]">
               SHOP
             </h5>
+
             <div className="space-y-3 text-sm text-[#6b5c50]">
               <p>療癒娃娃</p>
               <p>韓系穿搭</p>
@@ -483,6 +425,7 @@ export default async function Home({ searchParams }: Props) {
             <h5 className="mb-5 text-sm font-bold tracking-[0.2em] text-[#a08060]">
               NOTICE
             </h5>
+
             <div className="space-y-3 text-sm leading-7 text-[#6b5c50]">
               <p>全館為預購商品</p>
               <p>出貨約 14–21 天</p>
@@ -494,14 +437,29 @@ export default async function Home({ searchParams }: Props) {
             <h5 className="mb-5 text-sm font-bold tracking-[0.2em] text-[#a08060]">
               FOLLOW US
             </h5>
+
             <div className="space-y-3 text-sm text-[#6b5c50]">
-              <a href="https://instagram.com" target="_blank" className="block">
+              <a
+                href="https://instagram.com"
+                target="_blank"
+                className="block"
+              >
                 Instagram
               </a>
-              <a href="https://threads.net" target="_blank" className="block">
+
+              <a
+                href="https://threads.net"
+                target="_blank"
+                className="block"
+              >
                 Threads
               </a>
-              <a href="https://line.me" target="_blank" className="block">
+
+              <a
+                href="https://line.me"
+                target="_blank"
+                className="block"
+              >
                 LINE Official
               </a>
             </div>
