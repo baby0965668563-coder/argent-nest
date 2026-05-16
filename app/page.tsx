@@ -243,7 +243,7 @@ export default async function Home({ searchParams }: Props) {
           </form>
 
           <div className="grid grid-cols-2 gap-4 md:grid-cols-4 md:gap-5">
-            {displayProducts.map((product) => {
+           {displayProducts.map((product) => {
   const soldOut = product.is_sold_out === true;
 
   const createdAt = product.created_at
@@ -267,10 +267,8 @@ export default async function Home({ searchParams }: Props) {
     >
       <div className="relative aspect-[4/5] overflow-hidden bg-[#f4eee8]">
         <div className="absolute left-3 top-3 z-10 rounded-full bg-white/85 px-3 py-1 text-[10px] text-[#8b6f5c] backdrop-blur">
-          <div className="absolute left-3 top-3 z-10 rounded-full bg-white/85 px-3 py-1 text-[10px] text-[#8b6f5c] backdrop-blur">
-            {soldOut ? "SOLD OUT" : isNew ? "NEW" : "PREORDER"}
-          </div>
-        )}
+          {soldOut ? "SOLD OUT" : isNew ? "NEW" : "PREORDER"}
+        </div>
 
         {product.image ? (
           <img
