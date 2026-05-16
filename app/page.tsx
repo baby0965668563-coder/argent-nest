@@ -14,20 +14,21 @@ export default async function Home() {
             Argent Nest 🥛🤍
           </a>
 
-          <nav className="flex items-center gap-5 text-sm text-[#6b5c50]">
+          <nav className="flex items-center gap-4 text-sm text-[#6b5c50] md:gap-5">
             <a href="#hot">新品</a>
             <a href="#hot">熱賣</a>
             <a href="#categories">分類</a>
             <a
               href="/admin"
-              className="rounded-full border border-[#d8c5b0] px-4 py-2"
+              className="rounded-full border border-[#d8c5b0] px-3 py-1.5 text-xs md:px-4 md:py-2"
             >
-              管理後台
+              後台
             </a>
           </nav>
         </div>
       </header>
 
+      {/* Hero 主視覺 */}
       <section className="px-5 py-8 md:px-10 md:py-12">
         <div className="relative mx-auto max-w-6xl overflow-hidden rounded-[2.5rem] bg-[#ede6dd]">
           <div className="grid items-center gap-10 px-8 py-16 md:grid-cols-2 md:px-16 md:py-24">
@@ -69,7 +70,10 @@ export default async function Home() {
             <div className="relative flex justify-center">
               <div className="relative overflow-hidden rounded-[2rem] shadow-[0_10px_40px_rgba(0,0,0,0.12)]">
                 <img
-                  src={products?.[0]?.image || "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?q=80&w=1200&auto=format&fit=crop"}
+                  src={
+                    products?.[0]?.image ||
+                    "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?q=80&w=1200&auto=format&fit=crop"
+                  }
                   alt="Argent Nest"
                   className="h-[520px] w-full object-cover md:w-[420px]"
                 />
@@ -77,7 +81,7 @@ export default async function Home() {
 
               <div className="absolute bottom-5 left-0 rounded-2xl bg-white/90 px-5 py-3 shadow-lg backdrop-blur">
                 <p className="text-xs tracking-[0.2em] text-[#a08060]">
-                  GIRL'S LITTLE WORLD ☁️
+                  GIRL&apos;S LITTLE WORLD ☁️
                 </p>
               </div>
             </div>
@@ -85,6 +89,7 @@ export default async function Home() {
         </div>
       </section>
 
+      {/* 熱門商品 */}
       <section id="hot" className="px-5 pb-20 md:px-10">
         <div className="mx-auto max-w-6xl">
           <div className="mb-10">
@@ -141,10 +146,17 @@ export default async function Home() {
                 </div>
               </a>
             ))}
+
+            {(!products || products.length === 0) && (
+              <div className="col-span-full rounded-[2rem] bg-white p-10 text-center text-[#8b7b6e]">
+                目前還沒有商品，請先到後台新增 ☁️
+              </div>
+            )}
           </div>
         </div>
       </section>
 
+      {/* 分類區 */}
       <section id="categories" className="px-5 pb-24 md:px-10">
         <div className="mx-auto max-w-6xl">
           <div className="mb-10">
@@ -205,6 +217,98 @@ export default async function Home() {
         </div>
       </section>
 
+      {/* 豬豬碎念 */}
+      <section className="px-5 pb-24 md:px-10">
+        <div className="mx-auto max-w-5xl overflow-hidden rounded-[2.5rem] bg-[#efe7de]">
+          <div className="grid gap-10 px-8 py-14 md:grid-cols-2 md:px-14 md:py-20">
+            <div className="flex flex-col justify-center">
+              <p className="mb-3 text-xs uppercase tracking-[0.35em] text-[#a08060]">
+                Owner&apos;s Diary
+              </p>
+
+              <h3 className="mb-6 text-4xl font-bold tracking-tight">
+                豬豬的碎念 ☁️
+              </h3>
+
+              <div className="space-y-5 text-[15px] leading-9 text-[#6b5c50]">
+                <p>最近一直覺得，生活已經夠累了。</p>
+
+                <p>
+                  所以想把一些看到會笑、摸到會安心、
+                  放在房間裡會覺得「好像有被療癒到」的東西，
+                  慢慢放進 Argent Nest 裡。
+                </p>
+
+                <p>
+                  希望妳每次逛進來，
+                  都能找到一點讓自己開心的小東西 ☁️
+                </p>
+              </div>
+            </div>
+
+            <div className="relative flex items-center justify-center">
+              <div className="overflow-hidden rounded-[2rem] shadow-[0_12px_40px_rgba(0,0,0,0.12)]">
+                <img
+                  src={
+                    products?.[1]?.image ||
+                    products?.[0]?.image ||
+                    "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=1200&auto=format&fit=crop"
+                  }
+                  alt="Argent Nest Mood"
+                  className="h-[500px] w-full object-cover md:w-[380px]"
+                />
+              </div>
+
+              <div className="absolute bottom-5 right-0 rounded-2xl bg-white/90 px-5 py-3 shadow-lg backdrop-blur">
+                <p className="text-xs tracking-[0.2em] text-[#a08060]">
+                  LITTLE HEALING WORLD ☁️
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* IG / Threads 氛圍牆 */}
+      <section className="px-5 pb-24 md:px-10">
+        <div className="mx-auto max-w-6xl">
+          <div className="mb-10 text-center">
+            <p className="mb-2 text-xs uppercase tracking-[0.35em] text-[#a08060]">
+              Today&apos;s Little Mood
+            </p>
+
+            <h3 className="text-3xl font-bold tracking-tight">
+              Argent Nest 的日常碎片 ☁️
+            </h3>
+
+            <p className="mt-3 text-sm leading-7 text-[#8b7b6e]">
+              一些讓人想停下來看看的小可愛、穿搭靈感和療癒角落。
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-4 md:gap-5">
+            {[0, 1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className={`overflow-hidden rounded-[2rem] bg-white shadow-sm ${
+                  i % 2 === 1 ? "md:mt-10" : ""
+                }`}
+              >
+                <img
+                  src={
+                    products?.[i]?.image ||
+                    "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=800&auto=format&fit=crop"
+                  }
+                  className="h-56 w-full object-cover"
+                  alt="Argent Nest daily mood"
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
       <footer className="border-t border-[#e8ddd4] bg-[#f6f1eb] px-5 py-16 md:px-10">
         <div className="mx-auto grid max-w-6xl gap-12 md:grid-cols-4">
           <div>
