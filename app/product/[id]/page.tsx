@@ -11,6 +11,7 @@ function parseOptions(optionsText: string) {
     .split("\n")
     .map((line) => {
       const [name, values] = line.split("|");
+
       if (!name || !values) return null;
 
       return {
@@ -30,10 +31,11 @@ export default function ProductPage() {
 
   const [product, setProduct] = useState<any>(null);
   const [mainImage, setMainImage] = useState("");
-  const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>(
-    {}
-  );
+  const [selectedOptions, setSelectedOptions] = useState<
+    Record<string, string>
+  >({});
   const [showOptionWarning, setShowOptionWarning] = useState(false);
+  const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
     async function fetchProduct() {
@@ -41,20 +43,55 @@ export default function ProductPage() {
         .from("products")
         .select("*")
         .eq("id", Number(id))
+        .eq("is_active", true)
         .single();
 
-      if (data) {
-        setProduct(data);
-
-        const imgs =
-          data.images && data.images.length > 0 ? data.images : [data.image];
-
-        setMainImage(imgs[0]);
+      if (!data) {
+        setNotFound(true);
+        return;
       }
+
+      setProduct(data);
+
+      const imgs =
+        data.images && data.images.length > 0
+          ? data.images
+          : [data.image];
+
+      setMainImage(imgs[0]);
     }
 
     fetchProduct();
   }, [id]);
+
+  if (notFound) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-[#f8f5f0] px-5">
+        <div className="w-full max-w-md rounded-[2.5rem] bg-white p-10 text-center shadow-sm">
+          <p className="mb-3 text-xs uppercase tracking-[0.35em] text-[#a08060]">
+            Argent Nest
+          </p>
+
+          <h1 className="mb-4 text-3xl font-bold">
+            商品暫時下架 ☁️
+          </h1>
+
+          <p className="mb-8 text-sm leading-8 text-[#6b5c50]">
+            這個商品目前沒有開放販售，
+            <br />
+            可以回首頁看看其他療癒小可愛。
+          </p>
+
+          <a
+            href="/"
+            className="inline-block rounded-full bg-[#2e2e2e] px-8 py-4 text-sm font-medium text-white"
+          >
+            回首頁逛逛
+          </a>
+        </div>
+      </main>
+    );
+  }
 
   if (!product) {
     return <div className="p-10">商品讀取中...</div>;
@@ -83,7 +120,9 @@ export default function ProductPage() {
     lineMessage
   )}`;
 
-  function handleLineClick(e: React.MouseEvent<HTMLAnchorElement>) {
+  function handleLineClick(
+    e: React.MouseEvent<HTMLAnchorElement>
+  ) {
     if (optionGroups.length > 0 && !isOptionsComplete) {
       e.preventDefault();
       setShowOptionWarning(true);
@@ -175,7 +214,8 @@ export default function ProductPage() {
 
                     <div className="flex flex-wrap gap-2">
                       {group.values.map((value) => {
-                        const active = selectedOptions[group.name] === value;
+                        const active =
+                          selectedOptions[group.name] === value;
 
                         return (
                           <button
@@ -185,6 +225,7 @@ export default function ProductPage() {
                                 ...selectedOptions,
                                 [group.name]: value,
                               });
+
                               setShowOptionWarning(false);
                             }}
                             className={`rounded-full border px-4 py-2 text-sm transition ${
