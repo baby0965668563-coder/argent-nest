@@ -112,7 +112,7 @@ export default async function Home() {
           href={`/product/${product.id}`}
           className="group overflow-hidden rounded-[2.2rem] bg-white/90 shadow-[0_6px_30px_rgba(70,50,35,0.08)] ring-1 ring-[#eaded4] transition duration-300 hover:-translate-y-1.5 hover:shadow-[0_16px_50px_rgba(70,50,35,0.16)]"
         >
-          <div className="relative aspect-[4/5] overflow-hidden bg-[#f1ece6]">
+          <div className="relative aspect-[4/5] overflow-hidden bg-[#f4eee8]">
             <div className="absolute left-3 top-3 z-10 rounded-full bg-white/85 px-3 py-1 text-[10px] text-[#8b6f5c] backdrop-blur">
               HOT
             </div>
@@ -139,7 +139,7 @@ export default async function Home() {
               {product.name}
             </h4>
 
-            <p className="font-bold text-[#2e2e2e]">
+            <p className="pt-1 text-lg font-bold text-[#8b6f5c]">
               NT$ {Number(product.price).toLocaleString()}
             </p>
           </div>
