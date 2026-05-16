@@ -1,5 +1,5 @@
-import ProductQuickView from "./components/ProductQuickView";
 import { supabase } from "@/lib/supabase";
+import ProductQuickView from "./components/ProductQuickView";
 
 interface Props {
   searchParams: Promise<{
