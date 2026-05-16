@@ -377,7 +377,7 @@ export default function AdminPage() {
       </button>
     </div>
   </div>
-);
+})}
           {products.length === 0 && (
             <div className="rounded-2xl border p-6 text-center text-gray-500">
               目前還沒有商品
