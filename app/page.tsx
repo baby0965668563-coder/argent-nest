@@ -243,45 +243,57 @@ export default async function Home({ searchParams }: Props) {
           </form>
 
           <div className="grid grid-cols-2 gap-4 md:grid-cols-4 md:gap-5">
-            {displayProducts.map((product) => (
-              <a
-                key={product.id}
-                href={`/product/${product.id}`}
-                className="group overflow-hidden rounded-[2.2rem] bg-white/90 shadow-[0_6px_30px_rgba(70,50,35,0.08)] ring-1 ring-[#eaded4] transition duration-300 hover:-translate-y-1.5 hover:shadow-[0_16px_50px_rgba(70,50,35,0.16)]"
-              >
-                <div className="relative aspect-[4/5] overflow-hidden bg-[#f4eee8]">
-                  <div className="absolute left-3 top-3 z-10 rounded-full bg-white/85 px-3 py-1 text-[10px] text-[#8b6f5c] backdrop-blur">
-                    NEW
-                  </div>
+            {displayProducts.map((product) => {
+  const soldOut = product.is_sold_out === true;
 
-                  {product.image ? (
-                    <img
-                      src={product.image}
-                      alt={product.name}
-                      className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                    />
-                  ) : (
-                    <div className="flex h-full items-center justify-center text-4xl">
-                      🏷️
-                    </div>
-                  )}
-                </div>
+  return (
+    <a
+      key={product.id}
+      href={`/product/${product.id}`}
+      className="group overflow-hidden rounded-[2.2rem] bg-white/90 shadow-[0_6px_30px_rgba(70,50,35,0.08)] ring-1 ring-[#eaded4] transition duration-300 hover:-translate-y-1.5 hover:shadow-[0_16px_50px_rgba(70,50,35,0.16)]"
+    >
+      <div className="relative aspect-[4/5] overflow-hidden bg-[#f4eee8]">
+        <div className="absolute left-3 top-3 z-10 rounded-full bg-white/85 px-3 py-1 text-[10px] text-[#8b6f5c] backdrop-blur">
+          {soldOut ? "SOLD OUT" : "NEW"}
+        </div>
 
-                <div className="space-y-2 p-4">
-                  <p className="text-[11px] tracking-[0.25em] text-[#b58b6b]">
-                    {product.category}
-                  </p>
+        {product.image ? (
+          <img
+            src={product.image}
+            alt={product.name}
+            className={`h-full w-full object-cover transition duration-500 group-hover:scale-105 ${
+              soldOut ? "opacity-60 grayscale" : ""
+            }`}
+          />
+        ) : (
+          <div className="flex h-full items-center justify-center text-4xl">
+            🏷️
+          </div>
+        )}
+      </div>
 
-                  <h4 className="line-clamp-2 text-sm font-semibold leading-6">
-                    {product.name}
-                  </h4>
+      <div className="space-y-2 p-4">
+        <p className="text-[11px] tracking-[0.25em] text-[#b58b6b]">
+          {product.category}
+        </p>
 
-                  <p className="pt-1 text-lg font-bold text-[#8b6f5c]">
-                    NT$ {Number(product.price).toLocaleString()}
-                  </p>
-                </div>
-              </a>
-            ))}
+        <h4 className="line-clamp-2 text-sm font-semibold leading-6">
+          {product.name}
+        </h4>
+
+        <p className="pt-1 text-lg font-bold text-[#8b6f5c]">
+          NT$ {Number(product.price).toLocaleString()}
+        </p>
+
+        {soldOut && (
+          <p className="text-xs text-gray-400">
+            目前已售完 ☁️
+          </p>
+        )}
+      </div>
+    </a>
+  );
+})}
 
             {displayProducts.length === 0 && (
               <div className="col-span-full rounded-[2rem] bg-white p-10 text-center text-[#8b7b6e]">
