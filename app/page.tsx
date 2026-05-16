@@ -309,6 +309,54 @@ export default async function Home() {
   </div>
 </section>
 
+      <section className="px-5 pb-24 md:px-10">
+  <div className="mx-auto max-w-6xl">
+    <div className="mb-10 text-center">
+      <p className="mb-2 text-xs uppercase tracking-[0.35em] text-[#a08060]">
+        Today's Little Mood
+      </p>
+
+      <h3 className="text-3xl font-bold tracking-tight">
+        Argent Nest 的日常碎片 ☁️
+      </h3>
+
+      <p className="mt-3 text-sm leading-7 text-[#8b7b6e]">
+        一些讓人想停下來看看的小可愛、穿搭靈感和療癒角落。
+      </p>
+    </div>
+
+    <div className="grid grid-cols-2 gap-4 md:grid-cols-4 md:gap-5">
+      <div className="overflow-hidden rounded-[2rem] bg-white shadow-sm">
+        <img
+          src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=800&auto=format&fit=crop"
+          className="h-56 w-full object-cover"
+        />
+      </div>
+
+      <div className="overflow-hidden rounded-[2rem] bg-white shadow-sm md:mt-10">
+        <img
+          src="https://images.unsplash.com/photo-1529139574466-a303027c1d8b?q=80&w=800&auto=format&fit=crop"
+          className="h-56 w-full object-cover"
+        />
+      </div>
+
+      <div className="overflow-hidden rounded-[2rem] bg-white shadow-sm">
+        <img
+          src="https://images.unsplash.com/photo-1512436991641-6745cdb1723f?q=80&w=800&auto=format&fit=crop"
+          className="h-56 w-full object-cover"
+        />
+      </div>
+
+      <div className="overflow-hidden rounded-[2rem] bg-white shadow-sm md:mt-10">
+        <img
+          src="https://images.unsplash.com/photo-1511988617509-a57c8a288659?q=80&w=800&auto=format&fit=crop"
+          className="h-56 w-full object-cover"
+        />
+      </div>
+    </div>
+  </div>
+</section>
+
       <footer className="border-t border-[#e8ddd4] px-5 py-8 text-center text-xs text-[#b0a090] md:px-10">
         <p>© 2026 Argent Nest 🥛🤍 · 韓系療癒選物</p>
       </footer>
