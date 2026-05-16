@@ -211,7 +211,7 @@ export default function AdminPage() {
     <main className="min-h-screen bg-[#f8f5f2] px-5 py-8 text-[#3d3d3d]">
       <div className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">管理後台</h1>
+          <h1 className="text-3xl font-bold">Argent Nest 後台 ☁️</h1>
           <p className="mt-2 text-sm text-gray-500">Argent Nest 商品管理</p>
         </div>
 
@@ -222,20 +222,20 @@ export default function AdminPage() {
 
       <div className="rounded-3xl bg-white p-6 shadow-sm">
         <h2 className="mb-5 text-xl font-bold">
-          {editingId ? "編輯商品" : "Argent Nest 後台 ☁️"}
+          {editingId ? "編輯商品" : "新增商品☁️"}
         </h2>
 
         <div className="space-y-4">
           <input
             className="w-full rounded-2xl border p-4"
-            placeholder="商品名稱"
+            placeholder="商品名稱✨"
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
 
           <input
             className="w-full rounded-2xl border p-4"
-            placeholder="價格"
+            placeholder="價格💰"
             value={price}
             onChange={(e) => setPrice(e.target.value)}
           />
@@ -262,7 +262,7 @@ export default function AdminPage() {
 
           <div className="rounded-2xl border p-4">
   <p className="mb-4 text-sm font-bold">
-    商品規格
+    商品規格📏
   </p>
 
   <textarea
@@ -291,13 +291,13 @@ export default function AdminPage() {
 
           <textarea
             className="w-full rounded-2xl border p-4"
-            placeholder="商品描述"
+            placeholder="商品描述✏️"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
           />
 
           <label className="flex items-center justify-between rounded-2xl border p-4">
-            <span>{isActive ? "目前狀態：上架中" : "目前狀態：已下架"}</span>
+            <span>{isActive ? "目前狀態：上架中🆗" : "目前狀態：已下架"}</span>
             <input
               type="checkbox"
               checked={isActive}
@@ -306,7 +306,7 @@ export default function AdminPage() {
           </label>
 
           <label className="flex items-center justify-between rounded-2xl border p-4">
-            <span>{isSoldOut ? "銷售狀態：已售完" : "銷售狀態：可下單"}</span>
+            <span>{isSoldOut ? "銷售狀態：已售完🈚️" : "銷售狀態：可下單"}</span>
             <input
               type="checkbox"
               checked={isSoldOut}
@@ -365,7 +365,7 @@ export default function AdminPage() {
             disabled={loading}
             className="w-full rounded-full bg-black py-4 text-white disabled:opacity-50"
           >
-            {loading ? "處理中..." : editingId ? "儲存修改" : "新增商品"}
+            {loading ? "處理中..." : editingId ? "儲存修改" : "新增商品☁️"}
           </button>
 
           {editingId && (
@@ -384,7 +384,7 @@ export default function AdminPage() {
 
         <input
           className="mb-5 w-full rounded-2xl border p-4"
-          placeholder="搜尋商品名稱、分類、描述"
+          placeholder="🔍搜尋商品名稱、分類、描述"
           value={searchText}
           onChange={(e) => setSearchText(e.target.value)}
         />
@@ -411,7 +411,7 @@ export default function AdminPage() {
                         : "bg-gray-200 text-gray-500"
                     }`}
                   >
-                    {active ? "上架中" : "已下架"}
+                    {active ? "上架中🆗" : "已下架"}
                   </span>
 
                   <span
@@ -421,7 +421,7 @@ export default function AdminPage() {
                         : "bg-[#f3ede6] text-[#8b6f5c]"
                     }`}
                   >
-                    {soldOut ? "已售完" : "可下單"}
+                    {soldOut ? "已售完🈚️" : "可下單"}
                   </span>
                 </div>
 
