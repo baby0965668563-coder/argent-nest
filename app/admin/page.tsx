@@ -9,6 +9,7 @@ export default function AdminPage() {
   const [price, setPrice] = useState("");
   const [category, setCategory] = useState("");
   const [sortOrder, setSortOrder] = useState("0");
+  const [options, setOptions] = useState("");
   const [description, setDescription] = useState("");
   const [images, setImages] = useState<File[]>([]);
   const [products, setProducts] = useState<any[]>([]);
@@ -34,6 +35,7 @@ export default function AdminPage() {
     setPrice("");
     setCategory("");
     setSortOrder("0");
+    setOptions("");
     setDescription("");
     setImages([]);
     setEditingId(null);
@@ -91,6 +93,7 @@ export default function AdminPage() {
         price,
         category,
         sort_order: Number(sortOrder) || 0,
+        options,
         description,
         image: imageUrls[0],
         images: imageUrls,
@@ -121,6 +124,7 @@ export default function AdminPage() {
         price,
         category,
         sort_order: Number(sortOrder) || 0,
+        options,
         description,
       })
       .eq("id", editingId);
@@ -208,6 +212,13 @@ export default function AdminPage() {
 
           <textarea
             className="w-full rounded-2xl border p-4"
+            placeholder="商品規格，例如：顏色：奶油白、黑色&#10;尺寸：S、M、L&#10;款式：A款、B款"
+            value={options}
+            onChange={(e) => setOptions(e.target.value)}
+          />
+
+          <textarea
+            className="w-full rounded-2xl border p-4"
             placeholder="商品描述"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
@@ -279,6 +290,11 @@ export default function AdminPage() {
                   <p className="text-xs text-gray-400">
                     圖片 {product.images?.length || 1} 張
                   </p>
+                  {product.options && (
+                    <p className="mt-1 line-clamp-1 text-xs text-gray-400">
+                      規格：{product.options}
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -290,6 +306,7 @@ export default function AdminPage() {
                     setPrice(product.price || "");
                     setCategory(product.category || "");
                     setSortOrder(String(product.sort_order ?? 0));
+                    setOptions(product.options || "");
                     setDescription(product.description || "");
                     window.scrollTo({ top: 0, behavior: "smooth" });
                   }}
