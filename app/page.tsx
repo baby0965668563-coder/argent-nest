@@ -254,6 +254,61 @@ export default async function Home() {
         </div>
       </section>
 
+      <section className="px-5 pb-24 md:px-10">
+  <div className="mx-auto max-w-5xl overflow-hidden rounded-[2.5rem] bg-[#efe7de]">
+    
+    <div className="grid gap-10 px-8 py-14 md:grid-cols-2 md:px-14 md:py-20">
+      
+      <div className="flex flex-col justify-center">
+        <p className="mb-3 text-xs uppercase tracking-[0.35em] text-[#a08060]">
+          Owner's Diary
+        </p>
+
+        <h3 className="mb-6 text-4xl font-bold tracking-tight">
+          豬豬的碎念 ☁️
+        </h3>
+
+        <div className="space-y-5 text-[15px] leading-9 text-[#6b5c50]">
+          <p>
+            最近一直覺得，
+            生活已經夠累了。
+          </p>
+
+          <p>
+            所以想把一些看到會笑、
+            摸到會安心、
+            放在房間裡會覺得
+            「好像有被療癒到」的東西，
+            慢慢放進 Argent Nest 裡。
+          </p>
+
+          <p>
+            希望妳每次逛進來，
+            都能找到一點讓自己開心的小東西 ☁️
+          </p>
+        </div>
+      </div>
+
+      <div className="relative flex items-center justify-center">
+        <div className="overflow-hidden rounded-[2rem] shadow-[0_12px_40px_rgba(0,0,0,0.12)]">
+          <img
+            src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=1200&auto=format&fit=crop"
+            alt="Argent Nest Mood"
+            className="h-[500px] w-full object-cover md:w-[380px]"
+          />
+        </div>
+
+        <div className="absolute bottom-5 right-0 rounded-2xl bg-white/90 px-5 py-3 shadow-lg backdrop-blur">
+          <p className="text-xs tracking-[0.2em] text-[#a08060]">
+            LITTLE HEALING WORLD ☁️
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
       <footer className="border-t border-[#e8ddd4] px-5 py-8 text-center text-xs text-[#b0a090] md:px-10">
         <p>© 2026 Argent Nest 🥛🤍 · 韓系療癒選物</p>
       </footer>
