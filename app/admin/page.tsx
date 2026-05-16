@@ -260,15 +260,34 @@ export default function AdminPage() {
             onChange={(e) => setSortOrder(e.target.value)}
           />
 
-          <textarea
-            className="w-full rounded-2xl border p-4"
-            placeholder={`商品規格，例如：
-顏色|奶油白,黑色
-尺寸|S,M,L
-款式|A款,B款`}
-            value={options}
-            onChange={(e) => setOptions(e.target.value)}
-          />
+          <div className="rounded-2xl border p-4">
+  <p className="mb-4 text-sm font-bold">
+    商品規格
+  </p>
+
+  <textarea
+    className="min-h-[140px] w-full rounded-2xl border p-4"
+    placeholder={`請依照格式輸入：
+
+顏色：奶油白、黑色、粉色
+
+尺寸：S、M、L
+
+款式：A款、B款`}
+    value={options}
+    onChange={(e) => setOptions(e.target.value)}
+  />
+
+  <div className="mt-4 rounded-2xl bg-[#f8f5f2] p-4 text-sm text-gray-600">
+    <p className="mb-2 font-bold">
+      輸入範例 ☁️
+    </p>
+
+    <p>顏色：奶油白、黑色</p>
+    <p>尺寸：S、M、L</p>
+    <p>款式：吊飾、娃娃</p>
+  </div>
+</div>
 
           <textarea
             className="w-full rounded-2xl border p-4"
