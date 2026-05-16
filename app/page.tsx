@@ -18,6 +18,14 @@ export default async function Home({ searchParams }: Props) {
 
   const { data: products } = await query;
 
+  const allProductsQuery = await supabase
+    .from("products")
+    .select("*")
+    .order("id", { ascending: false });
+
+  const allProducts = allProductsQuery.data || [];
+  const displayProducts = products || [];
+
   const categories = [
     { label: "全部", emoji: "☁️", desc: "全部商品" },
     { label: "療癒娃娃", emoji: "🧸", desc: "把小小快樂帶回家。" },
@@ -48,6 +56,7 @@ export default async function Home({ searchParams }: Props) {
         </div>
       </header>
 
+      {/* Hero 主視覺 */}
       <section className="px-5 py-8 md:px-10 md:py-12">
         <div className="relative mx-auto max-w-6xl overflow-hidden rounded-[2.5rem] bg-[#ede6dd]">
           <div className="grid items-center gap-10 px-8 py-16 md:grid-cols-2 md:px-16 md:py-24">
@@ -89,7 +98,7 @@ export default async function Home({ searchParams }: Props) {
               <div className="relative overflow-hidden rounded-[2rem] shadow-[0_10px_40px_rgba(0,0,0,0.12)]">
                 <img
                   src={
-                    products?.[0]?.image ||
+                    allProducts?.[0]?.image ||
                     "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?q=80&w=1200&auto=format&fit=crop"
                   }
                   alt="Argent Nest"
@@ -107,6 +116,7 @@ export default async function Home({ searchParams }: Props) {
         </div>
       </section>
 
+      {/* 分類篩選 */}
       <section id="categories" className="px-5 pb-16 md:px-10">
         <div className="mx-auto max-w-6xl">
           <div className="mb-10">
@@ -162,6 +172,7 @@ export default async function Home({ searchParams }: Props) {
         </div>
       </section>
 
+      {/* 商品區 */}
       <section id="hot" className="px-5 pb-20 md:px-10">
         <div className="mx-auto max-w-6xl">
           <div className="mb-10">
@@ -181,7 +192,7 @@ export default async function Home({ searchParams }: Props) {
           </div>
 
           <div className="grid grid-cols-2 gap-4 md:grid-cols-4 md:gap-5">
-            {products?.map((product) => (
+            {displayProducts.map((product) => (
               <a
                 key={product.id}
                 href={`/product/${product.id}`}
@@ -221,7 +232,7 @@ export default async function Home({ searchParams }: Props) {
               </a>
             ))}
 
-            {(!products || products.length === 0) && (
+            {displayProducts.length === 0 && (
               <div className="col-span-full rounded-[2rem] bg-white p-10 text-center text-[#8b7b6e]">
                 這個分類目前還沒有商品 ☁️
               </div>
@@ -230,6 +241,7 @@ export default async function Home({ searchParams }: Props) {
         </div>
       </section>
 
+      {/* 豬豬碎念 */}
       <section className="px-5 pb-24 md:px-10">
         <div className="mx-auto max-w-5xl overflow-hidden rounded-[2.5rem] bg-[#efe7de]">
           <div className="grid gap-10 px-8 py-14 md:grid-cols-2 md:px-14 md:py-20">
@@ -262,8 +274,8 @@ export default async function Home({ searchParams }: Props) {
               <div className="overflow-hidden rounded-[2rem] shadow-[0_12px_40px_rgba(0,0,0,0.12)]">
                 <img
                   src={
-                    products?.[1]?.image ||
-                    products?.[0]?.image ||
+                    allProducts?.[1]?.image ||
+                    allProducts?.[0]?.image ||
                     "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=1200&auto=format&fit=crop"
                   }
                   alt="Argent Nest Mood"
@@ -281,13 +293,52 @@ export default async function Home({ searchParams }: Props) {
         </div>
       </section>
 
+      {/* Argent Nest 的日常碎片 */}
+      <section className="px-5 pb-24 md:px-10">
+        <div className="mx-auto max-w-6xl">
+          <div className="mb-10 text-center">
+            <p className="mb-2 text-xs uppercase tracking-[0.35em] text-[#a08060]">
+              Today&apos;s Little Mood
+            </p>
+
+            <h3 className="text-3xl font-bold tracking-tight">
+              Argent Nest 的日常碎片 ☁️
+            </h3>
+
+            <p className="mt-3 text-sm leading-7 text-[#8b7b6e]">
+              一些讓人想停下來看看的小可愛、穿搭靈感和療癒角落。
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-4 md:gap-5">
+            {[0, 1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className={`overflow-hidden rounded-[2rem] bg-white shadow-sm ${
+                  i % 2 === 1 ? "md:mt-10" : ""
+                }`}
+              >
+                <img
+                  src={
+                    allProducts?.[i]?.image ||
+                    "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=800&auto=format&fit=crop"
+                  }
+                  className="h-56 w-full object-cover"
+                  alt="Argent Nest daily mood"
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
       <footer className="border-t border-[#e8ddd4] bg-[#f6f1eb] px-5 py-16 md:px-10">
         <div className="mx-auto grid max-w-6xl gap-12 md:grid-cols-4">
           <div>
             <h4 className="mb-4 text-2xl font-bold tracking-tight">
               Argent Nest 🥛🤍
             </h4>
-
             <p className="text-sm leading-8 text-[#8b7b6e]">
               韓系療癒選物 · 女孩日常 · 微辣穿搭
               <br />
@@ -299,7 +350,6 @@ export default async function Home({ searchParams }: Props) {
             <h5 className="mb-5 text-sm font-bold tracking-[0.2em] text-[#a08060]">
               SHOP
             </h5>
-
             <div className="space-y-3 text-sm text-[#6b5c50]">
               <p>療癒娃娃</p>
               <p>韓系穿搭</p>
@@ -312,7 +362,6 @@ export default async function Home({ searchParams }: Props) {
             <h5 className="mb-5 text-sm font-bold tracking-[0.2em] text-[#a08060]">
               NOTICE
             </h5>
-
             <div className="space-y-3 text-sm leading-7 text-[#6b5c50]">
               <p>全館為預購商品</p>
               <p>出貨約 14–21 天</p>
@@ -324,7 +373,6 @@ export default async function Home({ searchParams }: Props) {
             <h5 className="mb-5 text-sm font-bold tracking-[0.2em] text-[#a08060]">
               FOLLOW US
             </h5>
-
             <div className="space-y-3 text-sm text-[#6b5c50]">
               <a href="https://instagram.com" target="_blank" className="block">
                 Instagram
