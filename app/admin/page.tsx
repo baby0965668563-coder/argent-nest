@@ -1,28 +1,41 @@
 "use client";
 
 import { useState } from "react";
+import { supabase } from "@/lib/supabase";
 
 export default function Page() {
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
-  const [products, setProducts] = useState<
-    { name: string; price: string }[]
-  >([]);
+  const [loading, setLoading] = useState(false);
 
-  function addProduct() {
-    if (!name || !price) {
-      alert("請輸入完整 ☁️");
-      return;
-    }
+  async function addProduct() {
+    if (!name) return alert("請輸入商品名稱");
+    if (!price) return alert("請輸入商品價格");
 
-    setProducts([
-      ...products,
+    setLoading(true);
+
+    const { error } = await supabase.from("products").insert([
       {
         name,
         price,
+        category: "未分類",
+        description: "",
+        image: "",
+        images: [],
+        sort_order: 0,
+        is_active: true,
+        is_sold_out: false,
       },
     ]);
 
+    setLoading(false);
+
+    if (error) {
+      alert("新增失敗：" + error.message);
+      return;
+    }
+
+    alert("新增成功 ☁️");
     setName("");
     setPrice("");
   }
@@ -50,27 +63,11 @@ export default function Page() {
 
         <button
           onClick={addProduct}
-          className="mb-6 w-full rounded-full bg-black py-4 text-white"
+          disabled={loading}
+          className="w-full rounded-full bg-black py-4 text-white disabled:opacity-50"
         >
-          新增商品
+          {loading ? "新增中..." : "新增商品"}
         </button>
-
-        <div className="space-y-3">
-          {products.map((product, index) => (
-            <div
-              key={index}
-              className="rounded-2xl border p-4"
-            >
-              <p className="font-bold">
-                {product.name}
-              </p>
-
-              <p className="text-gray-500">
-                NT$ {product.price}
-              </p>
-            </div>
-          ))}
-        </div>
       </div>
     </main>
   );
