@@ -273,9 +273,25 @@ export default function AdminPage() {
           />
 
           {images.length > 0 && (
-            <div className="rounded-2xl bg-[#f8f5f2] p-4 text-sm text-gray-600">
-              已選擇 {images.length} 張新圖片
-              {editingId && "，儲存後會取代原本圖片"}
+            <div className="rounded-2xl bg-[#f8f5f2] p-4">
+              <p className="mb-3 text-sm text-gray-600">
+                已選擇 {images.length} 張新圖片
+                {editingId ? "，儲存後會取代原本圖片" : ""}
+              </p>
+
+              <div className="grid grid-cols-4 gap-3">
+                {images.map((file, index) => (
+                  <div
+                    key={index}
+                    className="overflow-hidden rounded-xl bg-white"
+                  >
+                    <img
+                      src={URL.createObjectURL(file)}
+                      className="aspect-square w-full object-cover"
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
@@ -311,73 +327,72 @@ export default function AdminPage() {
                 : [];
 
             return (
-  <div
-    key={product.id}
-    className="rounded-2xl border p-4"
-  >
-    <div className="flex gap-4">
-      <div className="h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-gray-100">
-        {product.image ? (
-          <img
-            src={product.image}
-            className="h-full w-full object-cover"
-          />
-        ) : null}
-      </div>
+              <div key={product.id} className="rounded-2xl border p-4">
+                <div className="flex gap-4">
+                  <div className="h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-gray-100">
+                    {product.image ? (
+                      <img
+                        src={product.image}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : null}
+                  </div>
 
-      <div className="min-w-0 flex-1">
-        <p className="line-clamp-2 font-bold">
-          {product.name}
-        </p>
+                  <div className="min-w-0 flex-1">
+                    <p className="line-clamp-2 font-bold">
+                      {product.name}
+                    </p>
 
-        <p className="mt-1 text-sm text-gray-500">
-          NT$ {product.price}
-        </p>
+                    <p className="mt-1 text-sm text-gray-500">
+                      NT$ {product.price}
+                    </p>
 
-        <p className="mt-1 text-xs text-[#b58b6b]">
-          {product.category}｜排序 {product.sort_order ?? 0}
-        </p>
+                    <p className="mt-1 text-xs text-[#b58b6b]">
+                      {product.category}｜排序 {product.sort_order ?? 0}
+                    </p>
 
-        <p className="mt-1 text-xs text-gray-400">
-          圖片 {productImages.length} 張
-        </p>
+                    <p className="mt-1 text-xs text-gray-400">
+                      圖片 {productImages.length} 張
+                    </p>
 
-        {product.options && (
-          <p className="mt-1 line-clamp-2 text-xs text-gray-400">
-            規格：{product.options}
-          </p>
-        )}
-      </div>
-    </div>
+                    {product.options && (
+                      <p className="mt-1 line-clamp-2 text-xs text-gray-400">
+                        規格：{product.options}
+                      </p>
+                    )}
+                  </div>
+                </div>
 
-    <div className="mt-4 grid grid-cols-2 gap-3">
-      <button
-        onClick={() => {
-          setEditingId(product.id);
-          setName(product.name || "");
-          setPrice(product.price || "");
-          setCategory(product.category || "");
-          setSortOrder(String(product.sort_order ?? 0));
-          setOptions(product.options || "");
-          setDescription(product.description || "");
-          setEditingImages(productImages);
-          setImages([]);
-          window.scrollTo({ top: 0, behavior: "smooth" });
-        }}
-        className="rounded-full bg-[#b58b6b] py-3 text-sm text-white"
-      >
-        編輯
-      </button>
+                <div className="mt-4 grid grid-cols-2 gap-3">
+                  <button
+                    onClick={() => {
+                      setEditingId(product.id);
+                      setName(product.name || "");
+                      setPrice(product.price || "");
+                      setCategory(product.category || "");
+                      setSortOrder(String(product.sort_order ?? 0));
+                      setOptions(product.options || "");
+                      setDescription(product.description || "");
+                      setEditingImages(productImages);
+                      setImages([]);
+                      window.scrollTo({ top: 0, behavior: "smooth" });
+                    }}
+                    className="rounded-full bg-[#b58b6b] py-3 text-sm text-white"
+                  >
+                    編輯
+                  </button>
 
-      <button
-        onClick={() => deleteProduct(product.id)}
-        className="rounded-full bg-red-500 py-3 text-sm text-white"
-      >
-        刪除
-      </button>
-    </div>
-  </div>
-})}
+                  <button
+                    onClick={() => deleteProduct(product.id)}
+                    className="rounded-full bg-red-500 py-3 text-sm text-white"
+                  >
+                    刪除
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+
           {products.length === 0 && (
             <div className="rounded-2xl border p-6 text-center text-gray-500">
               目前還沒有商品
