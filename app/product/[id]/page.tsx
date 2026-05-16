@@ -15,7 +15,10 @@ function parseOptions(optionsText: string) {
 
       return {
         name: name.trim(),
-        values: values.split(",").map((v) => v.trim()).filter(Boolean),
+        values: values
+          .split(",")
+          .map((v) => v.trim())
+          .filter(Boolean),
       };
     })
     .filter(Boolean) as { name: string; values: string[] }[];
@@ -27,7 +30,10 @@ export default function ProductPage() {
 
   const [product, setProduct] = useState<any>(null);
   const [mainImage, setMainImage] = useState("");
-  const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
+  const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>(
+    {}
+  );
+  const [showOptionWarning, setShowOptionWarning] = useState(false);
 
   useEffect(() => {
     async function fetchProduct() {
@@ -41,9 +47,7 @@ export default function ProductPage() {
         setProduct(data);
 
         const imgs =
-          data.images && data.images.length > 0
-            ? data.images
-            : [data.image];
+          data.images && data.images.length > 0 ? data.images : [data.image];
 
         setMainImage(imgs[0]);
       }
@@ -63,6 +67,10 @@ export default function ProductPage() {
 
   const optionGroups = parseOptions(product.options || "");
 
+  const isOptionsComplete = optionGroups.every(
+    (group) => selectedOptions[group.name]
+  );
+
   const optionText = Object.entries(selectedOptions)
     .map(([key, value]) => `${key}：${value}`)
     .join("\n");
@@ -70,6 +78,18 @@ export default function ProductPage() {
   const lineMessage = `我想詢問：${product.name}${
     optionText ? `\n\n規格：\n${optionText}` : ""
   }`;
+
+  const lineUrl = `https://line.me/R/oaMessage/@929santn/?${encodeURIComponent(
+    lineMessage
+  )}`;
+
+  function handleLineClick(e: React.MouseEvent<HTMLAnchorElement>) {
+    if (optionGroups.length > 0 && !isOptionsComplete) {
+      e.preventDefault();
+      setShowOptionWarning(true);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }
 
   return (
     <main className="min-h-screen bg-[#f8f5f0] text-[#2e2e2e]">
@@ -105,7 +125,9 @@ export default function ProductPage() {
                   key={index}
                   onClick={() => setMainImage(img)}
                   className={`overflow-hidden rounded-2xl border bg-[#ede6dd] ${
-                    mainImage === img ? "border-[#8b6f5c]" : "border-transparent"
+                    mainImage === img
+                      ? "border-[#8b6f5c]"
+                      : "border-transparent"
                   }`}
                 >
                   <img
@@ -132,6 +154,12 @@ export default function ProductPage() {
             NT$ {Number(product.price).toLocaleString()}
           </p>
 
+          {showOptionWarning && (
+            <div className="mb-6 rounded-2xl bg-[#fff1f1] p-4 text-sm leading-7 text-red-500">
+              請先選完商品規格，再私訊下單 ☁️
+            </div>
+          )}
+
           {optionGroups.length > 0 && (
             <div className="mb-8 rounded-[2rem] border border-[#e8ddd4] bg-[#fdf9f6] p-6">
               <p className="mb-4 text-xs uppercase tracking-[0.3em] text-[#a08060]">
@@ -152,12 +180,13 @@ export default function ProductPage() {
                         return (
                           <button
                             key={value}
-                            onClick={() =>
+                            onClick={() => {
                               setSelectedOptions({
                                 ...selectedOptions,
                                 [group.name]: value,
-                              })
-                            }
+                              });
+                              setShowOptionWarning(false);
+                            }}
                             className={`rounded-full border px-4 py-2 text-sm transition ${
                               active
                                 ? "border-[#2e2e2e] bg-[#2e2e2e] text-white"
@@ -186,14 +215,19 @@ export default function ProductPage() {
           </div>
 
           <a
-            href={`https://line.me/R/oaMessage/@929santn/?${encodeURIComponent(
-              lineMessage
-            )}`}
+            href={lineUrl}
+            onClick={handleLineClick}
             target="_blank"
             rel="noopener noreferrer"
-            className="mb-6 block rounded-full bg-[#06C755] py-4 text-center font-semibold text-white shadow-[0_8px_25px_rgba(6,199,85,0.25)] transition hover:scale-[1.02]"
+            className={`mb-6 block rounded-full py-4 text-center font-semibold text-white shadow-[0_8px_25px_rgba(6,199,85,0.25)] transition hover:scale-[1.02] ${
+              optionGroups.length > 0 && !isOptionsComplete
+                ? "bg-gray-400"
+                : "bg-[#06C755]"
+            }`}
           >
-            立即詢問 / 下單 ☁️
+            {optionGroups.length > 0 && !isOptionsComplete
+              ? "請先選擇規格 ☁️"
+              : "立即詢問 / 下單 ☁️"}
           </a>
 
           <div className="rounded-[2rem] border border-[#e8ddd4] bg-[#fdf9f6] p-6">
