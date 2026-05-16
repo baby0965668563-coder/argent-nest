@@ -357,9 +357,82 @@ export default async function Home() {
   </div>
 </section>
 
-      <footer className="border-t border-[#e8ddd4] px-5 py-8 text-center text-xs text-[#b0a090] md:px-10">
-        <p>© 2026 Argent Nest 🥛🤍 · 韓系療癒選物</p>
-      </footer>
-    </main>
-  );
-}
+     <footer className="border-t border-[#e8ddd4] bg-[#f6f1eb] px-5 py-16 md:px-10">
+  <div className="mx-auto grid max-w-6xl gap-12 md:grid-cols-4">
+    
+    <div>
+      <h4 className="mb-4 text-2xl font-bold tracking-tight">
+        Argent Nest 🥛🤍
+      </h4>
+
+      <p className="text-sm leading-8 text-[#8b7b6e]">
+        韓系療癒選物 · 女孩日常 · 微辣穿搭
+        <br />
+        把讓人心情變好的東西，
+        慢慢放進這裡 ☁️
+      </p>
+    </div>
+
+    <div>
+      <h5 className="mb-5 text-sm font-bold tracking-[0.2em] text-[#a08060]">
+        SHOP
+      </h5>
+
+      <div className="space-y-3 text-sm text-[#6b5c50]">
+        <p>療癒娃娃</p>
+        <p>韓系穿搭</p>
+        <p>女孩小物</p>
+        <p>甜點研究所</p>
+      </div>
+    </div>
+
+    <div>
+      <h5 className="mb-5 text-sm font-bold tracking-[0.2em] text-[#a08060]">
+        NOTICE
+      </h5>
+
+      <div className="space-y-3 text-sm leading-7 text-[#6b5c50]">
+        <p>全館為預購商品</p>
+        <p>出貨約 14–21 天</p>
+        <p>無法等待請勿下單</p>
+      </div>
+    </div>
+
+    <div>
+      <h5 className="mb-5 text-sm font-bold tracking-[0.2em] text-[#a08060]">
+        FOLLOW US
+      </h5>
+
+      <div className="space-y-3 text-sm text-[#6b5c50]">
+        <a
+          href="https://instagram.com"
+          target="_blank"
+          className="block transition hover:text-black"
+        >
+          Instagram
+        </a>
+
+        <a
+          href="https://threads.net"
+          target="_blank"
+          className="block transition hover:text-black"
+        >
+          Threads
+        </a>
+
+        <a
+          href="https://line.me"
+          target="_blank"
+          className="block transition hover:text-black"
+        >
+          LINE Official
+        </a>
+      </div>
+    </div>
+
+  </div>
+
+  <div className="mx-auto mt-14 max-w-6xl border-t border-[#e8ddd4] pt-6 text-center text-xs text-[#b0a090]">
+    © 2026 Argent Nest 🥛🤍 · All Rights Reserved
+  </div>
+</footer>
