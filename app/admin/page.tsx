@@ -222,7 +222,7 @@ export default function AdminPage() {
 
       <div className="rounded-3xl bg-white p-6 shadow-sm">
         <h2 className="mb-5 text-xl font-bold">
-          {editingId ? "編輯商品" : "新增商品"}
+          {editingId ? "編輯商品" : "Argent Nest 後台 ☁️"}
         </h2>
 
         <div className="space-y-4">
