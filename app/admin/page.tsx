@@ -11,6 +11,7 @@ export default function AdminPage() {
   const [sortOrder, setSortOrder] = useState("0");
   const [options, setOptions] = useState("");
   const [description, setDescription] = useState("");
+  const [isActive, setIsActive] = useState(true);
   const [images, setImages] = useState<File[]>([]);
   const [products, setProducts] = useState<any[]>([]);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -49,6 +50,7 @@ export default function AdminPage() {
     setSortOrder("0");
     setOptions("");
     setDescription("");
+    setIsActive(true);
     setImages([]);
     setEditingId(null);
     setEditingImages([]);
@@ -108,6 +110,7 @@ export default function AdminPage() {
         sort_order: Number(sortOrder) || 0,
         options,
         description,
+        is_active: isActive,
         image: imageUrls[0],
         images: imageUrls,
       },
@@ -152,6 +155,7 @@ export default function AdminPage() {
         sort_order: Number(sortOrder) || 0,
         options,
         description,
+        is_active: isActive,
         image: imageUrls[0] || "",
         images: imageUrls,
       })
@@ -166,6 +170,20 @@ export default function AdminPage() {
 
     alert("修改成功！");
     resetForm();
+    fetchProducts();
+  }
+
+  async function toggleActive(id: number, currentStatus: boolean) {
+    const { error } = await supabase
+      .from("products")
+      .update({ is_active: !currentStatus })
+      .eq("id", id);
+
+    if (error) {
+      alert("狀態修改失敗：" + error.message);
+      return;
+    }
+
     fetchProducts();
   }
 
@@ -252,6 +270,19 @@ export default function AdminPage() {
             onChange={(e) => setDescription(e.target.value)}
           />
 
+          <label className="flex items-center justify-between rounded-2xl border p-4">
+            <span className="text-sm font-medium">
+              {isActive ? "目前狀態：上架中" : "目前狀態：已下架"}
+            </span>
+
+            <input
+              type="checkbox"
+              checked={isActive}
+              onChange={(e) => setIsActive(e.target.checked)}
+              className="h-5 w-5"
+            />
+          </label>
+
           {editingId && editingImages.length > 0 && (
             <div className="rounded-2xl bg-[#f8f5f2] p-4">
               <p className="mb-3 text-sm text-gray-600">目前圖片</p>
@@ -335,8 +366,29 @@ export default function AdminPage() {
                 ? [product.image]
                 : [];
 
+            const active = product.is_active !== false;
+
             return (
               <div key={product.id} className="rounded-2xl border p-4">
+                <div className="mb-3 flex justify-between gap-3">
+                  <span
+                    className={`rounded-full px-3 py-1 text-xs ${
+                      active
+                        ? "bg-green-100 text-green-700"
+                        : "bg-gray-200 text-gray-500"
+                    }`}
+                  >
+                    {active ? "上架中" : "已下架"}
+                  </span>
+
+                  <button
+                    onClick={() => toggleActive(product.id, active)}
+                    className="rounded-full border px-3 py-1 text-xs text-gray-600"
+                  >
+                    {active ? "下架" : "上架"}
+                  </button>
+                </div>
+
                 <div className="flex gap-4">
                   <div className="h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-gray-100">
                     {product.image ? (
@@ -380,6 +432,7 @@ export default function AdminPage() {
                       setSortOrder(String(product.sort_order ?? 0));
                       setOptions(product.options || "");
                       setDescription(product.description || "");
+                      setIsActive(product.is_active !== false);
                       setEditingImages(productImages);
                       setImages([]);
                       window.scrollTo({ top: 0, behavior: "smooth" });
