@@ -12,6 +12,7 @@ export default function AdminPage() {
   const [options, setOptions] = useState("");
   const [description, setDescription] = useState("");
   const [isActive, setIsActive] = useState(true);
+  const [isSoldOut, setIsSoldOut] = useState(false);
   const [images, setImages] = useState<File[]>([]);
   const [products, setProducts] = useState<any[]>([]);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -51,6 +52,7 @@ export default function AdminPage() {
     setOptions("");
     setDescription("");
     setIsActive(true);
+    setIsSoldOut(false);
     setImages([]);
     setEditingId(null);
     setEditingImages([]);
@@ -111,6 +113,7 @@ export default function AdminPage() {
         options,
         description,
         is_active: isActive,
+        is_sold_out: isSoldOut,
         image: imageUrls[0],
         images: imageUrls,
       },
@@ -156,6 +159,7 @@ export default function AdminPage() {
         options,
         description,
         is_active: isActive,
+        is_sold_out: isSoldOut,
         image: imageUrls[0] || "",
         images: imageUrls,
       })
@@ -187,6 +191,20 @@ export default function AdminPage() {
     fetchProducts();
   }
 
+  async function toggleSoldOut(id: number, currentStatus: boolean) {
+    const { error } = await supabase
+      .from("products")
+      .update({ is_sold_out: !currentStatus })
+      .eq("id", id);
+
+    if (error) {
+      alert("售完狀態修改失敗：" + error.message);
+      return;
+    }
+
+    fetchProducts();
+  }
+
   async function deleteProduct(id: number) {
     if (!confirm("確定要刪除這個商品嗎？")) return;
 
@@ -206,9 +224,7 @@ export default function AdminPage() {
       <div className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">管理後台</h1>
-          <p className="mt-2 text-sm text-gray-500">
-            Argent Nest 商品管理
-          </p>
+          <p className="mt-2 text-sm text-gray-500">Argent Nest 商品管理</p>
         </div>
 
         <a href="/" className="rounded-full border px-4 py-2 text-sm">
@@ -279,6 +295,19 @@ export default function AdminPage() {
               type="checkbox"
               checked={isActive}
               onChange={(e) => setIsActive(e.target.checked)}
+              className="h-5 w-5"
+            />
+          </label>
+
+          <label className="flex items-center justify-between rounded-2xl border p-4">
+            <span className="text-sm font-medium">
+              {isSoldOut ? "銷售狀態：已售完" : "銷售狀態：可下單"}
+            </span>
+
+            <input
+              type="checkbox"
+              checked={isSoldOut}
+              onChange={(e) => setIsSoldOut(e.target.checked)}
               className="h-5 w-5"
             />
           </label>
@@ -367,10 +396,11 @@ export default function AdminPage() {
                 : [];
 
             const active = product.is_active !== false;
+            const soldOut = product.is_sold_out === true;
 
             return (
               <div key={product.id} className="rounded-2xl border p-4">
-                <div className="mb-3 flex justify-between gap-3">
+                <div className="mb-3 flex flex-wrap gap-2">
                   <span
                     className={`rounded-full px-3 py-1 text-xs ${
                       active
@@ -381,11 +411,28 @@ export default function AdminPage() {
                     {active ? "上架中" : "已下架"}
                   </span>
 
+                  <span
+                    className={`rounded-full px-3 py-1 text-xs ${
+                      soldOut
+                        ? "bg-red-100 text-red-600"
+                        : "bg-[#f3ede6] text-[#8b6f5c]"
+                    }`}
+                  >
+                    {soldOut ? "已售完" : "可下單"}
+                  </span>
+
                   <button
                     onClick={() => toggleActive(product.id, active)}
                     className="rounded-full border px-3 py-1 text-xs text-gray-600"
                   >
                     {active ? "下架" : "上架"}
+                  </button>
+
+                  <button
+                    onClick={() => toggleSoldOut(product.id, soldOut)}
+                    className="rounded-full border px-3 py-1 text-xs text-gray-600"
+                  >
+                    {soldOut ? "恢復販售" : "設為售完"}
                   </button>
                 </div>
 
@@ -433,6 +480,7 @@ export default function AdminPage() {
                       setOptions(product.options || "");
                       setDescription(product.description || "");
                       setIsActive(product.is_active !== false);
+                      setIsSoldOut(product.is_sold_out === true);
                       setEditingImages(productImages);
                       setImages([]);
                       window.scrollTo({ top: 0, behavior: "smooth" });
