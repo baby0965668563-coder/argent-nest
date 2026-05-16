@@ -268,7 +268,7 @@ export default async function Home({ searchParams }: Props) {
       <div className="relative aspect-[4/5] overflow-hidden bg-[#f4eee8]">
         {(soldOut || isNew) && (
           <div className="absolute left-3 top-3 z-10 rounded-full bg-white/85 px-3 py-1 text-[10px] text-[#8b6f5c] backdrop-blur">
-            {soldOut ? "SOLD OUT" : "NEW"}
+            {soldOut ? "SOLD OUT" : isNew ? "NEW" : "PREORDER"}
           </div>
         )}
 
