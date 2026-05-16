@@ -1,10 +1,30 @@
 import { supabase } from "@/lib/supabase";
 
-export default async function Home() {
-  const { data: products } = await supabase
+interface Props {
+  searchParams: Promise<{ category?: string }>;
+}
+
+export default async function Home({ searchParams }: Props) {
+  const { category } = await searchParams;
+
+  let query = supabase
     .from("products")
     .select("*")
     .order("id", { ascending: false });
+
+  if (category && category !== "全部") {
+    query = query.eq("category", category);
+  }
+
+  const { data: products } = await query;
+
+  const categories = [
+    { label: "全部", emoji: "☁️", desc: "全部商品" },
+    { label: "療癒娃娃", emoji: "🧸", desc: "把小小快樂帶回家。" },
+    { label: "微辣穿搭", emoji: "👗", desc: "韓系慵懶感女孩日常。" },
+    { label: "女孩小物", emoji: "🎀", desc: "飾品、包包與日常可愛。" },
+    { label: "甜點研究所", emoji: "🍰", desc: "屬於甜甜日常的小角落。" },
+  ];
 
   return (
     <main className="min-h-screen bg-[#f8f5f0] text-[#2e2e2e]">
@@ -28,7 +48,6 @@ export default async function Home() {
         </div>
       </header>
 
-      {/* Hero 主視覺 */}
       <section className="px-5 py-8 md:px-10 md:py-12">
         <div className="relative mx-auto max-w-6xl overflow-hidden rounded-[2.5rem] bg-[#ede6dd]">
           <div className="grid items-center gap-10 px-8 py-16 md:grid-cols-2 md:px-16 md:py-24">
@@ -44,8 +63,7 @@ export default async function Home() {
               </h2>
 
               <p className="mb-8 max-w-md text-[15px] leading-8 text-[#6b5c50]">
-                把讓人心情變好的東西，
-                都放進這裡了。
+                把讓人心情變好的東西，都放進這裡了。
                 <br />
                 韓系療癒選物・女孩日常・微辣穿搭 ☁️
               </p>
@@ -89,7 +107,61 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* 熱門商品 */}
+      <section id="categories" className="px-5 pb-16 md:px-10">
+        <div className="mx-auto max-w-6xl">
+          <div className="mb-10">
+            <p className="mb-2 text-xs uppercase tracking-[0.35em] text-[#a08060]">
+              Categories
+            </p>
+
+            <h3 className="text-3xl font-bold tracking-tight">
+              逛逛屬於妳的小世界 ☁️
+            </h3>
+
+            <p className="mt-3 text-sm leading-7 text-[#8b7b6e]">
+              點分類後，下面商品會自動篩選。
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-5 md:gap-5">
+            {categories.map((cat) => {
+              const active =
+                (!category && cat.label === "全部") || category === cat.label;
+
+              return (
+                <a
+                  key={cat.label}
+                  href={
+                    cat.label === "全部"
+                      ? "/#hot"
+                      : `/?category=${encodeURIComponent(cat.label)}#hot`
+                  }
+                  className={`rounded-[2rem] p-6 transition hover:-translate-y-1 ${
+                    active
+                      ? "bg-[#2e2e2e] text-white"
+                      : "bg-white text-[#2e2e2e]"
+                  }`}
+                >
+                  <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#f8f5f0] text-3xl shadow-sm">
+                    {cat.emoji}
+                  </div>
+
+                  <h4 className="mb-2 text-lg font-bold">{cat.label}</h4>
+
+                  <p
+                    className={`text-sm leading-7 ${
+                      active ? "text-white/75" : "text-[#8b7b6e]"
+                    }`}
+                  >
+                    {cat.desc}
+                  </p>
+                </a>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
       <section id="hot" className="px-5 pb-20 md:px-10">
         <div className="mx-auto max-w-6xl">
           <div className="mb-10">
@@ -98,7 +170,9 @@ export default async function Home() {
             </p>
 
             <h3 className="text-3xl font-bold tracking-tight">
-              最近大家都在偷偷收藏 ☁️
+              {category && category !== "全部"
+                ? `${category} ☁️`
+                : "最近大家都在偷偷收藏 ☁️"}
             </h3>
 
             <p className="mt-3 text-sm leading-7 text-[#8b7b6e]">
@@ -149,75 +223,13 @@ export default async function Home() {
 
             {(!products || products.length === 0) && (
               <div className="col-span-full rounded-[2rem] bg-white p-10 text-center text-[#8b7b6e]">
-                目前還沒有商品，請先到後台新增 ☁️
+                這個分類目前還沒有商品 ☁️
               </div>
             )}
           </div>
         </div>
       </section>
 
-      {/* 分類區 */}
-      <section id="categories" className="px-5 pb-24 md:px-10">
-        <div className="mx-auto max-w-6xl">
-          <div className="mb-10">
-            <p className="mb-2 text-xs uppercase tracking-[0.35em] text-[#a08060]">
-              Categories
-            </p>
-
-            <h3 className="text-3xl font-bold tracking-tight">
-              逛逛屬於妳的小世界 ☁️
-            </h3>
-
-            <p className="mt-3 text-sm leading-7 text-[#8b7b6e]">
-              從療癒萌物到微辣穿搭，把日常變得可愛一點。
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-4 md:gap-5">
-            <a href="#hot" className="rounded-[2rem] bg-[#fdf3ec] p-6">
-              <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-white text-3xl shadow-sm">
-                🧸
-              </div>
-              <h4 className="mb-2 text-lg font-bold">療癒娃娃</h4>
-              <p className="text-sm leading-7 text-[#8b7b6e]">
-                把小小快樂帶回家。
-              </p>
-            </a>
-
-            <a href="#hot" className="rounded-[2rem] bg-[#f3efea] p-6">
-              <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-white text-3xl shadow-sm">
-                👗
-              </div>
-              <h4 className="mb-2 text-lg font-bold">微辣穿搭</h4>
-              <p className="text-sm leading-7 text-[#8b7b6e]">
-                韓系慵懶感女孩日常。
-              </p>
-            </a>
-
-            <a href="#hot" className="rounded-[2rem] bg-[#faeef4] p-6">
-              <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-white text-3xl shadow-sm">
-                🎀
-              </div>
-              <h4 className="mb-2 text-lg font-bold">女孩小物</h4>
-              <p className="text-sm leading-7 text-[#8b7b6e]">
-                飾品、包包與日常可愛。
-              </p>
-            </a>
-
-            <a href="#hot" className="rounded-[2rem] bg-[#fff5ea] p-6">
-              <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-white text-3xl shadow-sm">
-                🍰
-              </div>
-              <h4 className="mb-2 text-lg font-bold">甜點研究所</h4>
-              <p className="text-sm leading-7 text-[#8b7b6e]">
-                屬於甜甜日常的小角落。
-              </p>
-            </a>
-          </div>
-        </div>
-      </section>
-
-      {/* 豬豬碎念 */}
       <section className="px-5 pb-24 md:px-10">
         <div className="mx-auto max-w-5xl overflow-hidden rounded-[2.5rem] bg-[#efe7de]">
           <div className="grid gap-10 px-8 py-14 md:grid-cols-2 md:px-14 md:py-20">
@@ -269,52 +281,13 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* IG / Threads 氛圍牆 */}
-      <section className="px-5 pb-24 md:px-10">
-        <div className="mx-auto max-w-6xl">
-          <div className="mb-10 text-center">
-            <p className="mb-2 text-xs uppercase tracking-[0.35em] text-[#a08060]">
-              Today&apos;s Little Mood
-            </p>
-
-            <h3 className="text-3xl font-bold tracking-tight">
-              Argent Nest 的日常碎片 ☁️
-            </h3>
-
-            <p className="mt-3 text-sm leading-7 text-[#8b7b6e]">
-              一些讓人想停下來看看的小可愛、穿搭靈感和療癒角落。
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-4 md:gap-5">
-            {[0, 1, 2, 3].map((i) => (
-              <div
-                key={i}
-                className={`overflow-hidden rounded-[2rem] bg-white shadow-sm ${
-                  i % 2 === 1 ? "md:mt-10" : ""
-                }`}
-              >
-                <img
-                  src={
-                    products?.[i]?.image ||
-                    "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=800&auto=format&fit=crop"
-                  }
-                  className="h-56 w-full object-cover"
-                  alt="Argent Nest daily mood"
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Footer */}
       <footer className="border-t border-[#e8ddd4] bg-[#f6f1eb] px-5 py-16 md:px-10">
         <div className="mx-auto grid max-w-6xl gap-12 md:grid-cols-4">
           <div>
             <h4 className="mb-4 text-2xl font-bold tracking-tight">
               Argent Nest 🥛🤍
             </h4>
+
             <p className="text-sm leading-8 text-[#8b7b6e]">
               韓系療癒選物 · 女孩日常 · 微辣穿搭
               <br />
@@ -326,6 +299,7 @@ export default async function Home() {
             <h5 className="mb-5 text-sm font-bold tracking-[0.2em] text-[#a08060]">
               SHOP
             </h5>
+
             <div className="space-y-3 text-sm text-[#6b5c50]">
               <p>療癒娃娃</p>
               <p>韓系穿搭</p>
@@ -338,6 +312,7 @@ export default async function Home() {
             <h5 className="mb-5 text-sm font-bold tracking-[0.2em] text-[#a08060]">
               NOTICE
             </h5>
+
             <div className="space-y-3 text-sm leading-7 text-[#6b5c50]">
               <p>全館為預購商品</p>
               <p>出貨約 14–21 天</p>
@@ -349,6 +324,7 @@ export default async function Home() {
             <h5 className="mb-5 text-sm font-bold tracking-[0.2em] text-[#a08060]">
               FOLLOW US
             </h5>
+
             <div className="space-y-3 text-sm text-[#6b5c50]">
               <a href="https://instagram.com" target="_blank" className="block">
                 Instagram
