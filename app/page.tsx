@@ -436,3 +436,6 @@ export default async function Home() {
     © 2026 Argent Nest 🥛🤍 · All Rights Reserved
   </div>
 </footer>
+</main>
+);
+}
