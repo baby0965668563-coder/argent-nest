@@ -266,7 +266,7 @@ export default async function Home({ searchParams }: Props) {
       className="group overflow-hidden rounded-[2.2rem] bg-white/90 shadow-[0_6px_30px_rgba(70,50,35,0.08)] ring-1 ring-[#eaded4] transition duration-300 hover:-translate-y-1.5 hover:shadow-[0_16px_50px_rgba(70,50,35,0.16)]"
     >
       <div className="relative aspect-[4/5] overflow-hidden bg-[#f4eee8]">
-        {(soldOut || isNew) && (
+        <div className="absolute left-3 top-3 z-10 rounded-full bg-white/85 px-3 py-1 text-[10px] text-[#8b6f5c] backdrop-blur">
           <div className="absolute left-3 top-3 z-10 rounded-full bg-white/85 px-3 py-1 text-[10px] text-[#8b6f5c] backdrop-blur">
             {soldOut ? "SOLD OUT" : isNew ? "NEW" : "PREORDER"}
           </div>
