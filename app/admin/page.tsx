@@ -10,7 +10,7 @@ export default function AdminPage() {
   const [category, setCategory] = useState("");
   const [sortOrder, setSortOrder] = useState("0");
   const [description, setDescription] = useState("");
-  const [image, setImage] = useState<File | null>(null);
+  const [images, setImages] = useState<File[]>([]);
   const [products, setProducts] = useState<any[]>([]);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
@@ -35,11 +35,11 @@ export default function AdminPage() {
     setCategory("");
     setSortOrder("0");
     setDescription("");
-    setImage(null);
+    setImages([]);
     setEditingId(null);
   }
 
-  async function uploadImage(file: File) {
+  async function uploadOneImage(file: File) {
     const fileName = `public/${uuidv4()}.jpg`;
 
     const { error } = await supabase.storage
@@ -56,21 +56,31 @@ export default function AdminPage() {
     }
 
     const { data } = supabase.storage.from("products").getPublicUrl(fileName);
-
     return data.publicUrl;
+  }
+
+  async function uploadImages(files: File[]) {
+    const urls: string[] = [];
+
+    for (const file of files) {
+      const url = await uploadOneImage(file);
+      if (url) urls.push(url);
+    }
+
+    return urls;
   }
 
   async function addProduct() {
     if (!name) return alert("請輸入商品名稱");
     if (!price) return alert("請輸入價格");
     if (!category) return alert("請選擇商品分類");
-    if (!image) return alert("請選擇圖片");
+    if (images.length === 0) return alert("請選擇至少一張圖片");
 
     setLoading(true);
 
-    const imageUrl = await uploadImage(image);
+    const imageUrls = await uploadImages(images);
 
-    if (!imageUrl) {
+    if (imageUrls.length === 0) {
       setLoading(false);
       return;
     }
@@ -82,7 +92,8 @@ export default function AdminPage() {
         category,
         sort_order: Number(sortOrder) || 0,
         description,
-        image: imageUrl,
+        image: imageUrls[0],
+        images: imageUrls,
       },
     ]);
 
@@ -206,12 +217,19 @@ export default function AdminPage() {
             <input
               type="file"
               accept="image/*"
+              multiple
               className="w-full rounded-2xl border p-4"
               onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) setImage(file);
+                const files = Array.from(e.target.files || []);
+                setImages(files);
               }}
             />
+          )}
+
+          {!editingId && images.length > 0 && (
+            <div className="rounded-2xl bg-[#f8f5f2] p-4 text-sm text-gray-600">
+              已選擇 {images.length} 張圖片
+            </div>
           )}
 
           <button
@@ -257,6 +275,9 @@ export default function AdminPage() {
                   <p className="text-sm text-gray-500">NT$ {product.price}</p>
                   <p className="text-xs text-[#b58b6b]">
                     {product.category}｜排序 {product.sort_order ?? 0}
+                  </p>
+                  <p className="text-xs text-gray-400">
+                    圖片 {product.images?.length || 1} 張
                   </p>
                 </div>
               </div>
