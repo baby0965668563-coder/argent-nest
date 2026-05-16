@@ -4,12 +4,30 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
+function parseOptions(optionsText: string) {
+  if (!optionsText) return [];
+
+  return optionsText
+    .split("\n")
+    .map((line) => {
+      const [name, values] = line.split("|");
+      if (!name || !values) return null;
+
+      return {
+        name: name.trim(),
+        values: values.split(",").map((v) => v.trim()).filter(Boolean),
+      };
+    })
+    .filter(Boolean) as { name: string; values: string[] }[];
+}
+
 export default function ProductPage() {
   const params = useParams();
   const id = params.id as string;
 
   const [product, setProduct] = useState<any>(null);
   const [mainImage, setMainImage] = useState("");
+  const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
 
   useEffect(() => {
     async function fetchProduct() {
@@ -43,7 +61,15 @@ export default function ProductPage() {
       ? product.images
       : [product.image];
 
-  const lineMessage = `我想詢問：${product.name}`;
+  const optionGroups = parseOptions(product.options || "");
+
+  const optionText = Object.entries(selectedOptions)
+    .map(([key, value]) => `${key}：${value}`)
+    .join("\n");
+
+  const lineMessage = `我想詢問：${product.name}${
+    optionText ? `\n\n規格：\n${optionText}` : ""
+  }`;
 
   return (
     <main className="min-h-screen bg-[#f8f5f0] text-[#2e2e2e]">
@@ -79,9 +105,7 @@ export default function ProductPage() {
                   key={index}
                   onClick={() => setMainImage(img)}
                   className={`overflow-hidden rounded-2xl border bg-[#ede6dd] ${
-                    mainImage === img
-                      ? "border-[#8b6f5c]"
-                      : "border-transparent"
+                    mainImage === img ? "border-[#8b6f5c]" : "border-transparent"
                   }`}
                 >
                   <img
@@ -108,15 +132,46 @@ export default function ProductPage() {
             NT$ {Number(product.price).toLocaleString()}
           </p>
 
-          {product.options && (
+          {optionGroups.length > 0 && (
             <div className="mb-8 rounded-[2rem] border border-[#e8ddd4] bg-[#fdf9f6] p-6">
-              <p className="mb-3 text-xs uppercase tracking-[0.3em] text-[#a08060]">
-                商品規格
+              <p className="mb-4 text-xs uppercase tracking-[0.3em] text-[#a08060]">
+                選擇規格
               </p>
 
-              <p className="whitespace-pre-line text-sm leading-8 text-[#6b5c50]">
-                {product.options}
-              </p>
+              <div className="space-y-5">
+                {optionGroups.map((group) => (
+                  <div key={group.name}>
+                    <p className="mb-3 text-sm font-bold text-[#6b5c50]">
+                      {group.name}
+                    </p>
+
+                    <div className="flex flex-wrap gap-2">
+                      {group.values.map((value) => {
+                        const active = selectedOptions[group.name] === value;
+
+                        return (
+                          <button
+                            key={value}
+                            onClick={() =>
+                              setSelectedOptions({
+                                ...selectedOptions,
+                                [group.name]: value,
+                              })
+                            }
+                            className={`rounded-full border px-4 py-2 text-sm transition ${
+                              active
+                                ? "border-[#2e2e2e] bg-[#2e2e2e] text-white"
+                                : "border-[#d8c5b0] bg-white text-[#6b5c50]"
+                            }`}
+                          >
+                            {value}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
