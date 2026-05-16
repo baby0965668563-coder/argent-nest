@@ -8,6 +8,7 @@ export default function AdminPage() {
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
   const [category, setCategory] = useState("");
+  const [sortOrder, setSortOrder] = useState("0");
   const [description, setDescription] = useState("");
   const [image, setImage] = useState<File | null>(null);
   const [products, setProducts] = useState<any[]>([]);
@@ -18,6 +19,7 @@ export default function AdminPage() {
     const { data } = await supabase
       .from("products")
       .select("*")
+      .order("sort_order", { ascending: true })
       .order("id", { ascending: false });
 
     setProducts(data || []);
@@ -31,49 +33,43 @@ export default function AdminPage() {
     setName("");
     setPrice("");
     setCategory("");
+    setSortOrder("0");
     setDescription("");
     setImage(null);
     setEditingId(null);
   }
 
   async function uploadImage(file: File) {
-    try {
-      const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
-      const safeExt = ext.replace(/[^a-z0-9]/g, "") || "jpg";
-      const fileName = `${uuidv4()}.${safeExt}`;
+    const fileName = `public/${uuidv4()}.jpg`;
 
-      const { error } = await supabase.storage
-        .from("products")
-        .upload(fileName, file, {
-          cacheControl: "3600",
-          upsert: true,
-          contentType: file.type || "image/jpeg",
-        });
+    const { error } = await supabase.storage
+      .from("products")
+      .upload(fileName, file, {
+        cacheControl: "3600",
+        upsert: true,
+        contentType: file.type || "image/jpeg",
+      });
 
-      if (error) {
-        alert("圖片上傳失敗：" + error.message);
-        return null;
-      }
-
-      const { data } = supabase.storage
-        .from("products")
-        .getPublicUrl(fileName);
-
-      return data.publicUrl;
-    } catch (err) {
-      alert("圖片上傳失敗");
+    if (error) {
+      alert("圖片上傳失敗：" + error.message);
       return null;
     }
+
+    const { data } = supabase.storage.from("products").getPublicUrl(fileName);
+
+    return data.publicUrl;
   }
 
   async function addProduct() {
     if (!name) return alert("請輸入商品名稱");
     if (!price) return alert("請輸入價格");
+    if (!category) return alert("請選擇商品分類");
     if (!image) return alert("請選擇圖片");
 
     setLoading(true);
 
     const imageUrl = await uploadImage(image);
+
     if (!imageUrl) {
       setLoading(false);
       return;
@@ -84,6 +80,7 @@ export default function AdminPage() {
         name,
         price,
         category,
+        sort_order: Number(sortOrder) || 0,
         description,
         image: imageUrl,
       },
@@ -112,6 +109,7 @@ export default function AdminPage() {
         name,
         price,
         category,
+        sort_order: Number(sortOrder) || 0,
         description,
       })
       .eq("id", editingId);
@@ -163,17 +161,12 @@ export default function AdminPage() {
         </h2>
 
         <div className="space-y-4">
-          <select
-  className="w-full rounded-2xl border p-4"
-  value={category}
-  onChange={(e) => setCategory(e.target.value)}
->
-  <option value="">請選擇商品分類</option>
-  <option value="療癒娃娃">療癒娃娃</option>
-  <option value="微辣穿搭">微辣穿搭</option>
-  <option value="女孩小物">女孩小物</option>
-  <option value="甜點研究所">甜點研究所</option>
-</select>
+          <input
+            className="w-full rounded-2xl border p-4"
+            placeholder="商品名稱"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
 
           <input
             className="w-full rounded-2xl border p-4"
@@ -182,11 +175,24 @@ export default function AdminPage() {
             onChange={(e) => setPrice(e.target.value)}
           />
 
-          <input
+          <select
             className="w-full rounded-2xl border p-4"
-            placeholder="商品分類"
             value={category}
             onChange={(e) => setCategory(e.target.value)}
+          >
+            <option value="">請選擇商品分類</option>
+            <option value="療癒娃娃">療癒娃娃</option>
+            <option value="微辣穿搭">微辣穿搭</option>
+            <option value="女孩小物">女孩小物</option>
+            <option value="甜點研究所">甜點研究所</option>
+          </select>
+
+          <input
+            className="w-full rounded-2xl border p-4"
+            placeholder="商品排序，數字越小越前面"
+            type="number"
+            value={sortOrder}
+            onChange={(e) => setSortOrder(e.target.value)}
           />
 
           <textarea
@@ -249,7 +255,9 @@ export default function AdminPage() {
                 <div>
                   <p className="font-bold">{product.name}</p>
                   <p className="text-sm text-gray-500">NT$ {product.price}</p>
-                  <p className="text-xs text-[#b58b6b]">{product.category}</p>
+                  <p className="text-xs text-[#b58b6b]">
+                    {product.category}｜排序 {product.sort_order ?? 0}
+                  </p>
                 </div>
               </div>
 
@@ -257,10 +265,11 @@ export default function AdminPage() {
                 <button
                   onClick={() => {
                     setEditingId(product.id);
-                    setName(product.name);
-                    setPrice(product.price);
-                    setCategory(product.category);
-                    setDescription(product.description);
+                    setName(product.name || "");
+                    setPrice(product.price || "");
+                    setCategory(product.category || "");
+                    setSortOrder(String(product.sort_order ?? 0));
+                    setDescription(product.description || "");
                     window.scrollTo({ top: 0, behavior: "smooth" });
                   }}
                   className="rounded-full bg-[#b58b6b] px-4 py-2 text-sm text-white"
@@ -277,6 +286,12 @@ export default function AdminPage() {
               </div>
             </div>
           ))}
+
+          {products.length === 0 && (
+            <div className="rounded-2xl border p-6 text-center text-gray-500">
+              目前還沒有商品
+            </div>
+          )}
         </div>
       </div>
     </main>
