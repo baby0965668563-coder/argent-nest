@@ -163,12 +163,17 @@ export default function AdminPage() {
         </h2>
 
         <div className="space-y-4">
-          <input
-            className="w-full rounded-2xl border p-4"
-            placeholder="商品名稱"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
+          <select
+  className="w-full rounded-2xl border p-4"
+  value={category}
+  onChange={(e) => setCategory(e.target.value)}
+>
+  <option value="">請選擇商品分類</option>
+  <option value="療癒娃娃">療癒娃娃</option>
+  <option value="微辣穿搭">微辣穿搭</option>
+  <option value="女孩小物">女孩小物</option>
+  <option value="甜點研究所">甜點研究所</option>
+</select>
 
           <input
             className="w-full rounded-2xl border p-4"
