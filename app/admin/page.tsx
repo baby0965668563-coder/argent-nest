@@ -446,6 +446,22 @@ export default function AdminPage() {
                     <p className="mt-1 text-xs text-gray-400">
                       圖片 {productImages.length} 張
                     </p>
+
+{productImages.length > 0 && (
+  <div className="mt-3 grid grid-cols-4 gap-2">
+    {productImages.slice(0, 4).map((img: string, index: number) => (
+      <div
+        key={index}
+        className="overflow-hidden rounded-xl bg-gray-100"
+      >
+        <img
+          src={img}
+          className="aspect-square w-full object-cover"
+        />
+      </div>
+    ))}
+  </div>
+)}
                   </div>
                 </div>
 
