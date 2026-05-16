@@ -8,9 +8,10 @@ export default async function Home({ searchParams }: Props) {
   const { category } = await searchParams;
 
   let query = supabase
-    .from("products")
-    .select("*")
-    .order("id", { ascending: false });
+  .from("products")
+  .select("*")
+  .order("sort_order", { ascending: true })
+  .order("id", { ascending: false });
 
   if (category && category !== "全部") {
     query = query.eq("category", category);
@@ -19,9 +20,10 @@ export default async function Home({ searchParams }: Props) {
   const { data: products } = await query;
 
   const allProductsQuery = await supabase
-    .from("products")
-    .select("*")
-    .order("id", { ascending: false });
+  .from("products")
+  .select("*")
+  .order("sort_order", { ascending: true })
+  .order("id", { ascending: false });
 
   const allProducts = allProductsQuery.data || [];
   const displayProducts = products || [];
