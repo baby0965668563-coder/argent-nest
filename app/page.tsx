@@ -31,11 +31,12 @@ export default async function Home({ searchParams }: Props) {
   const { data: products } = await query;
 
   const allProductsQuery = await supabase
-    .from("products")
-    .select("*")
-    .order("sort_order", { ascending: true })
-    .order("id", { ascending: false });
-
+  .from("products")
+  .select("*")
+  .eq("is_active", true)
+  .order("sort_order", { ascending: true })
+  .order("id", { ascending: false });
+  
   const allProducts = allProductsQuery.data || [];
   const displayProducts = products || [];
 
