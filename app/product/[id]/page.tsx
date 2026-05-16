@@ -4,10 +4,34 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
+function parseOptions(optionsText: string) {
+  if (!optionsText) return [];
+
+  return optionsText
+    .split("\n")
+    .map((line) => {
+      const parts = line.includes("|") ? line.split("|") : line.split("：");
+      if (parts.length < 2) return null;
+
+      return {
+        name: parts[0].trim(),
+        values: parts
+          .slice(1)
+          .join("：")
+          .split(/[、,，]/)
+          .map((v) => v.trim())
+          .filter(Boolean),
+      };
+    })
+    .filter(Boolean) as { name: string; values: string[] }[];
+}
+
 export default function ProductPage() {
   const params = useParams();
   const [product, setProduct] = useState<any>(null);
   const [selectedImage, setSelectedImage] = useState("");
+  const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
+  const [showWarning, setShowWarning] = useState(false);
 
   useEffect(() => {
     fetchProduct();
@@ -18,36 +42,60 @@ export default function ProductPage() {
       .from("products")
       .select("*")
       .eq("id", params.id)
+      .eq("is_active", true)
       .single();
 
     if (data) {
       setProduct(data);
-
-      if (data.images?.length > 0) {
-        setSelectedImage(data.images[0]);
-      } else {
-        setSelectedImage(data.image);
-      }
+      setSelectedImage(data.images?.[0] || data.image || "");
     }
   }
 
   if (!product) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#f8f5f2] text-black">
-        載入中...
+        商品讀取中...
       </main>
     );
   }
 
-  const images =
-    product.images && product.images.length > 0
-      ? product.images
-      : [product.image];
+  const images = product.images?.length ? product.images : [product.image];
+  const optionGroups = parseOptions(product.options || "");
+  const soldOut = product.is_sold_out === true;
+
+  const isOptionsComplete = optionGroups.every(
+    (group) => selectedOptions[group.name]
+  );
+
+  const optionText = Object.entries(selectedOptions)
+    .map(([key, value]) => `${key}：${value}`)
+    .join("\n");
+
+  const lineMessage = `我想詢問：${product.name}${
+    optionText ? `\n\n規格：\n${optionText}` : ""
+  }`;
+
+  const lineUrl = `https://line.me/R/oaMessage/@929santn/?${encodeURIComponent(
+    lineMessage
+  )}`;
+
+  function handleOrder(e: React.MouseEvent<HTMLAnchorElement>) {
+    if (soldOut) {
+      e.preventDefault();
+      return;
+    }
+
+    if (optionGroups.length > 0 && !isOptionsComplete) {
+      e.preventDefault();
+      setShowWarning(true);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }
 
   return (
-    <main className="min-h-screen bg-[#f8f5f2] pb-24 text-black">
+    <main className="min-h-screen bg-[#f8f5f2] pb-28 text-black">
       <div className="mx-auto max-w-md">
-        <div className="sticky top-0 z-20 flex items-center justify-between border-b bg-[#f8f5f2]/95 px-5 py-4 text-black backdrop-blur">
+        <div className="sticky top-0 z-20 flex items-center justify-between border-b border-[#eee5dc] bg-[#f8f5f2]/95 px-5 py-4 backdrop-blur">
           <button
             onClick={() => window.history.back()}
             className="rounded-full border border-[#d8c5b0] px-4 py-2 text-sm text-black"
@@ -55,18 +103,24 @@ export default function ProductPage() {
             返回
           </button>
 
-          <h1 className="text-sm font-bold text-black">
-            Argent Nest 🥛🤍
-          </h1>
+          <h1 className="text-sm font-bold text-black">Argent Nest 🥛🤍</h1>
 
           <div className="w-[60px]" />
         </div>
 
         <div className="p-5">
-          <div className="overflow-hidden rounded-[2rem] bg-white shadow-sm">
+          <div className="relative overflow-hidden rounded-[2rem] bg-white shadow-sm">
+            {soldOut && (
+              <div className="absolute left-4 top-4 z-10 rounded-full bg-black/80 px-4 py-2 text-xs text-white">
+                SOLD OUT
+              </div>
+            )}
+
             <img
               src={selectedImage}
-              className="aspect-square w-full object-cover"
+              className={`aspect-square w-full object-cover ${
+                soldOut ? "opacity-60 grayscale" : ""
+              }`}
             />
           </div>
 
@@ -76,53 +130,89 @@ export default function ProductPage() {
                 key={index}
                 onClick={() => setSelectedImage(img)}
                 className={`h-20 w-20 shrink-0 overflow-hidden rounded-2xl border-2 ${
-                  selectedImage === img
-                    ? "border-black"
-                    : "border-transparent"
+                  selectedImage === img ? "border-black" : "border-transparent"
                 }`}
               >
-                <img
-                  src={img}
-                  className="h-full w-full object-cover"
-                />
+                <img src={img} className="h-full w-full object-cover" />
               </button>
             ))}
           </div>
 
           <div className="mt-6 rounded-[2rem] bg-white p-6 text-black shadow-sm">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-xs uppercase tracking-[0.3em] text-[#8b6f5c]">
-                  Argent Nest
-                </p>
-
-                <h2 className="mt-2 text-2xl font-bold leading-tight text-black">
-                  {product.name}
-                </h2>
-              </div>
-
-              {product.is_sold_out && (
-                <div className="rounded-full bg-red-500 px-4 py-2 text-xs text-white">
-                  SOLD OUT
-                </div>
-              )}
-            </div>
-
-            <p className="mt-5 text-3xl font-bold text-black">
-              NT$ {product.price}
+            <p className="text-xs uppercase tracking-[0.3em] text-[#8b6f5c]">
+              Argent Nest
             </p>
 
-            <div className="mt-5">
-              <div className="inline-block rounded-full bg-[#f5eee7] px-4 py-2 text-sm font-medium text-[#8b6f5c]">
-                {product.category}
-              </div>
+            <h2 className="mt-2 text-2xl font-bold leading-tight text-black">
+              {product.name}
+            </h2>
+
+            <p className="mt-5 text-3xl font-bold text-black">
+              NT$ {Number(product.price).toLocaleString()}
+            </p>
+
+            <div className="mt-5 inline-block rounded-full bg-[#f5eee7] px-4 py-2 text-sm font-medium text-[#8b6f5c]">
+              {product.category}
             </div>
+
+            {soldOut && (
+              <div className="mt-5 rounded-2xl bg-[#f3ede6] p-4 text-sm text-[#8b6f5c]">
+                這款目前已售完，暫時不能下單 ☁️
+              </div>
+            )}
+
+            {showWarning && (
+              <div className="mt-5 rounded-2xl bg-[#fff1f1] p-4 text-sm text-red-500">
+                請先選完商品規格，再私訊下單 ☁️
+              </div>
+            )}
+
+            {optionGroups.length > 0 && (
+              <div className="mt-8 border-t border-[#eee5dc] pt-6">
+                <p className="mb-4 text-sm font-bold text-black">選擇規格</p>
+
+                <div className="space-y-5">
+                  {optionGroups.map((group) => (
+                    <div key={group.name}>
+                      <p className="mb-3 text-sm font-bold text-[#6b5c50]">
+                        {group.name}
+                      </p>
+
+                      <div className="flex flex-wrap gap-2">
+                        {group.values.map((value) => {
+                          const active = selectedOptions[group.name] === value;
+
+                          return (
+                            <button
+                              key={value}
+                              disabled={soldOut}
+                              onClick={() => {
+                                setSelectedOptions({
+                                  ...selectedOptions,
+                                  [group.name]: value,
+                                });
+                                setShowWarning(false);
+                              }}
+                              className={`rounded-full border px-4 py-2 text-sm transition disabled:opacity-50 ${
+                                active
+                                  ? "border-black bg-black text-white"
+                                  : "border-[#d8c5b0] bg-white text-[#6b5c50]"
+                              }`}
+                            >
+                              {value}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {product.description && (
               <div className="mt-8 border-t border-[#eee5dc] pt-6">
-                <p className="mb-3 text-sm font-bold text-black">
-                  商品介紹
-                </p>
+                <p className="mb-3 text-sm font-bold text-black">商品介紹</p>
 
                 <p className="whitespace-pre-line text-sm leading-8 text-[#4a4a4a]">
                   {product.description}
@@ -130,52 +220,40 @@ export default function ProductPage() {
               </div>
             )}
 
-            {product.options && (
-              <div className="mt-8 border-t border-[#eee5dc] pt-6">
-                <p className="mb-3 text-sm font-bold text-black">
-                  商品規格
-                </p>
+            <div className="mt-8 border-t border-[#eee5dc] pt-6">
+              <p className="mb-3 text-sm font-bold text-black">購買須知</p>
 
-                <div className="space-y-3">
-                  {product.options
-                    .split("\n")
-                    .map((line: string, index: number) => {
-                      const parts = line.includes("|")
-                        ? line.split("|")
-                        : line.split("：");
-
-                      if (parts.length < 2) return null;
-
-                      return (
-                        <div
-                          key={index}
-                          className="rounded-2xl bg-[#f8f5f2] p-4"
-                        >
-                          <p className="text-xs font-medium text-[#8b6f5c]">
-                            {parts[0]}
-                          </p>
-
-                          <p className="mt-1 text-sm font-semibold text-black">
-                            {parts.slice(1).join("：")}
-                          </p>
-                        </div>
-                      );
-                    })}
-                </div>
+              <div className="space-y-2 text-sm leading-7 text-[#5c5c5c]">
+                <p>☁️ 全館為預購商品</p>
+                <p>☁️ 出貨約 14–21 天，不含假日與連續假期</p>
+                <p>☁️ 無法等待請勿下單</p>
+                <p>☁️ 商品顏色以實物為準，螢幕色差請見諒</p>
               </div>
-            )}
+            </div>
           </div>
         </div>
 
         <div className="fixed bottom-0 left-0 right-0 border-t border-[#eee5dc] bg-white p-4">
           <div className="mx-auto max-w-md">
-            <button
-              className={`w-full rounded-full py-4 text-sm font-medium text-white ${
-                product.is_sold_out ? "bg-gray-400" : "bg-black"
+            <a
+              href={lineUrl}
+              onClick={handleOrder}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`block w-full rounded-full py-4 text-center text-sm font-medium text-white ${
+                soldOut
+                  ? "bg-gray-400"
+                  : optionGroups.length > 0 && !isOptionsComplete
+                  ? "bg-gray-400"
+                  : "bg-black"
               }`}
             >
-              {product.is_sold_out ? "已售完" : "加入購物車"}
-            </button>
+              {soldOut
+                ? "已售完"
+                : optionGroups.length > 0 && !isOptionsComplete
+                ? "請先選擇規格 ☁️"
+                : "立即詢問 / 下單 ☁️"}
+            </a>
           </div>
         </div>
       </div>
