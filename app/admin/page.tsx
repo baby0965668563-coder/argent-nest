@@ -5,6 +5,9 @@ import { v4 as uuidv4 } from "uuid";
 import { supabase } from "@/lib/supabase";
 
 export default function AdminPage() {
+  const [authorized, setAuthorized] = useState(false);
+  const [checking, setChecking] = useState(true);
+
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
   const [category, setCategory] = useState("");
@@ -21,8 +24,31 @@ export default function AdminPage() {
   const [searchText, setSearchText] = useState("");
 
   useEffect(() => {
-    fetchProducts();
+    const saved = localStorage.getItem("argent_admin_login");
+
+    if (saved === "true") {
+      setAuthorized(true);
+      setChecking(false);
+      return;
+    }
+
+    const password = prompt("請輸入後台密碼");
+
+    if (password === "argentnest520") {
+      localStorage.setItem("argent_admin_login", "true");
+      setAuthorized(true);
+    } else {
+      alert("密碼錯誤 ☁️");
+    }
+
+    setChecking(false);
   }, []);
+
+  useEffect(() => {
+    if (authorized) {
+      fetchProducts();
+    }
+  }, [authorized]);
 
   async function fetchProducts() {
     const { data } = await supabase
@@ -199,7 +225,10 @@ export default function AdminPage() {
   async function deleteProduct(id: number) {
     if (!confirm("確定要刪除這個商品嗎？")) return;
 
-    const { error } = await supabase.from("products").delete().eq("id", id);
+    const { error } = await supabase
+      .from("products")
+      .delete()
+      .eq("id", id);
 
     if (error) return alert("刪除失敗：" + error.message);
 
@@ -207,35 +236,59 @@ export default function AdminPage() {
     fetchProducts();
   }
 
+  if (checking) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-[#f8f5f2] text-black">
+        驗證中...
+      </main>
+    );
+  }
+
+  if (!authorized) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-[#f8f5f2] text-black">
+        無權限 ☁️
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-screen bg-[#f8f5f2] px-5 py-8 text-[#3d3d3d]">
       <div className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Argent Nest 後台 ☁️</h1>
-          <p className="mt-2 text-sm text-gray-500">Argent Nest 商品管理</p>
+          <h1 className="text-3xl font-bold">管理後台</h1>
+          <p className="mt-2 text-sm text-gray-500">
+            Argent Nest 商品管理
+          </p>
         </div>
 
-        <a href="/" className="rounded-full border px-4 py-2 text-sm">
-          回首頁
-        </a>
+        <button
+          onClick={() => {
+            localStorage.removeItem("argent_admin_login");
+            location.reload();
+          }}
+          className="rounded-full border px-4 py-2 text-sm"
+        >
+          登出
+        </button>
       </div>
 
       <div className="rounded-3xl bg-white p-6 shadow-sm">
         <h2 className="mb-5 text-xl font-bold">
-          {editingId ? "編輯商品" : "新增商品☁️"}
+          {editingId ? "編輯商品" : "新增商品"}
         </h2>
 
         <div className="space-y-4">
           <input
             className="w-full rounded-2xl border p-4"
-            placeholder="商品名稱✨"
+            placeholder="商品名稱"
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
 
           <input
             className="w-full rounded-2xl border p-4"
-            placeholder="價格💰"
+            placeholder="價格"
             value={price}
             onChange={(e) => setPrice(e.target.value)}
           />
@@ -254,50 +307,31 @@ export default function AdminPage() {
 
           <input
             className="w-full rounded-2xl border p-4"
-            placeholder="商品排序，數字越小越前面"
+            placeholder="商品排序"
             type="number"
             value={sortOrder}
             onChange={(e) => setSortOrder(e.target.value)}
           />
 
-          <div className="rounded-2xl border p-4">
-  <p className="mb-4 text-sm font-bold">
-    商品規格📏
-  </p>
+          <textarea
+            className="w-full rounded-2xl border p-4"
+            placeholder={`顏色：奶油白、黑色
 
-  <textarea
-    className="min-h-[140px] w-full rounded-2xl border p-4"
-    placeholder={`請依照格式輸入：
-
-顏色：奶油白、黑色、粉色
-
-尺寸：S、M、L
-
-款式：A款、B款`}
-    value={options}
-    onChange={(e) => setOptions(e.target.value)}
-  />
-
-  <div className="mt-4 rounded-2xl bg-[#f8f5f2] p-4 text-sm text-gray-600">
-    <p className="mb-2 font-bold">
-      輸入範例 ☁️
-    </p>
-
-    <p>顏色：奶油白、黑色</p>
-    <p>尺寸：S、M、L</p>
-    <p>款式：吊飾、娃娃</p>
-  </div>
-</div>
+尺寸：S、M、L`}
+            value={options}
+            onChange={(e) => setOptions(e.target.value)}
+          />
 
           <textarea
             className="w-full rounded-2xl border p-4"
-            placeholder="商品描述✏️"
+            placeholder="商品描述"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
           />
 
           <label className="flex items-center justify-between rounded-2xl border p-4">
-            <span>{isActive ? "目前狀態：上架中🆗" : "目前狀態：已下架"}</span>
+            <span>{isActive ? "上架中" : "已下架"}</span>
+
             <input
               type="checkbox"
               checked={isActive}
@@ -306,7 +340,8 @@ export default function AdminPage() {
           </label>
 
           <label className="flex items-center justify-between rounded-2xl border p-4">
-            <span>{isSoldOut ? "銷售狀態：已售完🈚️" : "銷售狀態：可下單"}</span>
+            <span>{isSoldOut ? "已售完" : "可下單"}</span>
+
             <input
               type="checkbox"
               checked={isSoldOut}
@@ -314,58 +349,48 @@ export default function AdminPage() {
             />
           </label>
 
-          {editingImages.length > 0 && (
-            <div className="rounded-2xl bg-[#f8f5f2] p-4">
-              <p className="mb-3 text-sm text-gray-600">目前圖片</p>
-
-              <div className="grid grid-cols-4 gap-3">
-                {editingImages.map((img, index) => (
-                  <img
-                    key={index}
-                    src={img}
-                    className="aspect-square rounded-xl object-cover"
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-
           <input
             type="file"
             multiple
             accept="image/*"
             className="w-full rounded-2xl border p-4"
-            onChange={(e) => setImages(Array.from(e.target.files || []))}
+            onChange={(e) =>
+              setImages(Array.from(e.target.files || []))
+            }
           />
 
           {images.length > 0 && (
-  <div className="rounded-2xl bg-[#f8f5f2] p-4">
-    <p className="mb-3 text-sm text-gray-600">
-      已選擇 {images.length} 張圖片
-    </p>
+            <div className="rounded-2xl bg-[#f8f5f2] p-4">
+              <p className="mb-3 text-sm text-gray-600">
+                已選擇 {images.length} 張圖片
+              </p>
 
-    <div className="grid grid-cols-3 gap-3">
-      {images.map((file, index) => (
-        <div
-          key={index}
-          className="overflow-hidden rounded-xl bg-white"
-        >
-          <img
-            src={URL.createObjectURL(file)}
-            className="aspect-square w-full object-cover"
-          />
-        </div>
-      ))}
-    </div>
-  </div>
-)}
+              <div className="grid grid-cols-3 gap-3">
+                {images.map((file, index) => (
+                  <div
+                    key={index}
+                    className="overflow-hidden rounded-xl bg-white"
+                  >
+                    <img
+                      src={URL.createObjectURL(file)}
+                      className="aspect-square w-full object-cover"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <button
             onClick={editingId ? updateProduct : addProduct}
             disabled={loading}
             className="w-full rounded-full bg-black py-4 text-white disabled:opacity-50"
           >
-            {loading ? "處理中..." : editingId ? "儲存修改" : "新增商品☁️"}
+            {loading
+              ? "處理中..."
+              : editingId
+              ? "儲存修改"
+              : "新增商品"}
           </button>
 
           {editingId && (
@@ -375,148 +400,6 @@ export default function AdminPage() {
             >
               取消編輯
             </button>
-          )}
-        </div>
-      </div>
-
-      <div className="mt-8 rounded-3xl bg-white p-6 shadow-sm">
-        <h2 className="mb-5 text-xl font-bold">商品清單</h2>
-
-        <input
-          className="mb-5 w-full rounded-2xl border p-4"
-          placeholder="🔍搜尋商品名稱、分類、描述"
-          value={searchText}
-          onChange={(e) => setSearchText(e.target.value)}
-        />
-
-        <div className="space-y-4">
-          {filteredProducts.map((product) => {
-            const productImages =
-              product.images && product.images.length > 0
-                ? product.images
-                : product.image
-                ? [product.image]
-                : [];
-
-            const active = product.is_active !== false;
-            const soldOut = product.is_sold_out === true;
-
-            return (
-              <div key={product.id} className="rounded-2xl border p-4">
-                <div className="mb-3 flex flex-wrap gap-2">
-                  <span
-                    className={`rounded-full px-3 py-1 text-xs ${
-                      active
-                        ? "bg-green-100 text-green-700"
-                        : "bg-gray-200 text-gray-500"
-                    }`}
-                  >
-                    {active ? "上架中🆗" : "已下架"}
-                  </span>
-
-                  <span
-                    className={`rounded-full px-3 py-1 text-xs ${
-                      soldOut
-                        ? "bg-red-100 text-red-600"
-                        : "bg-[#f3ede6] text-[#8b6f5c]"
-                    }`}
-                  >
-                    {soldOut ? "已售完🈚️" : "可下單"}
-                  </span>
-                </div>
-
-                <div className="flex gap-4">
-                  <div className="h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-gray-100">
-                    {product.image && (
-                      <img
-                        src={product.image}
-                        className="h-full w-full object-cover"
-                      />
-                    )}
-                  </div>
-
-                  <div className="min-w-0 flex-1">
-                    <p className="line-clamp-2 font-bold">{product.name}</p>
-                    <p className="mt-1 text-sm text-gray-500">
-                      NT$ {product.price}
-                    </p>
-                    <p className="mt-1 text-xs text-[#b58b6b]">
-                      {product.category}｜排序 {product.sort_order ?? 0}
-                    </p>
-                    <p className="mt-1 text-xs text-gray-400">
-                      圖片 {productImages.length} 張
-                    </p>
-
-{productImages.length > 0 && (
-  <div className="mt-3 grid grid-cols-4 gap-2">
-    {productImages.slice(0, 4).map((img: string, index: number) => (
-      <div
-        key={index}
-        className="overflow-hidden rounded-xl bg-gray-100"
-      >
-        <img
-          src={img}
-          className="aspect-square w-full object-cover"
-        />
-      </div>
-    ))}
-  </div>
-)}
-                  </div>
-                </div>
-
-                <div className="mt-4 grid grid-cols-2 gap-3">
-                  <button
-                    onClick={() => {
-                      setEditingId(product.id);
-                      setName(product.name || "");
-                      setPrice(product.price || "");
-                      setCategory(product.category || "");
-                      setSortOrder(String(product.sort_order ?? 0));
-                      setOptions(product.options || "");
-                      setDescription(product.description || "");
-                      setIsActive(product.is_active !== false);
-                      setIsSoldOut(product.is_sold_out === true);
-                      setEditingImages(productImages);
-                      setImages([]);
-                      window.scrollTo({ top: 0, behavior: "smooth" });
-                    }}
-                    className="rounded-full bg-[#b58b6b] py-3 text-sm text-white"
-                  >
-                    編輯
-                  </button>
-
-                  <button
-                    onClick={() => deleteProduct(product.id)}
-                    className="rounded-full bg-red-500 py-3 text-sm text-white"
-                  >
-                    刪除
-                  </button>
-                </div>
-
-                <div className="mt-3 grid grid-cols-2 gap-3">
-                  <button
-                    onClick={() => toggleActive(product.id, active)}
-                    className="rounded-full border py-3 text-sm"
-                  >
-                    {active ? "下架" : "上架"}
-                  </button>
-
-                  <button
-                    onClick={() => toggleSoldOut(product.id, soldOut)}
-                    className="rounded-full border py-3 text-sm"
-                  >
-                    {soldOut ? "恢復販售" : "設為售完"}
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-
-          {filteredProducts.length === 0 && (
-            <div className="rounded-2xl border p-6 text-center text-gray-500">
-              找不到商品
-            </div>
           )}
         </div>
       </div>
