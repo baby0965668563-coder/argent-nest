@@ -43,6 +43,8 @@ export default function ProductPage() {
       ? product.images
       : [product.image];
 
+  const lineMessage = `我想詢問：${product.name}`;
+
   return (
     <main className="min-h-screen bg-[#f8f5f0] text-[#2e2e2e]">
       <header className="sticky top-0 z-50 border-b border-[#e8ddd4]/70 bg-[#f8f5f0]/90 px-5 py-4 backdrop-blur md:px-10">
@@ -106,6 +108,18 @@ export default function ProductPage() {
             NT$ {Number(product.price).toLocaleString()}
           </p>
 
+          {product.options && (
+            <div className="mb-8 rounded-[2rem] border border-[#e8ddd4] bg-[#fdf9f6] p-6">
+              <p className="mb-3 text-xs uppercase tracking-[0.3em] text-[#a08060]">
+                商品規格
+              </p>
+
+              <p className="whitespace-pre-line text-sm leading-8 text-[#6b5c50]">
+                {product.options}
+              </p>
+            </div>
+          )}
+
           <div className="mb-8 rounded-[2rem] bg-white p-6 shadow-sm">
             <p className="mb-3 text-xs uppercase tracking-[0.3em] text-[#a08060]">
               商品說明
@@ -117,7 +131,9 @@ export default function ProductPage() {
           </div>
 
           <a
-           href={`https://line.me/R/oaMessage/@929santn/?我想詢問：${product.name}`}
+            href={`https://line.me/R/oaMessage/@929santn/?${encodeURIComponent(
+              lineMessage
+            )}`}
             target="_blank"
             rel="noopener noreferrer"
             className="mb-6 block rounded-full bg-[#06C755] py-4 text-center font-semibold text-white shadow-[0_8px_25px_rgba(6,199,85,0.25)] transition hover:scale-[1.02]"
