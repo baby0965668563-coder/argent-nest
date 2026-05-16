@@ -357,7 +357,6 @@ export default async function Home({ searchParams }: Props) {
       </div>
     </a>
   );
-})}
 
             {displayProducts.length === 0 && (
               <div className="col-span-full rounded-[2rem] bg-white p-10 text-center text-[#8b7b6e]">
