@@ -11,11 +11,12 @@ export default async function Home({ searchParams }: Props) {
   const { category, q } = await searchParams;
   const keyword = q?.trim() || "";
 
-  let query = supabase
-    .from("products")
-    .select("*")
-    .order("sort_order", { ascending: true })
-    .order("id", { ascending: false });
+ let query = supabase
+  .from("products")
+  .select("*")
+  .eq("is_active", true)
+  .order("sort_order", { ascending: true })
+  .order("id", { ascending: false });
 
   if (category && category !== "全部") {
     query = query.eq("category", category);
