@@ -1,29 +1,39 @@
 import { supabase } from "@/lib/supabase";
 
 interface Props {
-  searchParams: Promise<{ category?: string }>;
+  searchParams: Promise<{
+    category?: string;
+    q?: string;
+  }>;
 }
 
 export default async function Home({ searchParams }: Props) {
-  const { category } = await searchParams;
+  const { category, q } = await searchParams;
+  const keyword = q?.trim() || "";
 
   let query = supabase
-  .from("products")
-  .select("*")
-  .order("sort_order", { ascending: true })
-  .order("id", { ascending: false });
+    .from("products")
+    .select("*")
+    .order("sort_order", { ascending: true })
+    .order("id", { ascending: false });
 
   if (category && category !== "全部") {
     query = query.eq("category", category);
   }
 
+  if (keyword) {
+    query = query.or(
+      `name.ilike.%${keyword}%,description.ilike.%${keyword}%,category.ilike.%${keyword}%`
+    );
+  }
+
   const { data: products } = await query;
 
   const allProductsQuery = await supabase
-  .from("products")
-  .select("*")
-  .order("sort_order", { ascending: true })
-  .order("id", { ascending: false });
+    .from("products")
+    .select("*")
+    .order("sort_order", { ascending: true })
+    .order("id", { ascending: false });
 
   const allProducts = allProductsQuery.data || [];
   const displayProducts = products || [];
@@ -35,6 +45,16 @@ export default async function Home({ searchParams }: Props) {
     { label: "女孩小物", emoji: "🎀", desc: "飾品、包包與日常可愛。" },
     { label: "甜點研究所", emoji: "🍰", desc: "屬於甜甜日常的小角落。" },
   ];
+
+  function categoryHref(label: string) {
+    const params = new URLSearchParams();
+
+    if (label !== "全部") params.set("category", label);
+    if (keyword) params.set("q", keyword);
+
+    const queryString = params.toString();
+    return queryString ? `/?${queryString}#hot` : "/#hot";
+  }
 
   return (
     <main className="min-h-screen bg-[#f8f5f0] text-[#2e2e2e]">
@@ -58,7 +78,6 @@ export default async function Home({ searchParams }: Props) {
         </div>
       </header>
 
-      {/* Hero 主視覺 */}
       <section className="px-5 py-8 md:px-10 md:py-12">
         <div className="relative mx-auto max-w-6xl overflow-hidden rounded-[2.5rem] bg-[#ede6dd]">
           <div className="grid items-center gap-10 px-8 py-16 md:grid-cols-2 md:px-16 md:py-24">
@@ -118,7 +137,6 @@ export default async function Home({ searchParams }: Props) {
         </div>
       </section>
 
-      {/* 分類篩選 */}
       <section id="categories" className="px-5 pb-16 md:px-10">
         <div className="mx-auto max-w-6xl">
           <div className="mb-10">
@@ -143,11 +161,7 @@ export default async function Home({ searchParams }: Props) {
               return (
                 <a
                   key={cat.label}
-                  href={
-                    cat.label === "全部"
-                      ? "/#hot"
-                      : `/?category=${encodeURIComponent(cat.label)}#hot`
-                  }
+                  href={categoryHref(cat.label)}
                   className={`rounded-[2rem] p-6 transition hover:-translate-y-1 ${
                     active
                       ? "bg-[#2e2e2e] text-white"
@@ -174,7 +188,6 @@ export default async function Home({ searchParams }: Props) {
         </div>
       </section>
 
-      {/* 商品區 */}
       <section id="hot" className="px-5 pb-20 md:px-10">
         <div className="mx-auto max-w-6xl">
           <div className="mb-10">
@@ -183,7 +196,9 @@ export default async function Home({ searchParams }: Props) {
             </p>
 
             <h3 className="text-3xl font-bold tracking-tight">
-              {category && category !== "全部"
+              {keyword
+                ? `搜尋：${keyword} ☁️`
+                : category && category !== "全部"
                 ? `${category} ☁️`
                 : "最近大家都在偷偷收藏 ☁️"}
             </h3>
@@ -192,6 +207,38 @@ export default async function Home({ searchParams }: Props) {
               闆娘挑出最近最有療癒感、最想帶回家的小可愛。
             </p>
           </div>
+
+          <form
+            action="/"
+            className="mb-8 flex flex-col gap-3 rounded-[2rem] bg-white p-4 shadow-sm md:flex-row"
+          >
+            {category && category !== "全部" && (
+              <input type="hidden" name="category" value={category} />
+            )}
+
+            <input
+              name="q"
+              defaultValue={keyword}
+              placeholder="搜尋商品名稱，例如：包包、娃娃、衣服"
+              className="flex-1 rounded-full border border-[#e8ddd4] px-5 py-3 text-sm outline-none"
+            />
+
+            <button
+              type="submit"
+              className="rounded-full bg-[#2e2e2e] px-8 py-3 text-sm font-medium text-white"
+            >
+              搜尋
+            </button>
+
+            {keyword && (
+              <a
+                href={category ? `/?category=${category}#hot` : "/#hot"}
+                className="rounded-full border border-[#d8c5b0] px-8 py-3 text-center text-sm text-[#6b5c50]"
+              >
+                清除
+              </a>
+            )}
+          </form>
 
           <div className="grid grid-cols-2 gap-4 md:grid-cols-4 md:gap-5">
             {displayProducts.map((product) => (
@@ -236,14 +283,13 @@ export default async function Home({ searchParams }: Props) {
 
             {displayProducts.length === 0 && (
               <div className="col-span-full rounded-[2rem] bg-white p-10 text-center text-[#8b7b6e]">
-                這個分類目前還沒有商品 ☁️
+                找不到相關商品 ☁️
               </div>
             )}
           </div>
         </div>
       </section>
 
-      {/* 豬豬碎念 */}
       <section className="px-5 pb-24 md:px-10">
         <div className="mx-auto max-w-5xl overflow-hidden rounded-[2.5rem] bg-[#efe7de]">
           <div className="grid gap-10 px-8 py-14 md:grid-cols-2 md:px-14 md:py-20">
@@ -295,7 +341,6 @@ export default async function Home({ searchParams }: Props) {
         </div>
       </section>
 
-      {/* Argent Nest 的日常碎片 */}
       <section className="px-5 pb-24 md:px-10">
         <div className="mx-auto max-w-6xl">
           <div className="mb-10 text-center">
@@ -334,7 +379,6 @@ export default async function Home({ searchParams }: Props) {
         </div>
       </section>
 
-      {/* Footer */}
       <footer className="border-t border-[#e8ddd4] bg-[#f6f1eb] px-5 py-16 md:px-10">
         <div className="mx-auto grid max-w-6xl gap-12 md:grid-cols-4">
           <div>
