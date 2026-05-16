@@ -17,6 +17,11 @@ export default async function ProductPage({ params }: Props) {
     return <div className="p-10">找不到商品</div>;
   }
 
+  const images =
+    product.images && product.images.length > 0
+      ? product.images
+      : [product.image];
+
   return (
     <main className="min-h-screen bg-[#f8f5f0] text-[#2e2e2e]">
       <header className="sticky top-0 z-50 border-b border-[#e8ddd4]/70 bg-[#f8f5f0]/90 px-5 py-4 backdrop-blur md:px-10">
@@ -37,18 +42,29 @@ export default async function ProductPage({ params }: Props) {
       <section className="mx-auto grid max-w-6xl gap-10 px-5 py-10 md:grid-cols-2 md:px-10 md:py-16">
         <div>
           <div className="overflow-hidden rounded-[2.5rem] bg-[#ede6dd] shadow-[0_12px_45px_rgba(70,50,35,0.12)]">
-            {product.image ? (
-              <img
-                src={product.image}
-                alt={product.name}
-                className="aspect-[4/5] w-full object-cover"
-              />
-            ) : (
-              <div className="flex aspect-[4/5] items-center justify-center text-6xl">
-                🏷️
-              </div>
-            )}
+            <img
+              src={images[0]}
+              alt={product.name}
+              className="aspect-[4/5] w-full object-cover"
+            />
           </div>
+
+          {images.length > 1 && (
+            <div className="mt-4 grid grid-cols-4 gap-3">
+              {images.map((img: string, index: number) => (
+                <div
+                  key={index}
+                  className="overflow-hidden rounded-2xl bg-[#ede6dd]"
+                >
+                  <img
+                    src={img}
+                    alt={`${product.name}-${index}`}
+                    className="aspect-square w-full object-cover"
+                  />
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="flex flex-col justify-center">
