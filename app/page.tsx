@@ -90,69 +90,64 @@ export default async function Home() {
 </section>
       
       <section id="hot" className="px-5 pb-20 md:px-10">
-        <div className="mx-auto max-w-6xl">
-          <div className="mb-10 flex items-end justify-between">
-            <div>
-              <p className="mb-1 text-xs uppercase tracking-[0.35em] text-[#a08060]">Collection</p>
-              <h3 className="text-2xl font-bold tracking-tight md:text-3xl">熱賣商品</h3>
+  <div className="mx-auto max-w-6xl">
+    <div className="mb-10">
+      <p className="mb-2 text-xs uppercase tracking-[0.35em] text-[#a08060]">
+        Popular Picks
+      </p>
+
+      <h3 className="text-3xl font-bold tracking-tight">
+        最近大家都在偷偷收藏 ☁️
+      </h3>
+
+      <p className="mt-3 text-sm leading-7 text-[#8b7b6e]">
+        闆娘挑出最近最有療癒感、最想帶回家的小可愛。
+      </p>
+    </div>
+
+    <div className="grid grid-cols-2 gap-4 md:grid-cols-4 md:gap-5">
+      {products?.slice(0, 4).map((product) => (
+        <a
+          key={product.id}
+          href={`/product/${product.id}`}
+          className="group overflow-hidden rounded-[2rem] bg-white shadow-[0_4px_24px_rgba(0,0,0,0.06)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_12px_40px_rgba(0,0,0,0.12)]"
+        >
+          <div className="relative aspect-[4/5] overflow-hidden bg-[#f1ece6]">
+            <div className="absolute left-3 top-3 z-10 rounded-full bg-white/85 px-3 py-1 text-[10px] text-[#8b6f5c] backdrop-blur">
+              HOT
             </div>
+
+            {product.image ? (
+              <img
+                src={product.image}
+                alt={product.name}
+                className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+              />
+            ) : (
+              <div className="flex h-full items-center justify-center text-4xl">
+                🏷️
+              </div>
+            )}
           </div>
 
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-5 lg:grid-cols-4">
-            {products?.map((product) => (
-              <a
-                key={product.id}
-                href={`/product/${product.id}`}
-                className="group relative flex flex-col overflow-hidden rounded-[1.75rem] bg-white shadow-[0_2px_16px_rgba(0,0,0,0.06)] transition-all duration-300 hover:-translate-y-1.5"
-              >
-                <div className="relative aspect-[4/5] overflow-hidden bg-[#f0ebe4]">
-                  {product.category && (
-                    <div className="absolute left-3 top-3 z-10 rounded-full bg-white/80 px-2.5 py-1 text-[10px] font-medium text-[#8b6f5c]">
-                      {product.category}
-                    </div>
-                  )}
+          <div className="space-y-2 p-4">
+            <p className="text-[11px] tracking-[0.25em] text-[#b58b6b]">
+              {product.category}
+            </p>
 
-                  <div className="absolute right-3 top-3 z-10 rounded-full bg-[#2e2e2e] px-2.5 py-1 text-[10px] font-medium text-white">
-                    HOT
-                  </div>
+            <h4 className="line-clamp-2 text-sm font-semibold leading-6">
+              {product.name}
+            </h4>
 
-                  {product.image ? (
-                    <img
-                      src={product.image}
-                      alt={product.name}
-                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.06]"
-                    />
-                  ) : (
-                    <div className="flex h-full items-center justify-center text-3xl">🏷️</div>
-                  )}
-                </div>
-
-                <div className="flex flex-1 flex-col gap-2 p-4 md:p-5">
-                  <h4 className="line-clamp-2 text-[13px] font-medium leading-[1.55] md:text-sm">
-                    {product.name}
-                  </h4>
-
-                  {product.description && (
-                    <p className="line-clamp-2 text-[11px] leading-[1.6] text-[#9e8e82] md:text-xs">
-                      {product.description}
-                    </p>
-                  )}
-
-                  <div className="mt-auto flex items-center justify-between pt-2">
-                    <p className="text-base font-bold md:text-lg">
-                      NT$ {Number(product.price).toLocaleString()}
-                    </p>
-
-                    <span className="rounded-full bg-[#f3ede6] px-3 py-1.5 text-[11px] font-medium text-[#8b6f5c]">
-                      查看 →
-                    </span>
-                  </div>
-                </div>
-              </a>
-            ))}
+            <p className="font-bold text-[#2e2e2e]">
+              NT$ {Number(product.price).toLocaleString()}
+            </p>
           </div>
-        </div>
-      </section>
+        </a>
+      ))}
+    </div>
+  </div>
+</section>
 
       <section id="categories" className="px-5 pb-20 md:px-10">
         <div className="mx-auto max-w-6xl">
