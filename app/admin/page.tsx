@@ -320,10 +320,26 @@ export default function AdminPage() {
           />
 
           {images.length > 0 && (
-            <div className="rounded-2xl bg-[#f8f5f2] p-4 text-sm text-gray-600">
-              已選擇 {images.length} 張新圖片
-            </div>
-          )}
+  <div className="rounded-2xl bg-[#f8f5f2] p-4">
+    <p className="mb-3 text-sm text-gray-600">
+      已選擇 {images.length} 張圖片
+    </p>
+
+    <div className="grid grid-cols-3 gap-3">
+      {images.map((file, index) => (
+        <div
+          key={index}
+          className="overflow-hidden rounded-xl bg-white"
+        >
+          <img
+            src={URL.createObjectURL(file)}
+            className="aspect-square w-full object-cover"
+          />
+        </div>
+      ))}
+    </div>
+  </div>
+)}
 
           <button
             onClick={editingId ? updateProduct : addProduct}
