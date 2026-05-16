@@ -329,6 +329,7 @@ export default async function Home({ searchParams }: Props) {
                       <p className="text-xs text-gray-400">
                         目前已售完 ☁️
                       </p>
+                  <ProductQuickView product={product} />
                     )}
                   </div>
                 </a>
