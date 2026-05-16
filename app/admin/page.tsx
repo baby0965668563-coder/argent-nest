@@ -16,6 +16,7 @@ export default function AdminPage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editingImages, setEditingImages] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+  const [searchText, setSearchText] = useState("");
 
   async function fetchProducts() {
     const { data } = await supabase
@@ -30,6 +31,16 @@ export default function AdminPage() {
   useEffect(() => {
     fetchProducts();
   }, []);
+
+  const filteredProducts = products.filter((product) => {
+    const keyword = searchText.toLowerCase();
+
+    return (
+      product.name?.toLowerCase().includes(keyword) ||
+      product.category?.toLowerCase().includes(keyword) ||
+      product.description?.toLowerCase().includes(keyword)
+    );
+  });
 
   function resetForm() {
     setName("");
@@ -247,14 +258,8 @@ export default function AdminPage() {
 
               <div className="grid grid-cols-4 gap-3">
                 {editingImages.map((img, index) => (
-                  <div
-                    key={index}
-                    className="overflow-hidden rounded-xl bg-white"
-                  >
-                    <img
-                      src={img}
-                      className="aspect-square w-full object-cover"
-                    />
+                  <div key={index} className="overflow-hidden rounded-xl bg-white">
+                    <img src={img} className="aspect-square w-full object-cover" />
                   </div>
                 ))}
               </div>
@@ -281,10 +286,7 @@ export default function AdminPage() {
 
               <div className="grid grid-cols-4 gap-3">
                 {images.map((file, index) => (
-                  <div
-                    key={index}
-                    className="overflow-hidden rounded-xl bg-white"
-                  >
+                  <div key={index} className="overflow-hidden rounded-xl bg-white">
                     <img
                       src={URL.createObjectURL(file)}
                       className="aspect-square w-full object-cover"
@@ -317,8 +319,15 @@ export default function AdminPage() {
       <div className="mt-8 rounded-3xl bg-white p-6 shadow-sm">
         <h2 className="mb-5 text-xl font-bold">商品清單</h2>
 
+        <input
+          className="mb-5 w-full rounded-2xl border p-4"
+          placeholder="搜尋商品名稱、分類、描述"
+          value={searchText}
+          onChange={(e) => setSearchText(e.target.value)}
+        />
+
         <div className="space-y-4">
-          {products.map((product) => {
+          {filteredProducts.map((product) => {
             const productImages =
               product.images && product.images.length > 0
                 ? product.images
@@ -339,9 +348,7 @@ export default function AdminPage() {
                   </div>
 
                   <div className="min-w-0 flex-1">
-                    <p className="line-clamp-2 font-bold">
-                      {product.name}
-                    </p>
+                    <p className="line-clamp-2 font-bold">{product.name}</p>
 
                     <p className="mt-1 text-sm text-gray-500">
                       NT$ {product.price}
@@ -393,9 +400,9 @@ export default function AdminPage() {
             );
           })}
 
-          {products.length === 0 && (
+          {filteredProducts.length === 0 && (
             <div className="rounded-2xl border p-6 text-center text-gray-500">
-              目前還沒有商品
+              找不到商品
             </div>
           )}
         </div>
