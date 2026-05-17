@@ -106,6 +106,17 @@ export default function AdminPage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
+  function removeEditingImage(index: number) {
+    const nextImages = editingImages.filter((_, i) => i !== index);
+    setEditingImages(nextImages);
+  }
+
+  function setCoverImage(index: number) {
+    const selected = editingImages[index];
+    const others = editingImages.filter((_, i) => i !== index);
+    setEditingImages([selected, ...others]);
+  }
+
   async function uploadOneImage(file: File) {
     const fileName = `public/${uuidv4()}.jpg`;
 
@@ -123,7 +134,6 @@ export default function AdminPage() {
     }
 
     const { data } = supabase.storage.from("products").getPublicUrl(fileName);
-
     return data.publicUrl;
   }
 
@@ -179,10 +189,13 @@ export default function AdminPage() {
 
   async function updateProduct() {
     if (!editingId) return;
+    if (!name) return alert("請輸入商品名稱");
+    if (!price) return alert("請輸入價格");
+    if (!category) return alert("請選擇商品分類");
 
     setLoading(true);
 
-    let imageUrls = editingImages;
+    let finalImages = [...editingImages];
 
     if (images.length > 0) {
       const uploadedUrls = await uploadImages(images);
@@ -192,7 +205,12 @@ export default function AdminPage() {
         return;
       }
 
-      imageUrls = uploadedUrls;
+      finalImages = [...finalImages, ...uploadedUrls];
+    }
+
+    if (finalImages.length === 0) {
+      setLoading(false);
+      return alert("請至少保留一張圖片");
     }
 
     const { error } = await supabase
@@ -206,8 +224,8 @@ export default function AdminPage() {
         description,
         is_active: isActive,
         is_sold_out: isSoldOut,
-        image: imageUrls[0] || "",
-        images: imageUrls,
+        image: finalImages[0] || "",
+        images: finalImages,
       })
       .eq("id", editingId);
 
@@ -227,7 +245,6 @@ export default function AdminPage() {
       .eq("id", id);
 
     if (error) return alert("狀態修改失敗：" + error.message);
-
     fetchProducts();
   }
 
@@ -238,7 +255,6 @@ export default function AdminPage() {
       .eq("id", id);
 
     if (error) return alert("售完狀態修改失敗：" + error.message);
-
     fetchProducts();
   }
 
@@ -274,9 +290,7 @@ export default function AdminPage() {
       <div className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">管理後台</h1>
-          <p className="mt-2 text-sm text-gray-500">
-            Argent Nest 商品管理
-          </p>
+          <p className="mt-2 text-sm text-gray-500">Argent Nest 商品管理</p>
         </div>
 
         <button
@@ -364,6 +378,49 @@ export default function AdminPage() {
             />
           </label>
 
+          {editingId && editingImages.length > 0 && (
+            <div className="rounded-2xl bg-[#f8f5f2] p-4">
+              <p className="mb-3 text-sm font-bold text-gray-700">
+                目前商品圖片
+              </p>
+
+              <div className="grid grid-cols-2 gap-3">
+                {editingImages.map((img, index) => (
+                  <div key={img} className="overflow-hidden rounded-2xl bg-white">
+                    <img
+                      src={img}
+                      className="aspect-square w-full object-cover"
+                    />
+
+                    <div className="space-y-2 p-2">
+                      {index === 0 ? (
+                        <p className="rounded-full bg-black py-2 text-center text-xs text-white">
+                          目前封面
+                        </p>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setCoverImage(index)}
+                          className="w-full rounded-full border py-2 text-xs text-[#6b5c50]"
+                        >
+                          設為封面
+                        </button>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={() => removeEditingImage(index)}
+                        className="w-full rounded-full bg-red-500 py-2 text-xs text-white"
+                      >
+                        刪除圖片
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <input
             type="file"
             multiple
@@ -372,25 +429,16 @@ export default function AdminPage() {
             onChange={(e) => setImages(Array.from(e.target.files || []))}
           />
 
-          {editingImages.length > 0 && images.length === 0 && (
-            <div className="rounded-2xl bg-[#f8f5f2] p-4">
-              <p className="mb-3 text-sm text-gray-600">目前商品圖片</p>
-              <div className="grid grid-cols-3 gap-3">
-                {editingImages.map((img, index) => (
-                  <img
-                    key={index}
-                    src={img}
-                    className="aspect-square w-full rounded-xl object-cover"
-                  />
-                ))}
-              </div>
-            </div>
+          {editingId && (
+            <p className="text-xs leading-6 text-gray-500">
+              編輯商品時，新選的圖片會加到原本圖片後面，不會覆蓋原圖片。
+            </p>
           )}
 
           {images.length > 0 && (
             <div className="rounded-2xl bg-[#f8f5f2] p-4">
               <p className="mb-3 text-sm text-gray-600">
-                已選擇 {images.length} 張圖片
+                已選擇新增 {images.length} 張圖片
               </p>
 
               <div className="grid grid-cols-3 gap-3">
