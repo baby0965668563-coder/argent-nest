@@ -45,9 +45,7 @@ export default function AdminPage() {
   }, []);
 
   useEffect(() => {
-    if (authorized) {
-      fetchProducts();
-    }
+    if (authorized) fetchProducts();
   }, [authorized]);
 
   async function fetchProducts() {
@@ -84,6 +82,32 @@ export default function AdminPage() {
     setEditingImages([]);
   }
 
+  function startEdit(product: any) {
+    setEditingId(product.id);
+    setName(product.name || "");
+    setPrice(String(product.price || ""));
+    setCategory(product.category || "");
+    setSortOrder(String(product.sort_order || 0));
+    setOptions(product.options || "");
+    setDescription(product.description || "");
+    setIsActive(product.is_active !== false);
+    setIsSoldOut(product.is_sold_out === true);
+
+    const oldImages =
+      Array.isArray(product.images) && product.images.length > 0
+        ? product.images
+        : product.image
+        ? [product.image]
+        : product.image_url
+        ? [product.image_url]
+        : [];
+
+    setEditingImages(oldImages);
+    setImages([]);
+
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   async function uploadOneImage(file: File) {
     const fileName = `public/${uuidv4()}.jpg`;
 
@@ -100,9 +124,7 @@ export default function AdminPage() {
       return null;
     }
 
-    const { data } = supabase.storage
-      .from("products")
-      .getPublicUrl(fileName);
+    const { data } = supabase.storage.from("products").getPublicUrl(fileName);
 
     return data.publicUrl;
   }
@@ -144,6 +166,7 @@ export default function AdminPage() {
         is_active: isActive,
         is_sold_out: isSoldOut,
         image: imageUrls[0],
+        image_url: imageUrls[0],
         images: imageUrls,
       },
     ]);
@@ -187,6 +210,7 @@ export default function AdminPage() {
         is_active: isActive,
         is_sold_out: isSoldOut,
         image: imageUrls[0] || "",
+        image_url: imageUrls[0] || "",
         images: imageUrls,
       })
       .eq("id", editingId);
@@ -225,10 +249,7 @@ export default function AdminPage() {
   async function deleteProduct(id: number) {
     if (!confirm("確定要刪除這個商品嗎？")) return;
 
-    const { error } = await supabase
-      .from("products")
-      .delete()
-      .eq("id", id);
+    const { error } = await supabase.from("products").delete().eq("id", id);
 
     if (error) return alert("刪除失敗：" + error.message);
 
@@ -299,10 +320,10 @@ export default function AdminPage() {
             onChange={(e) => setCategory(e.target.value)}
           >
             <option value="">請選擇商品分類</option>
-            <option value="療癒娃娃">療癒娃娃</option>
-            <option value="微辣穿搭">微辣穿搭</option>
-            <option value="女孩小物">女孩小物</option>
-            <option value="甜點研究所">甜點研究所</option>
+            <option value="卡通療癒選物">卡通療癒選物</option>
+            <option value="微辣韓系穿搭">微辣韓系穿搭</option>
+            <option value="飾品包包">飾品包包</option>
+            <option value="花束甜點">花束甜點</option>
           </select>
 
           <input
@@ -315,9 +336,9 @@ export default function AdminPage() {
 
           <textarea
             className="w-full rounded-2xl border p-4"
-            placeholder={`顏色：奶油白、黑色
-
-尺寸：S、M、L`}
+            placeholder={`規格格式請這樣輸入：
+顏色|奶油白,黑色
+尺寸|S,M,L`}
             value={options}
             onChange={(e) => setOptions(e.target.value)}
           />
@@ -331,7 +352,6 @@ export default function AdminPage() {
 
           <label className="flex items-center justify-between rounded-2xl border p-4">
             <span>{isActive ? "上架中" : "已下架"}</span>
-
             <input
               type="checkbox"
               checked={isActive}
@@ -341,7 +361,6 @@ export default function AdminPage() {
 
           <label className="flex items-center justify-between rounded-2xl border p-4">
             <span>{isSoldOut ? "已售完" : "可下單"}</span>
-
             <input
               type="checkbox"
               checked={isSoldOut}
@@ -354,10 +373,23 @@ export default function AdminPage() {
             multiple
             accept="image/*"
             className="w-full rounded-2xl border p-4"
-            onChange={(e) =>
-              setImages(Array.from(e.target.files || []))
-            }
+            onChange={(e) => setImages(Array.from(e.target.files || []))}
           />
+
+          {editingImages.length > 0 && images.length === 0 && (
+            <div className="rounded-2xl bg-[#f8f5f2] p-4">
+              <p className="mb-3 text-sm text-gray-600">目前商品圖片</p>
+              <div className="grid grid-cols-3 gap-3">
+                {editingImages.map((img, index) => (
+                  <img
+                    key={index}
+                    src={img}
+                    className="aspect-square w-full rounded-xl object-cover"
+                  />
+                ))}
+              </div>
+            </div>
+          )}
 
           {images.length > 0 && (
             <div className="rounded-2xl bg-[#f8f5f2] p-4">
@@ -367,15 +399,11 @@ export default function AdminPage() {
 
               <div className="grid grid-cols-3 gap-3">
                 {images.map((file, index) => (
-                  <div
+                  <img
                     key={index}
-                    className="overflow-hidden rounded-xl bg-white"
-                  >
-                    <img
-                      src={URL.createObjectURL(file)}
-                      className="aspect-square w-full object-cover"
-                    />
-                  </div>
+                    src={URL.createObjectURL(file)}
+                    className="aspect-square w-full rounded-xl object-cover"
+                  />
                 ))}
               </div>
             </div>
@@ -386,11 +414,7 @@ export default function AdminPage() {
             disabled={loading}
             className="w-full rounded-full bg-black py-4 text-white disabled:opacity-50"
           >
-            {loading
-              ? "處理中..."
-              : editingId
-              ? "儲存修改"
-              : "新增商品"}
+            {loading ? "處理中..." : editingId ? "儲存修改" : "新增商品"}
           </button>
 
           {editingId && (
@@ -400,6 +424,103 @@ export default function AdminPage() {
             >
               取消編輯
             </button>
+          )}
+        </div>
+      </div>
+
+      <div className="mt-8 rounded-3xl bg-white p-6 shadow-sm">
+        <h2 className="mb-4 text-xl font-bold">商品列表</h2>
+
+        <input
+          className="mb-5 w-full rounded-2xl border p-4"
+          placeholder="搜尋商品..."
+          value={searchText}
+          onChange={(e) => setSearchText(e.target.value)}
+        />
+
+        <div className="space-y-4">
+          {filteredProducts.map((product) => {
+            const imageSrc =
+              product.image_url ||
+              product.image ||
+              (Array.isArray(product.images) && product.images.length > 0
+                ? product.images[0]
+                : "");
+
+            return (
+              <div
+                key={product.id}
+                className="rounded-2xl border bg-[#fffdfb] p-4"
+              >
+                <div className="flex gap-4">
+                  <div className="h-24 w-24 shrink-0 overflow-hidden rounded-2xl bg-[#eee5dc]">
+                    {imageSrc ? (
+                      <img
+                        src={imageSrc}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-full items-center justify-center text-xs text-gray-400">
+                        No Image
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex-1">
+                    <p className="font-bold">{product.name}</p>
+                    <p className="mt-1 text-sm text-gray-500">
+                      {product.category}
+                    </p>
+                    <p className="mt-1 font-bold">
+                      NT$ {Number(product.price || 0).toLocaleString()}
+                    </p>
+                    <p className="mt-1 text-xs text-gray-400">
+                      排序：{product.sort_order || 0}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() =>
+                      toggleActive(product.id, product.is_active !== false)
+                    }
+                    className="rounded-full border py-2 text-sm"
+                  >
+                    {product.is_active !== false ? "下架" : "上架"}
+                  </button>
+
+                  <button
+                    onClick={() =>
+                      toggleSoldOut(product.id, product.is_sold_out === true)
+                    }
+                    className="rounded-full border py-2 text-sm"
+                  >
+                    {product.is_sold_out ? "改可下單" : "改售完"}
+                  </button>
+
+                  <button
+                    onClick={() => startEdit(product)}
+                    className="rounded-full bg-[#3f332b] py-2 text-sm text-white"
+                  >
+                    編輯
+                  </button>
+
+                  <button
+                    onClick={() => deleteProduct(product.id)}
+                    className="rounded-full bg-red-500 py-2 text-sm text-white"
+                  >
+                    刪除
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+
+          {filteredProducts.length === 0 && (
+            <p className="py-8 text-center text-sm text-gray-400">
+              目前沒有商品
+            </p>
           )}
         </div>
       </div>
