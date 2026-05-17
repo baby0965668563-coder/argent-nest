@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
 type CartItem = {
@@ -39,14 +40,25 @@ const statusOptions = [
 ];
 
 export default function AdminOrdersPage() {
+  const router = useRouter();
+
+  const [checkedLogin, setCheckedLogin] = useState(false);
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [keyword, setKeyword] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
   useEffect(() => {
+    const isLogin = localStorage.getItem("argent_admin_login");
+
+    if (isLogin !== "true") {
+      router.push("/admin-login");
+      return;
+    }
+
+    setCheckedLogin(true);
     fetchOrders();
-  }, []);
+  }, [router]);
 
   const filteredOrders = useMemo(() => {
     return orders.filter((order) => {
@@ -126,6 +138,11 @@ export default function AdminOrdersPage() {
     fetchOrders();
   }
 
+  function logout() {
+    localStorage.removeItem("argent_admin_login");
+    router.push("/admin-login");
+  }
+
   function formatDate(date: string) {
     return new Date(date).toLocaleString("zh-TW", {
       year: "numeric",
@@ -187,21 +204,41 @@ ${itemsText}
     alert("已複製訂單內容 ☁️");
   }
 
+  if (!checkedLogin) {
+    return (
+      <main className="min-h-screen bg-[#faf7f2] px-4 py-10">
+        <div className="mx-auto max-w-sm rounded-3xl bg-white p-8 text-center text-gray-500 shadow-sm">
+          檢查登入狀態中...
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-screen bg-[#faf7f2] px-4 py-6">
       <div className="mx-auto max-w-5xl">
-        <div className="mb-5 flex items-center justify-between">
+        <div className="mb-5 flex items-center justify-between gap-3">
           <h1 className="text-2xl font-semibold text-[#4b4038]">
             訂單後台
           </h1>
 
-          <button
-            type="button"
-            onClick={fetchOrders}
-            className="rounded-full border border-[#d8c5b0] bg-white px-4 py-2 text-sm text-[#6b5c50]"
-          >
-            重新整理
-          </button>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={fetchOrders}
+              className="rounded-full border border-[#d8c5b0] bg-white px-4 py-2 text-sm text-[#6b5c50]"
+            >
+              重新整理
+            </button>
+
+            <button
+              type="button"
+              onClick={logout}
+              className="rounded-full bg-[#2e2e2e] px-4 py-2 text-sm text-white"
+            >
+              登出
+            </button>
+          </div>
         </div>
 
         <div className="mb-5 rounded-3xl bg-white p-4 shadow-sm">
