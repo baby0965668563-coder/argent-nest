@@ -4,6 +4,7 @@ import HomeBanner from "./components/HomeBanner";
 import ProductImageHover from "./components/ProductImageHover";
 import MobileBottomNav from "./components/MobileBottomNav";
 import LineAskButton from "./components/LineAskButton";
+import LikeButton from "./components/LikeButton";
 
 interface Props {
   searchParams: Promise<{
@@ -393,6 +394,10 @@ export default async function Home({ searchParams }: Props) {
                   <div className="px-4 pb-4">
                     <ProductQuickView product={product} />
                     <LineAskButton product={product} />
+                    <LikeButton
+  productId={product.id}
+  initialLikes={Number(product.likes || 0)}
+/>
                   </div>
                 </div>
               );
