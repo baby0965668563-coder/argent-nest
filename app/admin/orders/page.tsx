@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
 type CartItem = {
@@ -27,13 +27,44 @@ type Order = {
   status: string;
 };
 
+const statusOptions = [
+  { value: "all", label: "全部" },
+  { value: "pending", label: "待確認" },
+  { value: "paid", label: "已付款" },
+  { value: "ordered", label: "已訂貨" },
+  { value: "arrived", label: "已到貨" },
+  { value: "shipped", label: "已出貨" },
+  { value: "done", label: "已完成" },
+  { value: "cancelled", label: "已取消" },
+];
+
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [keyword, setKeyword] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
 
   useEffect(() => {
     fetchOrders();
   }, []);
+
+  const filteredOrders = useMemo(() => {
+    return orders.filter((order) => {
+      const keywordText = keyword.trim().toLowerCase();
+
+      const matchKeyword =
+        !keywordText ||
+        order.customer_name?.toLowerCase().includes(keywordText) ||
+        order.phone?.toLowerCase().includes(keywordText) ||
+        order.line_id?.toLowerCase().includes(keywordText) ||
+        order.id?.toLowerCase().includes(keywordText);
+
+      const matchStatus =
+        statusFilter === "all" || (order.status || "pending") === statusFilter;
+
+      return matchKeyword && matchStatus;
+    });
+  }, [orders, keyword, statusFilter]);
 
   async function fetchOrders() {
     setLoading(true);
@@ -106,6 +137,7 @@ export default function AdminOrdersPage() {
 
     return `【Argent Nest 訂單】
 
+訂單編號：${order.id}
 訂單時間：${formatDate(order.created_at)}
 訂單狀態：${order.status || "pending"}
 
@@ -125,7 +157,6 @@ ${itemsText}
 
   async function copyOrder(order: Order) {
     const text = buildOrderText(order);
-
     await navigator.clipboard.writeText(text);
     alert("已複製訂單內容 ☁️");
   }
@@ -133,7 +164,7 @@ ${itemsText}
   return (
     <main className="min-h-screen bg-[#faf7f2] px-4 py-6">
       <div className="mx-auto max-w-5xl">
-        <div className="mb-6 flex items-center justify-between">
+        <div className="mb-5 flex items-center justify-between">
           <h1 className="text-2xl font-semibold text-[#4b4038]">
             訂單後台
           </h1>
@@ -147,28 +178,59 @@ ${itemsText}
           </button>
         </div>
 
+        <div className="mb-5 rounded-3xl bg-white p-4 shadow-sm">
+          <input
+            value={keyword}
+            onChange={(e) => setKeyword(e.target.value)}
+            placeholder="搜尋姓名、電話、LINE ID、訂單編號"
+            className="w-full rounded-2xl border border-[#e1d3c2] px-4 py-3 text-sm outline-none"
+          />
+
+          <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+            {statusOptions.map((status) => (
+              <button
+                key={status.value}
+                type="button"
+                onClick={() => setStatusFilter(status.value)}
+                className={`shrink-0 rounded-full px-4 py-2 text-sm transition ${
+                  statusFilter === status.value
+                    ? "bg-[#2e2e2e] text-white"
+                    : "border border-[#d8c5b0] bg-white text-[#6b5c50]"
+                }`}
+              >
+                {status.label}
+              </button>
+            ))}
+          </div>
+
+          <p className="mt-3 text-xs text-gray-400">
+            目前顯示 {filteredOrders.length} 筆訂單
+          </p>
+        </div>
+
         {loading ? (
           <div className="rounded-3xl bg-white p-8 text-center text-gray-500 shadow-sm">
             訂單載入中...
           </div>
-        ) : orders.length === 0 ? (
+        ) : filteredOrders.length === 0 ? (
           <div className="rounded-3xl bg-white p-8 text-center text-gray-500 shadow-sm">
-            目前還沒有訂單 ☁️
+            沒有符合條件的訂單 ☁️
           </div>
         ) : (
           <div className="space-y-5">
-            {orders.map((order) => (
-              <div
-                key={order.id}
-                className="rounded-3xl bg-white p-5 shadow-sm"
-              >
+            {filteredOrders.map((order) => (
+              <div key={order.id} className="rounded-3xl bg-white p-5 shadow-sm">
                 <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                   <div>
                     <p className="text-xs text-gray-400">
                       {formatDate(order.created_at)}
                     </p>
 
-                    <h2 className="mt-1 text-lg font-semibold text-[#4b4038]">
+                    <p className="mt-1 break-all text-xs text-gray-400">
+                      訂單編號：{order.id}
+                    </p>
+
+                    <h2 className="mt-2 text-lg font-semibold text-[#4b4038]">
                       {order.customer_name}
                     </h2>
 
@@ -200,18 +262,16 @@ ${itemsText}
 
                     <select
                       value={order.status || "pending"}
-                      onChange={(e) =>
-                        updateStatus(order.id, e.target.value)
-                      }
+                      onChange={(e) => updateStatus(order.id, e.target.value)}
                       className="rounded-full border border-[#d8c5b0] bg-white px-3 py-2 text-sm text-[#6b5c50] outline-none"
                     >
-                      <option value="pending">待確認</option>
-                      <option value="paid">已付款</option>
-                      <option value="ordered">已訂貨</option>
-                      <option value="arrived">已到貨</option>
-                      <option value="shipped">已出貨</option>
-                      <option value="done">已完成</option>
-                      <option value="cancelled">已取消</option>
+                      {statusOptions
+                        .filter((s) => s.value !== "all")
+                        .map((s) => (
+                          <option key={s.value} value={s.value}>
+                            {s.label}
+                          </option>
+                        ))}
                     </select>
 
                     <button
