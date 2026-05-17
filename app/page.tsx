@@ -5,6 +5,7 @@ import ProductImageHover from "./components/ProductImageHover";
 import MobileBottomNav from "./components/MobileBottomNav";
 import LineAskButton from "./components/LineAskButton";
 import LikeButton from "./components/LikeButton";
+import TopNoticeBar from "./components/TopNoticeBar";
 
 interface Props {
   searchParams: Promise<{
