@@ -196,11 +196,19 @@ export default function ProductPage() {
               {product.category}
             </div>
 
-            {soldOut && (
-              <div className="mt-5 rounded-2xl bg-[#f3ede6] p-4 text-sm text-[#8b6f5c]">
-                這款目前已售完，暫時不能下單 ☁️
-              </div>
-            )}
+            {soldOut ? (
+  <div className="mt-5 rounded-2xl bg-[#f3ede6] p-4 text-sm text-[#8b6f5c]">
+    這款目前已售完，暫時不能下單 ☁️
+  </div>
+) : Number(product.stock || 0) > 0 ? (
+  <div className="mt-5 rounded-2xl bg-[#edf7ed] p-4 text-sm text-[#2e7d32]">
+    現貨剩餘 {Number(product.stock || 0)} 件 ☁️
+  </div>
+) : (
+  <div className="mt-5 rounded-2xl bg-[#f5eee7] p-4 text-sm text-[#8b6f5c]">
+    此商品為預購商品 ☁️
+  </div>
+)}
 
             {showWarning && (
               <div className="mt-5 rounded-2xl bg-[#fff1f1] p-4 text-sm text-red-500">
