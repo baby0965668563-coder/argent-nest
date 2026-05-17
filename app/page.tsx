@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase";
 import ProductQuickView from "./components/ProductQuickView";
+import HomeBanner from "./components/HomeBanner";
 
 interface Props {
   searchParams: Promise<{
@@ -43,7 +44,6 @@ export default async function Home({ searchParams }: Props) {
 
   const getImage = (product: any) => {
     return (
-      product?.image_url ||
       product?.image ||
       (Array.isArray(product?.images) && product.images.length > 0
         ? product.images[0]
@@ -94,61 +94,7 @@ export default async function Home({ searchParams }: Props) {
         </div>
       </header>
 
-      <section className="px-5 py-8 md:px-10 md:py-12">
-        <div className="relative mx-auto max-w-6xl overflow-hidden rounded-[2.5rem] bg-[#ede6dd]">
-          <div className="grid items-center gap-10 px-8 py-16 md:grid-cols-2 md:px-16 md:py-24">
-            <div>
-              <p className="mb-4 text-xs uppercase tracking-[0.45em] text-[#a08060]">
-                Healing Select Shop
-              </p>
-
-              <h2 className="mb-6 text-5xl font-bold leading-[1.15] tracking-tight md:text-6xl">
-                Welcome to
-                <br />
-                Argent Nest 🥛🤍
-              </h2>
-
-              <p className="mb-8 max-w-md text-[15px] leading-8 text-[#6b5c50]">
-                把讓人心情變好的東西，都放進這裡了。
-                <br />
-                韓系療癒選物・女孩日常・微辣穿搭 ☁️
-              </p>
-
-              <div className="flex flex-wrap gap-4">
-                <a
-                  href="#hot"
-                  className="rounded-full bg-[#2e2e2e] px-8 py-4 text-sm font-medium text-white transition hover:scale-105"
-                >
-                  開始逛逛
-                </a>
-
-                <a
-                  href="#categories"
-                  className="rounded-full border border-[#c9b8a8] px-8 py-4 text-sm font-medium text-[#6b5c50]"
-                >
-                  探索分類
-                </a>
-              </div>
-            </div>
-
-            <div className="relative flex justify-center">
-              <div className="relative overflow-hidden rounded-[2rem] shadow-[0_10px_40px_rgba(0,0,0,0.12)]">
-                <img
-                  src={getImage(allProducts[0]) || fallbackImage}
-                  alt="Argent Nest"
-                  className="h-[520px] w-full object-cover md:w-[420px]"
-                />
-              </div>
-
-              <div className="absolute bottom-5 left-0 rounded-2xl bg-white/90 px-5 py-3 shadow-lg backdrop-blur">
-                <p className="text-xs tracking-[0.2em] text-[#a08060]">
-                  GIRL&apos;S LITTLE WORLD ☁️
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      <HomeBanner />
 
       <section id="categories" className="px-5 pb-16 md:px-10">
         <div className="mx-auto max-w-6xl">
