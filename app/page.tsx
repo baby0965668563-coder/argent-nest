@@ -146,7 +146,7 @@ export default async function Home({ searchParams }: Props) {
   }
 
   return (
-    <main className="min-h-screen bg-[#f8f5f0] pb-20 text-[#2e2e2e] md:pb-0">
+     <main className="min-h-screen bg-[#f8f5f0] overflow-x-hidden pb-20 text-[#2e2e2e] md:pb-0">
       <header className="sticky top-0 z-50 border-b border-[#e8ddd4]/70 bg-[#f8f5f0]/90 px-5 py-4 backdrop-blur md:px-10">
         <div className="mx-auto flex max-w-6xl items-center justify-between">
           <a href="/" className="text-xl font-bold tracking-tight">
