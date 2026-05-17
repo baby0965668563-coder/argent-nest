@@ -23,7 +23,9 @@ export default function CheckoutPage() {
     phone: "",
     lineId: "",
     shippingMethod: "超商取貨",
-    note: "",
+    storeName: "",
+    storeAddress: "",
+    customerNote: "",
   });
 
   useEffect(() => {
@@ -31,16 +33,22 @@ export default function CheckoutPage() {
     setCart(savedCart);
   }, []);
 
-  const total = cart.reduce(
+  const subtotal = cart.reduce(
     (sum, item) => sum + Number(item.price || 0) * Number(item.quantity || 1),
     0
   );
 
+  const shippingFee =
+    form.shippingMethod === "超商取貨"
+      ? 60
+      : form.shippingMethod === "宅配"
+      ? 130
+      : 0;
+
+  const total = subtotal + shippingFee;
+
   function updateForm(key: string, value: string) {
-    setForm((prev) => ({
-      ...prev,
-      [key]: value,
-    }));
+    setForm((prev) => ({ ...prev, [key]: value }));
   }
 
   async function handleSubmit() {
@@ -54,6 +62,11 @@ export default function CheckoutPage() {
       return;
     }
 
+    if (form.shippingMethod === "超商取貨" && !form.storeName) {
+      alert("請填寫超商門市名稱");
+      return;
+    }
+
     try {
       setLoading(true);
 
@@ -63,7 +76,7 @@ export default function CheckoutPage() {
           phone: form.phone,
           line_id: form.lineId,
           shipping_method: form.shippingMethod,
-          customer_note: form.note,
+          customer_note: form.customerNote,
           items: cart,
           total,
           status: "pending",
@@ -72,18 +85,13 @@ export default function CheckoutPage() {
 
       if (error) {
         console.error(error);
-        alert("訂單送出失敗");
+        alert("訂單送出失敗，請檢查 Supabase 欄位");
         return;
       }
 
       localStorage.removeItem("cart");
-
       alert("訂單送出成功 ☁️");
-
       window.location.href = "/";
-    } catch (err) {
-      console.error(err);
-      alert("發生錯誤");
     } finally {
       setLoading(false);
     }
@@ -91,139 +99,121 @@ export default function CheckoutPage() {
 
   return (
     <main className="min-h-screen bg-[#faf7f2] px-4 py-6">
-      <div className="mx-auto max-w-4xl">
+      <div className="mx-auto max-w-5xl">
         <h1 className="mb-6 text-2xl font-semibold text-[#4b4038]">
-          結帳資料
+          填寫收件資料
         </h1>
 
         <div className="grid grid-cols-1 gap-6 md:grid-cols-[1fr_380px]">
           <section className="rounded-3xl bg-white p-5 shadow-sm">
-            <h2 className="mb-4 font-semibold text-[#4b4038]">
-              收件 / 聯絡資料
-            </h2>
+            <h2 className="mb-4 font-semibold text-[#4b4038]">聯絡資料</h2>
 
             <div className="space-y-4">
-              <div>
-                <p className="mb-2 text-sm text-[#6b5c50]">姓名 *</p>
+              <input
+                value={form.name}
+                onChange={(e) => updateForm("name", e.target.value)}
+                placeholder="姓名 *"
+                className="w-full rounded-2xl border border-[#e1d3c2] px-4 py-3 text-sm outline-none"
+              />
 
-                <input
-                  value={form.name}
-                  onChange={(e) => updateForm("name", e.target.value)}
-                  className="w-full rounded-2xl border border-[#e1d3c2] px-4 py-3 text-sm outline-none"
-                  placeholder="請輸入姓名"
-                />
-              </div>
+              <input
+                value={form.phone}
+                onChange={(e) => updateForm("phone", e.target.value)}
+                placeholder="手機號碼 *"
+                className="w-full rounded-2xl border border-[#e1d3c2] px-4 py-3 text-sm outline-none"
+              />
 
-              <div>
-                <p className="mb-2 text-sm text-[#6b5c50]">電話 *</p>
+              <input
+                value={form.lineId}
+                onChange={(e) => updateForm("lineId", e.target.value)}
+                placeholder="LINE ID（方便通知）"
+                className="w-full rounded-2xl border border-[#e1d3c2] px-4 py-3 text-sm outline-none"
+              />
 
-                <input
-                  value={form.phone}
-                  onChange={(e) => updateForm("phone", e.target.value)}
-                  className="w-full rounded-2xl border border-[#e1d3c2] px-4 py-3 text-sm outline-none"
-                  placeholder="請輸入電話"
-                />
-              </div>
+              <select
+                value={form.shippingMethod}
+                onChange={(e) => updateForm("shippingMethod", e.target.value)}
+                className="w-full rounded-2xl border border-[#e1d3c2] bg-white px-4 py-3 text-sm outline-none"
+              >
+                <option value="超商取貨">超商取貨 $60</option>
+                <option value="宅配">宅配 $130</option>
+                <option value="面交">面交 $0</option>
+              </select>
 
-              <div>
-                <p className="mb-2 text-sm text-[#6b5c50]">LINE ID</p>
+              {form.shippingMethod === "超商取貨" && (
+                <>
+                  <input
+                    value={form.storeName}
+                    onChange={(e) => updateForm("storeName", e.target.value)}
+                    placeholder="超商門市名稱 *"
+                    className="w-full rounded-2xl border border-[#e1d3c2] px-4 py-3 text-sm outline-none"
+                  />
 
-                <input
-                  value={form.lineId}
-                  onChange={(e) => updateForm("lineId", e.target.value)}
-                  className="w-full rounded-2xl border border-[#e1d3c2] px-4 py-3 text-sm outline-none"
-                  placeholder="方便通知到貨"
-                />
-              </div>
+                  <input
+                    value={form.storeAddress}
+                    onChange={(e) =>
+                      updateForm("storeAddress", e.target.value)
+                    }
+                    placeholder="門市地址（可選）"
+                    className="w-full rounded-2xl border border-[#e1d3c2] px-4 py-3 text-sm outline-none"
+                  />
+                </>
+              )}
 
-              <div>
-                <p className="mb-2 text-sm text-[#6b5c50]">取貨方式</p>
-
-                <select
-                  value={form.shippingMethod}
-                  onChange={(e) =>
-                    updateForm("shippingMethod", e.target.value)
-                  }
-                  className="w-full rounded-2xl border border-[#e1d3c2] bg-white px-4 py-3 text-sm outline-none"
-                >
-                  <option value="超商取貨">超商取貨</option>
-                  <option value="宅配">宅配</option>
-                  <option value="面交">面交</option>
-                </select>
-              </div>
-
-              <div>
-                <p className="mb-2 text-sm text-[#6b5c50]">訂單備註</p>
-
-                <textarea
-                  value={form.note}
-                  onChange={(e) => updateForm("note", e.target.value)}
-                  className="min-h-[100px] w-full resize-none rounded-2xl border border-[#e1d3c2] px-4 py-3 text-sm outline-none"
-                  placeholder="例如：一起出貨、送禮用"
-                />
-              </div>
+              <textarea
+                value={form.customerNote}
+                onChange={(e) => updateForm("customerNote", e.target.value)}
+                placeholder="訂單備註，例如：想一起出貨、送禮用"
+                className="min-h-[100px] w-full resize-none rounded-2xl border border-[#e1d3c2] px-4 py-3 text-sm outline-none"
+              />
             </div>
           </section>
 
           <section className="rounded-3xl bg-white p-5 shadow-sm">
-            <h2 className="mb-4 font-semibold text-[#4b4038]">
-              訂單明細
-            </h2>
+            <h2 className="mb-4 font-semibold text-[#4b4038]">訂單明細</h2>
 
             {cart.length === 0 ? (
-              <p className="text-sm text-gray-500">
-                購物車目前是空的
-              </p>
+              <p className="text-sm text-gray-500">購物車目前是空的</p>
             ) : (
               <div className="space-y-4">
                 {cart.map((item, index) => (
-                  <div
-                    key={`${item.id}-${index}`}
-                    className="border-b pb-4"
-                  >
-                    <p className="font-medium text-[#4b4038]">
-                      {item.name}
-                    </p>
+                  <div key={`${item.id}-${index}`} className="border-b pb-4">
+                    <p className="font-medium text-[#4b4038]">{item.name}</p>
 
                     {item.options &&
                       Object.entries(item.options).map(([key, value]) => (
-                        <p
-                          key={key}
-                          className="mt-1 text-sm text-gray-500"
-                        >
+                        <p key={key} className="mt-1 text-sm text-gray-500">
                           {key}：{value}
                         </p>
                       ))}
 
-                    {item.productNote && (
-                      <p className="mt-1 text-sm text-[#9b6b4f]">
-                        商品備註：{item.productNote}
-                      </p>
-                    )}
-
                     {item.note && (
                       <p className="mt-1 text-sm text-[#6b5c50]">
-                        顧客備註：{item.note}
+                        商品備註：{item.note}
                       </p>
                     )}
 
-                    <div className="mt-2 flex justify-between text-sm text-[#4b4038]">
-                      <span>
-                        NT$ {item.price} × {item.quantity}
-                      </span>
-
-                      <span>
-                        NT${" "}
-                        {Number(item.price || 0) *
-                          Number(item.quantity || 1)}
-                      </span>
-                    </div>
+                    <p className="mt-2 text-sm text-[#4b4038]">
+                      NT$ {item.price} × {item.quantity}
+                    </p>
                   </div>
                 ))}
 
-                <div className="flex justify-between pt-2 text-lg font-semibold text-[#4b4038]">
-                  <span>小計</span>
-                  <span>NT$ {total}</span>
+                <div className="space-y-2 pt-2 text-sm text-[#4b4038]">
+                  <div className="flex justify-between">
+                    <span>商品小計</span>
+                    <span>NT$ {subtotal}</span>
+                  </div>
+
+                  <div className="flex justify-between">
+                    <span>運費</span>
+                    <span>NT$ {shippingFee}</span>
+                  </div>
+
+                  <div className="flex justify-between border-t pt-3 text-lg font-semibold">
+                    <span>總金額</span>
+                    <span>NT$ {total}</span>
+                  </div>
                 </div>
 
                 <button
