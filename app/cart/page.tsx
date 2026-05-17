@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 type CartItem = {
   id: string;
@@ -15,6 +16,7 @@ type CartItem = {
 };
 
 export default function CartPage() {
+  const router = useRouter();
   const [cart, setCart] = useState<CartItem[]>([]);
 
   useEffect(() => {
@@ -163,6 +165,7 @@ export default function CartPage() {
 
               <button
                 type="button"
+                onClick={() => router.push("/checkout")}
                 className="mt-5 w-full rounded-full bg-[#2e2e2e] py-4 text-sm font-medium text-white"
               >
                 前往結帳
