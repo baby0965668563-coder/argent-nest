@@ -100,6 +100,32 @@ export default function AdminOrdersPage() {
     fetchOrders();
   }
 
+  async function cancelOrder(orderId: string) {
+    const ok = window.confirm("確定要取消這筆訂單嗎？");
+    if (!ok) return;
+
+    await updateStatus(orderId, "cancelled");
+  }
+
+  async function deleteOrder(orderId: string) {
+    const ok = window.confirm(
+      "確定要永久刪除這筆訂單嗎？\n\n刪除後無法復原。"
+    );
+
+    if (!ok) return;
+
+    const { error } = await supabase.from("orders").delete().eq("id", orderId);
+
+    if (error) {
+      console.error(error);
+      alert("刪除訂單失敗");
+      return;
+    }
+
+    alert("訂單已刪除");
+    fetchOrders();
+  }
+
   function formatDate(date: string) {
     return new Date(date).toLocaleString("zh-TW", {
       year: "numeric",
@@ -219,7 +245,10 @@ ${itemsText}
         ) : (
           <div className="space-y-5">
             {filteredOrders.map((order) => (
-              <div key={order.id} className="rounded-3xl bg-white p-5 shadow-sm">
+              <div
+                key={order.id}
+                className="rounded-3xl bg-white p-5 shadow-sm"
+              >
                 <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                   <div>
                     <p className="text-xs text-gray-400">
@@ -280,6 +309,24 @@ ${itemsText}
                       className="rounded-full bg-[#2e2e2e] px-4 py-2 text-sm text-white"
                     >
                       複製訂單
+                    </button>
+
+                    {order.status !== "cancelled" && (
+                      <button
+                        type="button"
+                        onClick={() => cancelOrder(order.id)}
+                        className="rounded-full border border-[#d8c5b0] bg-white px-4 py-2 text-sm text-[#9b6b4f]"
+                      >
+                        取消訂單
+                      </button>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => deleteOrder(order.id)}
+                      className="rounded-full bg-[#b85c5c] px-4 py-2 text-sm text-white"
+                    >
+                      刪除訂單
                     </button>
                   </div>
                 </div>
