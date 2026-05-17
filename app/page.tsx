@@ -23,6 +23,7 @@ export default async function Home({ searchParams }: Props) {
     .select("*")
     .eq("is_active", true)
     .order("is_featured", { ascending: false })
+    .order("likes", { ascending: false })
     .order("sort_order", { ascending: true })
     .order("id", { ascending: false });
 
@@ -43,6 +44,7 @@ export default async function Home({ searchParams }: Props) {
     .select("*")
     .eq("is_active", true)
     .order("is_featured", { ascending: false })
+    .order("likes", { ascending: false })
     .order("sort_order", { ascending: true })
     .order("id", { ascending: false });
 
