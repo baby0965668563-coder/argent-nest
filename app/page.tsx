@@ -2,6 +2,7 @@ import { supabase } from "@/lib/supabase";
 import ProductQuickView from "./components/ProductQuickView";
 import HomeBanner from "./components/HomeBanner";
 import ProductImageHover from "./components/ProductImageHover";
+import MobileBottomNav from "./components/MobileBottomNav";
 
 interface Props {
   searchParams: Promise<{
