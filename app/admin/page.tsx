@@ -98,8 +98,6 @@ export default function AdminPage() {
         ? product.images
         : product.image
         ? [product.image]
-        : product.image_url
-        ? [product.image_url]
         : [];
 
     setEditingImages(oldImages);
@@ -166,7 +164,6 @@ export default function AdminPage() {
         is_active: isActive,
         is_sold_out: isSoldOut,
         image: imageUrls[0],
-        image_url: imageUrls[0],
         images: imageUrls,
       },
     ]);
@@ -210,7 +207,6 @@ export default function AdminPage() {
         is_active: isActive,
         is_sold_out: isSoldOut,
         image: imageUrls[0] || "",
-        image_url: imageUrls[0] || "",
         images: imageUrls,
       })
       .eq("id", editingId);
@@ -441,7 +437,6 @@ export default function AdminPage() {
         <div className="space-y-4">
           {filteredProducts.map((product) => {
             const imageSrc =
-              product.image_url ||
               product.image ||
               (Array.isArray(product.images) && product.images.length > 0
                 ? product.images[0]
