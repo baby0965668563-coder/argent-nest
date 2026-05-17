@@ -3,20 +3,28 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-const ADMIN_PASSWORD = "123456";
-
 export default function AdminLoginPage() {
   const router = useRouter();
+
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
+  const ADMIN_PASSWORD =
+    process.env.NEXT_PUBLIC_ADMIN_PASSWORD || "";
+
   function handleLogin() {
+    if (!ADMIN_PASSWORD) {
+      setError("尚未設定後台密碼");
+      return;
+    }
+
     if (password !== ADMIN_PASSWORD) {
       setError("密碼錯誤");
       return;
     }
 
     localStorage.setItem("argent_admin_login", "true");
+
     router.push("/admin/orders");
   }
 
