@@ -118,31 +118,31 @@ export default async function Home({ searchParams }: Props) {
       <HomeBanner />
 
       {featuredProducts.length > 0 && (
-        <section id="featured" className="px-5 pb-16 md:px-10">
-          <div className="mx-auto max-w-6xl overflow-hidden rounded-[2.5rem] bg-[#2e2e2e] p-6 text-white md:p-10">
-            <div className="mb-8">
-              <p className="mb-2 text-xs uppercase tracking-[0.35em] text-[#d8c5b0]">
+        <section id="featured" className="px-5 pb-14 md:px-10">
+          <div className="mx-auto max-w-6xl overflow-hidden rounded-[2rem] bg-[#2e2e2e] px-5 py-7 text-white shadow-[0_10px_35px_rgba(50,35,25,0.16)] md:rounded-[2.5rem] md:p-10">
+            <div className="mb-6">
+              <p className="mb-2 text-[11px] uppercase tracking-[0.35em] text-[#d8c5b0]">
                 Hot Picks
               </p>
 
-              <h3 className="text-3xl font-bold tracking-tight">
+              <h3 className="text-2xl font-black tracking-tight md:text-3xl">
                 闆娘私心推薦 ☁️
               </h3>
 
-              <p className="mt-3 text-sm leading-7 text-white/70">
+              <p className="mt-3 text-sm leading-7 text-white/65">
                 這些是最近最值得先看的小可愛，怕錯過可以先收藏。
               </p>
             </div>
 
-            <div className="flex gap-4 overflow-x-auto pb-2">
-              {featuredProducts.slice(0, 8).map((product: any) => {
+            <div className="-mx-1 flex gap-4 overflow-x-auto px-1 pb-2">
+              {featuredProducts.slice(0, 10).map((product: any) => {
                 const imageSrc = getImage(product);
 
                 return (
                   <a
                     key={product.id}
                     href={`/product/${product.id}`}
-                    className="w-44 shrink-0 overflow-hidden rounded-[1.8rem] bg-white text-[#2e2e2e] shadow-sm md:w-56"
+                    className="w-[46%] min-w-[150px] max-w-[190px] shrink-0 overflow-hidden rounded-[1.6rem] bg-white text-[#2e2e2e] shadow-sm md:w-56 md:max-w-none"
                   >
                     <div className="relative aspect-[4/5] bg-[#f4eee8]">
                       <div className="absolute left-3 top-3 z-10 rounded-full bg-[#2e2e2e] px-3 py-1 text-[10px] text-white">
@@ -162,7 +162,7 @@ export default async function Home({ searchParams }: Props) {
                       )}
                     </div>
 
-                    <div className="p-4">
+                    <div className="p-3">
                       <p className="line-clamp-2 text-sm font-bold leading-6">
                         {product.name}
                       </p>
@@ -179,9 +179,9 @@ export default async function Home({ searchParams }: Props) {
         </section>
       )}
 
-      <section id="categories" className="px-5 pb-16 md:px-10">
+      <section id="categories" className="px-5 pb-14 md:px-10 md:pb-16">
         <div className="mx-auto max-w-6xl">
-          <div className="mb-10">
+          <div className="mb-8">
             <p className="mb-2 text-xs uppercase tracking-[0.35em] text-[#a08060]">
               Categories
             </p>
@@ -195,7 +195,7 @@ export default async function Home({ searchParams }: Props) {
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-5 md:gap-5">
+          <div className="flex gap-3 overflow-x-auto pb-2 md:grid md:grid-cols-5 md:gap-5 md:overflow-visible">
             {categories.map((cat) => {
               const active =
                 (!category && cat.label === "全部") || category === cat.label;
@@ -204,20 +204,22 @@ export default async function Home({ searchParams }: Props) {
                 <a
                   key={cat.label}
                   href={categoryHref(cat.label)}
-                  className={`rounded-[2rem] p-6 transition hover:-translate-y-1 ${
+                  className={`min-w-[150px] rounded-[1.6rem] p-5 transition hover:-translate-y-1 md:min-w-0 md:rounded-[2rem] md:p-6 ${
                     active
                       ? "bg-[#2e2e2e] text-white"
                       : "bg-white text-[#2e2e2e]"
                   }`}
                 >
-                  <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#f8f5f0] text-3xl shadow-sm">
+                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#f8f5f0] text-2xl shadow-sm md:h-16 md:w-16 md:text-3xl">
                     {cat.emoji}
                   </div>
 
-                  <h4 className="mb-2 text-lg font-bold">{cat.label}</h4>
+                  <h4 className="mb-2 text-base font-bold md:text-lg">
+                    {cat.label}
+                  </h4>
 
                   <p
-                    className={`text-sm leading-7 ${
+                    className={`text-xs leading-6 md:text-sm md:leading-7 ${
                       active ? "text-white/75" : "text-[#8b7b6e]"
                     }`}
                   >
@@ -232,7 +234,7 @@ export default async function Home({ searchParams }: Props) {
 
       <section id="hot" className="px-5 pb-20 md:px-10">
         <div className="mx-auto max-w-6xl">
-          <div className="mb-10">
+          <div className="mb-8">
             <p className="mb-2 text-xs uppercase tracking-[0.35em] text-[#a08060]">
               Popular Picks
             </p>
@@ -291,7 +293,7 @@ export default async function Home({ searchParams }: Props) {
               return (
                 <div
                   key={product.id}
-                  className="overflow-hidden rounded-[2.2rem] bg-white/90 shadow-[0_6px_30px_rgba(70,50,35,0.08)] ring-1 ring-[#eaded4] transition duration-300 hover:-translate-y-1.5 hover:shadow-[0_16px_50px_rgba(70,50,35,0.16)]"
+                  className="overflow-hidden rounded-[2rem] bg-white/90 shadow-[0_6px_30px_rgba(70,50,35,0.08)] ring-1 ring-[#eaded4] transition duration-300 hover:-translate-y-1.5 hover:shadow-[0_16px_50px_rgba(70,50,35,0.16)] md:rounded-[2.2rem]"
                 >
                   <a href={`/product/${product.id}`}>
                     <div className="relative aspect-[4/5] overflow-hidden bg-[#f4eee8]">
