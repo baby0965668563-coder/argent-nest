@@ -35,6 +35,7 @@ export default function ProductPage() {
   const params = useParams();
 
   const [product, setProduct] = useState<any>(null);
+  const [relatedProducts, setRelatedProducts] = useState<any[]>([]);
   const [selectedImage, setSelectedImage] = useState("");
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
   const [showWarning, setShowWarning] = useState(false);
@@ -63,6 +64,15 @@ export default function ProductPage() {
 
       setProduct(data);
       setSelectedImage(productImages[0] || "");
+
+      const { data: related } = await supabase
+        .from("products")
+        .select("*")
+        .eq("is_active", true)
+        .neq("id", data.id)
+        .limit(4);
+
+      setRelatedProducts(related || []);
     }
   }
 
@@ -100,6 +110,15 @@ export default function ProductPage() {
   const lineUrl = `https://line.me/R/oaMessage/@929santn/?${encodeURIComponent(
     lineMessage
   )}`;
+
+  function getProductImage(item: any) {
+    return (
+      item?.image ||
+      (Array.isArray(item?.images) && item.images.length > 0
+        ? item.images[0]
+        : "")
+    );
+  }
 
   function openImageViewer(index: number) {
     setViewerIndex(index);
@@ -190,7 +209,11 @@ export default function ProductPage() {
                     selectedImage === img ? "border-black" : "border-transparent"
                   }`}
                 >
-                  <img src={img} alt={`${product.name}-${index + 1}`} className="h-full w-full object-cover" />
+                  <img
+                    src={img}
+                    alt={`${product.name}-${index + 1}`}
+                    className="h-full w-full object-cover"
+                  />
                 </button>
               ))}
             </div>
@@ -301,6 +324,58 @@ export default function ProductPage() {
               </div>
             </div>
           </div>
+
+          {relatedProducts.length > 0 && (
+            <div className="mt-10">
+              <div className="mb-5">
+                <p className="mb-2 text-[11px] uppercase tracking-[0.35em] text-[#a08060]">
+                  YOU MAY ALSO LIKE
+                </p>
+
+                <h3 className="text-2xl font-bold tracking-tight">
+                  猜你會喜歡 ☁️
+                </h3>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                {relatedProducts.map((item) => {
+                  const image = getProductImage(item);
+
+                  return (
+                    <a
+                      key={item.id}
+                      href={`/product/${item.id}`}
+                      className="overflow-hidden rounded-[2rem] bg-white shadow-sm"
+                    >
+                      <div className="aspect-[4/5] overflow-hidden bg-[#f4eee8]">
+                        {image ? (
+                          <img
+                            src={image}
+                            alt={item.name}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-full items-center justify-center text-sm text-[#b49a88]">
+                            No Image
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="p-4">
+                        <p className="line-clamp-2 text-sm font-semibold leading-6">
+                          {item.name}
+                        </p>
+
+                        <p className="mt-2 text-sm font-bold text-[#8b6f5c]">
+                          NT$ {Number(item.price || 0).toLocaleString()}
+                        </p>
+                      </div>
+                    </a>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="fixed bottom-0 left-0 right-0 border-t border-[#eee5dc] bg-white p-4">
