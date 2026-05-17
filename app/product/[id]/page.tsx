@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import LikeButton from "@/app/components/LikeButton";
+import AddToCartButton from "@/app/components/AddToCartButton";
 
 type OptionGroup = {
   name: string;
@@ -287,6 +288,11 @@ const lineUrl = `https://line.me/R/oaMessage/@929santn/?${encodeURIComponent(
                 此商品為預購商品 ☁️
               </div>
             )}
+
+<AddToCartButton
+  product={product}
+  selectedOptions={selectedOptions}
+/>
 
             {showWarning && (
               <div className="mt-5 rounded-2xl bg-[#fff1f1] p-4 text-sm text-red-500">
