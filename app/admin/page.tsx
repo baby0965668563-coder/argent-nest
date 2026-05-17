@@ -12,6 +12,7 @@ export default function AdminPage() {
   const [price, setPrice] = useState("");
   const [category, setCategory] = useState("");
   const [sortOrder, setSortOrder] = useState("0");
+  const [stock, setStock] = useState("0");
   const [options, setOptions] = useState("");
   const [description, setDescription] = useState("");
   const [isActive, setIsActive] = useState(true);
@@ -53,6 +54,7 @@ export default function AdminPage() {
     const { data } = await supabase
       .from("products")
       .select("*")
+      .order("is_featured", { ascending: false })
       .order("sort_order", { ascending: true })
       .order("id", { ascending: false });
 
@@ -74,6 +76,7 @@ export default function AdminPage() {
     setPrice("");
     setCategory("");
     setSortOrder("0");
+    setStock("0");
     setOptions("");
     setDescription("");
     setIsActive(true);
@@ -90,6 +93,7 @@ export default function AdminPage() {
     setPrice(String(product.price || ""));
     setCategory(product.category || "");
     setSortOrder(String(product.sort_order || 0));
+    setStock(String(product.stock || 0));
     setOptions(product.options || "");
     setDescription(product.description || "");
     setIsActive(product.is_active !== false);
@@ -170,6 +174,7 @@ export default function AdminPage() {
         price,
         category,
         sort_order: Number(sortOrder) || 0,
+        stock: Number(stock) || 0,
         options,
         description,
         is_active: isActive,
@@ -222,6 +227,7 @@ export default function AdminPage() {
         price,
         category,
         sort_order: Number(sortOrder) || 0,
+        stock: Number(stock) || 0,
         options,
         description,
         is_active: isActive,
@@ -355,6 +361,14 @@ export default function AdminPage() {
             type="number"
             value={sortOrder}
             onChange={(e) => setSortOrder(e.target.value)}
+          />
+
+          <input
+            className="w-full rounded-2xl border p-4"
+            placeholder="庫存數量，例如：3；預購可填 0"
+            type="number"
+            value={stock}
+            onChange={(e) => setStock(e.target.value)}
           />
 
           <textarea
@@ -536,11 +550,26 @@ export default function AdminPage() {
                     <p className="mt-1 text-xs text-gray-400">
                       排序：{product.sort_order || 0}
                     </p>
+                    <p className="mt-1 text-xs text-gray-400">
+                      庫存：{Number(product.stock || 0)}
+                    </p>
 
                     <div className="mt-2 flex flex-wrap gap-2">
                       {product.is_featured && (
                         <span className="rounded-full bg-yellow-100 px-3 py-1 text-xs text-yellow-700">
                           HOT 推薦
+                        </span>
+                      )}
+
+                      {Number(product.stock || 0) > 0 && (
+                        <span className="rounded-full bg-green-100 px-3 py-1 text-xs text-green-700">
+                          現貨 {Number(product.stock || 0)}
+                        </span>
+                      )}
+
+                      {Number(product.stock || 0) === 0 && !product.is_sold_out && (
+                        <span className="rounded-full bg-blue-100 px-3 py-1 text-xs text-blue-700">
+                          預購
                         </span>
                       )}
 
