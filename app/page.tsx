@@ -41,6 +41,9 @@ export default async function Home({ searchParams }: Props) {
 
   const allProducts = allProductsQuery.data || [];
   const displayProducts = products || [];
+  const featuredProducts = allProducts.filter(
+    (product: any) => product.is_featured === true
+  );
 
   const getImage = (product: any) => {
     return (
@@ -72,6 +75,24 @@ export default async function Home({ searchParams }: Props) {
     return queryString ? `/?${queryString}#hot` : "/#hot";
   }
 
+  function getBadge(product: any) {
+    const soldOut = product.is_sold_out === true;
+
+    const createdAt = product.created_at ? new Date(product.created_at) : null;
+    const now = new Date();
+
+    const diffDays = createdAt
+      ? (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24)
+      : 999;
+
+    const isNew = diffDays <= 7;
+
+    if (soldOut) return "SOLD OUT";
+    if (product.is_featured) return "HOT";
+    if (isNew) return "NEW";
+    return "PREORDER";
+  }
+
   return (
     <main className="min-h-screen bg-[#f8f5f0] text-[#2e2e2e]">
       <header className="sticky top-0 z-50 border-b border-[#e8ddd4]/70 bg-[#f8f5f0]/90 px-5 py-4 backdrop-blur md:px-10">
@@ -82,7 +103,7 @@ export default async function Home({ searchParams }: Props) {
 
           <nav className="flex items-center gap-4 text-sm text-[#6b5c50] md:gap-5">
             <a href="#hot">新品</a>
-            <a href="#hot">熱賣</a>
+            <a href="#featured">熱賣</a>
             <a href="#categories">分類</a>
             <a
               href="/admin"
@@ -95,6 +116,68 @@ export default async function Home({ searchParams }: Props) {
       </header>
 
       <HomeBanner />
+
+      {featuredProducts.length > 0 && (
+        <section id="featured" className="px-5 pb-16 md:px-10">
+          <div className="mx-auto max-w-6xl overflow-hidden rounded-[2.5rem] bg-[#2e2e2e] p-6 text-white md:p-10">
+            <div className="mb-8">
+              <p className="mb-2 text-xs uppercase tracking-[0.35em] text-[#d8c5b0]">
+                Hot Picks
+              </p>
+
+              <h3 className="text-3xl font-bold tracking-tight">
+                闆娘私心推薦 ☁️
+              </h3>
+
+              <p className="mt-3 text-sm leading-7 text-white/70">
+                這些是最近最值得先看的小可愛，怕錯過可以先收藏。
+              </p>
+            </div>
+
+            <div className="flex gap-4 overflow-x-auto pb-2">
+              {featuredProducts.slice(0, 8).map((product: any) => {
+                const imageSrc = getImage(product);
+
+                return (
+                  <a
+                    key={product.id}
+                    href={`/product/${product.id}`}
+                    className="w-44 shrink-0 overflow-hidden rounded-[1.8rem] bg-white text-[#2e2e2e] shadow-sm md:w-56"
+                  >
+                    <div className="relative aspect-[4/5] bg-[#f4eee8]">
+                      <div className="absolute left-3 top-3 z-10 rounded-full bg-[#2e2e2e] px-3 py-1 text-[10px] text-white">
+                        HOT
+                      </div>
+
+                      {imageSrc ? (
+                        <img
+                          src={imageSrc}
+                          alt={product.name}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-full items-center justify-center text-sm text-[#b49a88]">
+                          No Image
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="p-4">
+                      <p className="line-clamp-2 text-sm font-bold leading-6">
+                        {product.name}
+                      </p>
+
+                      <p className="mt-2 text-sm font-bold text-[#8b6f5c]">
+                        NT$ {Number(product.price || 0).toLocaleString()}
+                      </p>
+                    </div>
+                  </a>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+      )}
 
       <section id="categories" className="px-5 pb-16 md:px-10">
         <div className="mx-auto max-w-6xl">
@@ -203,19 +286,7 @@ export default async function Home({ searchParams }: Props) {
             {displayProducts.map((product: any) => {
               const soldOut = product.is_sold_out === true;
               const imageSrc = getImage(product);
-
-              const createdAt = product.created_at
-                ? new Date(product.created_at)
-                : null;
-
-              const now = new Date();
-
-              const diffDays = createdAt
-                ? (now.getTime() - createdAt.getTime()) /
-                  (1000 * 60 * 60 * 24)
-                : 999;
-
-              const isNew = diffDays <= 7;
+              const badge = getBadge(product);
 
               return (
                 <div
@@ -224,8 +295,16 @@ export default async function Home({ searchParams }: Props) {
                 >
                   <a href={`/product/${product.id}`}>
                     <div className="relative aspect-[4/5] overflow-hidden bg-[#f4eee8]">
-                      <div className="absolute left-3 top-3 z-10 rounded-full bg-white/85 px-3 py-1 text-[10px] text-[#8b6f5c] backdrop-blur">
-                        {soldOut ? "SOLD OUT" : isNew ? "NEW" : "PREORDER"}
+                      <div
+                        className={`absolute left-3 top-3 z-10 rounded-full px-3 py-1 text-[10px] backdrop-blur ${
+                          badge === "HOT"
+                            ? "bg-[#2e2e2e] text-white"
+                            : badge === "SOLD OUT"
+                            ? "bg-black/75 text-white"
+                            : "bg-white/85 text-[#8b6f5c]"
+                        }`}
+                      >
+                        {badge}
                       </div>
 
                       {imageSrc ? (
