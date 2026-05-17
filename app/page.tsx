@@ -166,7 +166,8 @@ export default async function Home({ searchParams }: Props) {
           </nav>
         </div>
       </header>
-
+      
+      <TopNoticeBar /
       <HomeBanner />
 
       {featuredProducts.length > 0 && (
