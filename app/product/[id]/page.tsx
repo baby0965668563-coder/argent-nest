@@ -33,6 +33,9 @@ export default function ProductPage() {
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
   const [showWarning, setShowWarning] = useState(false);
 
+  const [imageViewerOpen, setImageViewerOpen] = useState(false);
+  const [viewerIndex, setViewerIndex] = useState(0);
+
   useEffect(() => {
     fetchProduct();
   }, []);
@@ -59,7 +62,13 @@ export default function ProductPage() {
     );
   }
 
-  const images = product.images?.length ? product.images : [product.image];
+  const images =
+    Array.isArray(product.images) && product.images.length > 0
+      ? product.images
+      : product.image
+      ? [product.image]
+      : [];
+
   const optionGroups = parseOptions(product.options || "");
   const soldOut = product.is_sold_out === true;
 
@@ -78,6 +87,19 @@ export default function ProductPage() {
   const lineUrl = `https://line.me/R/oaMessage/@929santn/?${encodeURIComponent(
     lineMessage
   )}`;
+
+  function openImageViewer(index: number) {
+    setViewerIndex(index);
+    setImageViewerOpen(true);
+  }
+
+  function prevImage() {
+    setViewerIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
+  }
+
+  function nextImage() {
+    setViewerIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
+  }
 
   function handleOrder(e: React.MouseEvent<HTMLAnchorElement>) {
     if (soldOut) {
@@ -109,34 +131,53 @@ export default function ProductPage() {
         </div>
 
         <div className="p-5">
-          <div className="relative overflow-hidden rounded-[2rem] bg-white shadow-sm">
+          <button
+            onClick={() => {
+              const index = images.findIndex((img: string) => img === selectedImage);
+              openImageViewer(index >= 0 ? index : 0);
+            }}
+            className="relative block w-full overflow-hidden rounded-[2rem] bg-white shadow-sm"
+          >
             {soldOut && (
               <div className="absolute left-4 top-4 z-10 rounded-full bg-black/80 px-4 py-2 text-xs text-white">
                 SOLD OUT
               </div>
             )}
 
-            <img
-              src={selectedImage}
-              className={`aspect-square w-full object-cover ${
-                soldOut ? "opacity-60 grayscale" : ""
-              }`}
-            />
-          </div>
-
-          <div className="mt-4 flex gap-3 overflow-x-auto pb-1">
-            {images.map((img: string, index: number) => (
-              <button
-                key={index}
-                onClick={() => setSelectedImage(img)}
-                className={`h-20 w-20 shrink-0 overflow-hidden rounded-2xl border-2 ${
-                  selectedImage === img ? "border-black" : "border-transparent"
+            {selectedImage ? (
+              <img
+                src={selectedImage}
+                alt={product.name}
+                className={`aspect-square w-full object-cover ${
+                  soldOut ? "opacity-60 grayscale" : ""
                 }`}
-              >
-                <img src={img} className="h-full w-full object-cover" />
-              </button>
-            ))}
-          </div>
+              />
+            ) : (
+              <div className="flex aspect-square w-full items-center justify-center text-sm text-gray-400">
+                No Image
+              </div>
+            )}
+
+            <div className="absolute bottom-4 right-4 rounded-full bg-white/90 px-4 py-2 text-xs text-[#6b5c50] shadow">
+              點圖放大
+            </div>
+          </button>
+
+          {images.length > 1 && (
+            <div className="mt-4 flex gap-3 overflow-x-auto pb-1">
+              {images.map((img: string, index: number) => (
+                <button
+                  key={index}
+                  onClick={() => setSelectedImage(img)}
+                  className={`h-20 w-20 shrink-0 overflow-hidden rounded-2xl border-2 ${
+                    selectedImage === img ? "border-black" : "border-transparent"
+                  }`}
+                >
+                  <img src={img} className="h-full w-full object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
 
           <div className="mt-6 rounded-[2rem] bg-white p-6 text-black shadow-sm">
             <p className="text-xs uppercase tracking-[0.3em] text-[#8b6f5c]">
@@ -257,6 +298,45 @@ export default function ProductPage() {
           </div>
         </div>
       </div>
+
+      {imageViewerOpen && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 px-4">
+          <button
+            onClick={() => setImageViewerOpen(false)}
+            className="absolute right-5 top-5 rounded-full bg-white/90 px-4 py-2 text-sm font-bold text-black"
+          >
+            ✕
+          </button>
+
+          {images.length > 1 && (
+            <button
+              onClick={prevImage}
+              className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full bg-white/90 px-4 py-3 text-xl font-bold text-black"
+            >
+              ‹
+            </button>
+          )}
+
+          <img
+            src={images[viewerIndex]}
+            alt={product.name}
+            className="max-h-[80vh] max-w-full rounded-2xl object-contain"
+          />
+
+          {images.length > 1 && (
+            <button
+              onClick={nextImage}
+              className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full bg-white/90 px-4 py-3 text-xl font-bold text-black"
+            >
+              ›
+            </button>
+          )}
+
+          <div className="absolute bottom-8 rounded-full bg-white/90 px-5 py-2 text-sm text-black">
+            {viewerIndex + 1} / {images.length}
+          </div>
+        </div>
+      )}
     </main>
   );
 }
