@@ -70,18 +70,22 @@ export default function CheckoutPage() {
     try {
       setLoading(true);
 
-      const { error } = await supabase.from("orders").insert([
-        {
-          customer_name: form.name,
-          phone: form.phone,
-          line_id: form.lineId,
-          shipping_method: form.shippingMethod,
-          customer_note: form.customerNote,
-          items: cart,
-          total,
-          status: "pending",
-        },
-      ]);
+      const { data, error } = await supabase
+        .from("orders")
+        .insert([
+          {
+            customer_name: form.name,
+            phone: form.phone,
+            line_id: form.lineId,
+            shipping_method: form.shippingMethod,
+            customer_note: form.customerNote,
+            items: cart,
+            total,
+            status: "pending",
+          },
+        ])
+        .select("id")
+        .single();
 
       if (error) {
         console.error(error);
@@ -90,8 +94,8 @@ export default function CheckoutPage() {
       }
 
       localStorage.removeItem("cart");
-      alert("訂單送出成功 ☁️");
-      window.location.href = "/";
+
+      window.location.href = `/order-success?id=${data.id}`;
     } finally {
       setLoading(false);
     }
@@ -187,9 +191,15 @@ export default function CheckoutPage() {
                         </p>
                       ))}
 
+                    {item.productNote && (
+                      <p className="mt-1 text-sm text-[#9b6b4f]">
+                        商品備註：{item.productNote}
+                      </p>
+                    )}
+
                     {item.note && (
                       <p className="mt-1 text-sm text-[#6b5c50]">
-                        商品備註：{item.note}
+                        顧客備註：{item.note}
                       </p>
                     )}
 
