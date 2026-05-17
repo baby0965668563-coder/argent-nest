@@ -1,6 +1,7 @@
 import { supabase } from "@/lib/supabase";
 import ProductQuickView from "./components/ProductQuickView";
 import HomeBanner from "./components/HomeBanner";
+import ProductImageHover from "./components/ProductImageHover";
 
 interface Props {
   searchParams: Promise<{
@@ -312,13 +313,17 @@ const { data: products } = await query;
                       </div>
 
                       {imageSrc ? (
-                        <img
-                          src={imageSrc}
-                          alt={product.name}
-                          className={`h-full w-full object-cover transition duration-500 hover:scale-105 ${
-                            soldOut ? "opacity-60 grayscale" : ""
-                          }`}
-                        />
+                        <ProductImageHover
+  images={
+    Array.isArray(product.images) && product.images.length > 0
+      ? product.images
+      : imageSrc
+      ? [imageSrc]
+      : []
+  }
+  alt={product.name}
+  soldOut={soldOut}
+/>
                       ) : (
                         <div className="flex h-full items-center justify-center text-sm text-[#b49a88]">
                           No Image
