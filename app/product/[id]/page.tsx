@@ -41,6 +41,7 @@ export default function ProductPage() {
   const [selectedImage, setSelectedImage] = useState("");
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
   const [showWarning, setShowWarning] = useState(false);
+const [customerNote, setCustomerNote] = useState("");
   const [imageViewerOpen, setImageViewerOpen] = useState(false);
   const [viewerIndex, setViewerIndex] = useState(0);
 
@@ -120,6 +121,9 @@ export default function ProductPage() {
   );
 
   const optionText = Object.entries(selectedOptions)
+const noteText = customerNote.trim()
+  ? `\n備註：${customerNote}`
+  : "";
     .map(([key, value]) => `${key}：${value}`)
     .join("\n");
 
@@ -131,6 +135,7 @@ const lineMessage = [
   `價格：NT$ ${Number(product.price || 0).toLocaleString()}`,
   product.category ? `分類：${product.category}` : "",
   optionText ? `規格：\n${optionText}` : "",
+  customerNote ? `備註：${customerNote}` : "",
   productUrl ? `商品連結：${productUrl}` : "",
 ]
   .filter(Boolean)
@@ -344,6 +349,19 @@ const lineUrl = `https://line.me/R/oaMessage/@929santn/?${encodeURIComponent(
                 </div>
               </div>
             )}
+
+<div className="mt-8 border-t border-[#eee5dc] pt-6">
+  <p className="mb-3 text-sm font-bold text-black">
+    商品備註
+  </p>
+
+  <textarea
+    value={customerNote}
+    onChange={(e) => setCustomerNote(e.target.value)}
+    placeholder="例如：想要奶油白、送禮用途、想問現貨、其他需求 ☁️"
+    className="min-h-[120px] w-full rounded-[1.5rem] border border-[#e8ddd4] bg-white px-5 py-4 text-sm outline-none"
+  />
+</div>
 
             {product.description && (
               <div className="mt-8 border-t border-[#eee5dc] pt-6">
