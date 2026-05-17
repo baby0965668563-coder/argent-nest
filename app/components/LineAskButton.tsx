@@ -1,37 +1,24 @@
 "use client";
 
-export default function LineAskButton({
-  product,
-}: {
+interface Props {
   product: any;
-}) {
-  const soldOut = product?.is_sold_out === true;
+}
 
-  const lineMessage = `我想詢問：${product?.name || ""}`;
-
+export default function LineAskButton({ product }: Props) {
+  const message = `我想詢問：${product.name}`;
+  
   const lineUrl = `https://line.me/R/oaMessage/@929santn/?${encodeURIComponent(
-    lineMessage
+    message
   )}`;
-
-  if (soldOut) {
-    return (
-      <button
-        disabled
-        className="mt-2 w-full rounded-full bg-gray-300 py-2 text-xs text-white"
-      >
-        已售完
-      </button>
-    );
-  }
 
   return (
     <a
       href={lineUrl}
       target="_blank"
       rel="noopener noreferrer"
-      className="mt-2 block w-full rounded-full bg-[#06C755] py-2 text-center text-xs font-semibold text-white"
+      className="mt-3 block w-full rounded-full border border-[#06C755] bg-[#06C755] py-3 text-center text-sm font-medium text-white transition hover:opacity-90"
     >
-      LINE 詢問
+      LINE 詢問 ☁️
     </a>
   );
 }
