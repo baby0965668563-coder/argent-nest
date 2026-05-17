@@ -658,6 +658,50 @@ const newestProducts = [...allProducts]
         </div>
       </section>
 
+<section className="px-5 pb-24 md:px-10">
+  <div className="mx-auto max-w-6xl">
+    <div className="mb-10 text-center">
+      <p className="mb-2 text-[11px] uppercase tracking-[0.35em] text-[#a08060]">
+        LOOKBOOK
+      </p>
+
+      <h3 className="text-3xl font-bold tracking-tight">
+        Argent Nest 的穿搭與療癒角落 ☁️
+      </h3>
+
+      <p className="mt-3 text-sm leading-7 text-[#8b7b6e]">
+        一些奶油色、韓系感、女生房間裡會出現的小日常。
+      </p>
+    </div>
+
+    <div className="grid grid-cols-2 gap-4 md:grid-cols-4 md:gap-5">
+      {[0, 1, 2, 3].map((i) => {
+        const product = allProducts[i];
+        const image =
+          product?.image ||
+          (Array.isArray(product?.images) && product.images.length > 0
+            ? product.images[0]
+            : fallbackImage);
+
+        return (
+          <div
+            key={i}
+            className={`overflow-hidden rounded-[2rem] bg-white shadow-sm ${
+              i === 1 || i === 3 ? "mt-8" : ""
+            }`}
+          >
+            <img
+              src={image}
+              alt="Argent Nest Lookbook"
+              className="h-64 w-full object-cover md:h-80"
+            />
+          </div>
+        );
+      })}
+    </div>
+  </div>
+</section>
+
       <footer className="border-t border-[#e8ddd4] bg-[#f6f1eb] px-5 py-16 md:px-10">
         <div className="mx-auto grid max-w-6xl gap-12 md:grid-cols-4">
           <div>
