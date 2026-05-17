@@ -17,32 +17,32 @@ export default async function Home({ searchParams }: Props) {
   const keyword = q?.trim() || "";
 
   let query = supabase
-  .from("products")
-  .select("*")
-  .eq("is_active", true)
-  .order("is_featured", { ascending: false })
-  .order("sort_order", { ascending: true })
-  .order("id", { ascending: false });
+    .from("products")
+    .select("*")
+    .eq("is_active", true)
+    .order("is_featured", { ascending: false })
+    .order("sort_order", { ascending: true })
+    .order("id", { ascending: false });
 
-if (category && category !== "全部") {
-  query = query.eq("category", category);
-}
+  if (category && category !== "全部") {
+    query = query.eq("category", category);
+  }
 
-if (keyword) {
-  query = query.or(
-    `name.ilike.%${keyword}%,description.ilike.%${keyword}%,category.ilike.%${keyword}%`
-  );
-}
+  if (keyword) {
+    query = query.or(
+      `name.ilike.%${keyword}%,description.ilike.%${keyword}%,category.ilike.%${keyword}%`
+    );
+  }
 
-const { data: products } = await query;
+  const { data: products } = await query;
 
   const allProductsQuery = await supabase
-  .from("products")
-  .select("*")
-  .eq("is_active", true)
-  .order("is_featured", { ascending: false })
-  .order("sort_order", { ascending: true })
-  .order("id", { ascending: false });
+    .from("products")
+    .select("*")
+    .eq("is_active", true)
+    .order("is_featured", { ascending: false })
+    .order("sort_order", { ascending: true })
+    .order("id", { ascending: false });
 
   const allProducts = allProductsQuery.data || [];
   const displayProducts = products || [];
@@ -57,6 +57,16 @@ const { data: products } = await query;
         ? product.images[0]
         : "")
     );
+  };
+
+  const getImages = (product: any) => {
+    const firstImage = getImage(product);
+
+    if (Array.isArray(product?.images) && product.images.length > 0) {
+      return product.images;
+    }
+
+    return firstImage ? [firstImage] : [];
   };
 
   const fallbackImage =
@@ -98,8 +108,43 @@ const { data: products } = await query;
     return "PREORDER";
   }
 
+  function stockText(product: any) {
+    const soldOut = product.is_sold_out === true;
+    const stock = Number(product.stock || 0);
+
+    if (soldOut) {
+      return (
+        <p className="text-xs text-gray-400">
+          目前已售完 ☁️
+        </p>
+      );
+    }
+
+    if (stock > 0) {
+      return (
+        <>
+          <p className="text-xs text-[#2e7d32]">
+            現貨 {stock} 件 ☁️
+          </p>
+
+          {stock <= 3 && (
+            <p className="text-xs text-red-500">
+              庫存不多了 ☁️
+            </p>
+          )}
+        </>
+      );
+    }
+
+    return (
+      <p className="text-xs text-[#8b6f5c]">
+        預購商品 ☁️
+      </p>
+    );
+  }
+
   return (
-    <main className="min-h-screen bg-[#f8f5f0] text-[#2e2e2e]">
+    <main className="min-h-screen bg-[#f8f5f0] pb-20 text-[#2e2e2e] md:pb-0">
       <header className="sticky top-0 z-50 border-b border-[#e8ddd4]/70 bg-[#f8f5f0]/90 px-5 py-4 backdrop-blur md:px-10">
         <div className="mx-auto flex max-w-6xl items-center justify-between">
           <a href="/" className="text-xl font-bold tracking-tight">
@@ -294,6 +339,7 @@ const { data: products } = await query;
               const soldOut = product.is_sold_out === true;
               const imageSrc = getImage(product);
               const badge = getBadge(product);
+              const productImages = getImages(product);
 
               return (
                 <div
@@ -316,16 +362,10 @@ const { data: products } = await query;
 
                       {imageSrc ? (
                         <ProductImageHover
-  images={
-    Array.isArray(product.images) && product.images.length > 0
-      ? product.images
-      : imageSrc
-      ? [imageSrc]
-      : []
-  }
-  alt={product.name}
-  soldOut={soldOut}
-/>
+                          images={productImages}
+                          alt={product.name}
+                          soldOut={soldOut}
+                        />
                       ) : (
                         <div className="flex h-full items-center justify-center text-sm text-[#b49a88]">
                           No Image
@@ -346,20 +386,7 @@ const { data: products } = await query;
                         NT$ {Number(product.price || 0).toLocaleString()}
                       </p>
 
-                      {soldOut ? (
-  <p className="text-xs text-gray-400">
-    目前已售完 ☁️
-  </p>
-) : Number(product.stock || 0) > 0 ? (
-  <p className="text-xs text-[#2e7d32]">
-    現貨 {Number(product.stock || 0)} 件 ☁️
-  </p>
-) : (
-  <p className="text-xs text-[#8b6f5c]">
-    預購商品 ☁️
-  </p>
-)}
-                      )}
+                      {stockText(product)}
                     </div>
                   </a>
 
@@ -511,13 +538,30 @@ const { data: products } = await query;
             </h5>
 
             <div className="space-y-3 text-sm text-[#6b5c50]">
-              <a href="https://www.instagram.com/argent.nest?igsh=MTF0OG9mam5yZHExeQ%3D%3D&utm_source=qr" target="_blank" className="block">
+              <a
+                href="https://www.instagram.com/argent.nest?igsh=MTF0OG9mam5yZHExeQ%3D%3D&utm_source=qr"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block"
+              >
                 Instagram
               </a>
-              <a href="https://www.threads.com/@argent.nest?igshid=NTc4MTIwNjQ2YQ==" target="_blank" className="block">
+
+              <a
+                href="https://www.threads.com/@argent.nest?igshid=NTc4MTIwNjQ2YQ=="
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block"
+              >
                 Threads
               </a>
-              <a href="https://line.me/R/ti/p/@929santn" target="_blank" className="block">
+
+              <a
+                href="https://line.me/R/ti/p/@929santn"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block"
+              >
                 LINE Official
               </a>
             </div>
@@ -528,7 +572,8 @@ const { data: products } = await query;
           © 2026 Argent Nest 🥛🤍 · All Rights Reserved
         </div>
       </footer>
-    <MobileBottomNav />
+
+      <MobileBottomNav />
     </main>
   );
 }
