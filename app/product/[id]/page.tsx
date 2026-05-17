@@ -4,7 +4,12 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
-function parseOptions(optionsText: string) {
+type OptionGroup = {
+  name: string;
+  values: string[];
+};
+
+function parseOptions(optionsText: string): OptionGroup[] {
   if (!optionsText) return [];
 
   return optionsText
@@ -23,16 +28,16 @@ function parseOptions(optionsText: string) {
           .filter(Boolean),
       };
     })
-    .filter(Boolean) as { name: string; values: string[] }[];
+    .filter((item): item is OptionGroup => item !== null);
 }
 
 export default function ProductPage() {
   const params = useParams();
+
   const [product, setProduct] = useState<any>(null);
   const [selectedImage, setSelectedImage] = useState("");
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
   const [showWarning, setShowWarning] = useState(false);
-
   const [imageViewerOpen, setImageViewerOpen] = useState(false);
   const [viewerIndex, setViewerIndex] = useState(0);
 
@@ -49,8 +54,15 @@ export default function ProductPage() {
       .single();
 
     if (data) {
+      const productImages =
+        Array.isArray(data.images) && data.images.length > 0
+          ? data.images
+          : data.image
+          ? [data.image]
+          : [];
+
       setProduct(data);
-      setSelectedImage(data.images?.[0] || data.image || "");
+      setSelectedImage(productImages[0] || "");
     }
   }
 
@@ -71,6 +83,7 @@ export default function ProductPage() {
 
   const optionGroups = parseOptions(product.options || "");
   const soldOut = product.is_sold_out === true;
+  const stock = Number(product.stock || 0);
 
   const isOptionsComplete = optionGroups.every(
     (group) => selectedOptions[group.name]
@@ -132,6 +145,7 @@ export default function ProductPage() {
 
         <div className="p-5">
           <button
+            type="button"
             onClick={() => {
               const index = images.findIndex((img: string) => img === selectedImage);
               openImageViewer(index >= 0 ? index : 0);
@@ -158,22 +172,25 @@ export default function ProductPage() {
               </div>
             )}
 
-            <div className="absolute bottom-4 right-4 rounded-full bg-white/90 px-4 py-2 text-xs text-[#6b5c50] shadow">
-              點圖放大
-            </div>
+            {selectedImage && (
+              <div className="absolute bottom-4 right-4 rounded-full bg-white/90 px-4 py-2 text-xs text-[#6b5c50] shadow">
+                點圖放大
+              </div>
+            )}
           </button>
 
           {images.length > 1 && (
             <div className="mt-4 flex gap-3 overflow-x-auto pb-1">
               {images.map((img: string, index: number) => (
                 <button
-                  key={index}
+                  key={`${img}-${index}`}
+                  type="button"
                   onClick={() => setSelectedImage(img)}
                   className={`h-20 w-20 shrink-0 overflow-hidden rounded-2xl border-2 ${
                     selectedImage === img ? "border-black" : "border-transparent"
                   }`}
                 >
-                  <img src={img} className="h-full w-full object-cover" />
+                  <img src={img} alt={`${product.name}-${index + 1}`} className="h-full w-full object-cover" />
                 </button>
               ))}
             </div>
@@ -189,7 +206,7 @@ export default function ProductPage() {
             </h2>
 
             <p className="mt-5 text-3xl font-bold text-black">
-              NT$ {Number(product.price).toLocaleString()}
+              NT$ {Number(product.price || 0).toLocaleString()}
             </p>
 
             <div className="mt-5 inline-block rounded-full bg-[#f5eee7] px-4 py-2 text-sm font-medium text-[#8b6f5c]">
@@ -197,18 +214,21 @@ export default function ProductPage() {
             </div>
 
             {soldOut ? (
-  <div className="mt-5 rounded-2xl bg-[#f3ede6] p-4 text-sm text-[#8b6f5c]">
-    這款目前已售完，暫時不能下單 ☁️
-  </div>
-) : Number(product.stock || 0) > 0 ? (
-  <div className="mt-5 rounded-2xl bg-[#edf7ed] p-4 text-sm text-[#2e7d32]">
-    現貨剩餘 {Number(product.stock || 0)} 件 ☁️
-  </div>
-) : (
-  <div className="mt-5 rounded-2xl bg-[#f5eee7] p-4 text-sm text-[#8b6f5c]">
-    此商品為預購商品 ☁️
-  </div>
-)}
+              <div className="mt-5 rounded-2xl bg-[#f3ede6] p-4 text-sm text-[#8b6f5c]">
+                這款目前已售完，暫時不能下單 ☁️
+              </div>
+            ) : stock > 0 ? (
+              <div className="mt-5 rounded-2xl bg-[#edf7ed] p-4 text-sm text-[#2e7d32]">
+                現貨剩餘 {stock} 件 ☁️
+                {stock <= 3 && (
+                  <span className="ml-2 text-red-500">庫存不多了</span>
+                )}
+              </div>
+            ) : (
+              <div className="mt-5 rounded-2xl bg-[#f5eee7] p-4 text-sm text-[#8b6f5c]">
+                此商品為預購商品 ☁️
+              </div>
+            )}
 
             {showWarning && (
               <div className="mt-5 rounded-2xl bg-[#fff1f1] p-4 text-sm text-red-500">
@@ -234,6 +254,7 @@ export default function ProductPage() {
                           return (
                             <button
                               key={value}
+                              type="button"
                               disabled={soldOut}
                               onClick={() => {
                                 setSelectedOptions({
@@ -310,6 +331,7 @@ export default function ProductPage() {
       {imageViewerOpen && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 px-4">
           <button
+            type="button"
             onClick={() => setImageViewerOpen(false)}
             className="absolute right-5 top-5 rounded-full bg-white/90 px-4 py-2 text-sm font-bold text-black"
           >
@@ -318,6 +340,7 @@ export default function ProductPage() {
 
           {images.length > 1 && (
             <button
+              type="button"
               onClick={prevImage}
               className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full bg-white/90 px-4 py-3 text-xl font-bold text-black"
             >
@@ -325,14 +348,17 @@ export default function ProductPage() {
             </button>
           )}
 
-          <img
-            src={images[viewerIndex]}
-            alt={product.name}
-            className="max-h-[80vh] max-w-full rounded-2xl object-contain"
-          />
+          {images[viewerIndex] && (
+            <img
+              src={images[viewerIndex]}
+              alt={product.name}
+              className="max-h-[80vh] max-w-full rounded-2xl object-contain"
+            />
+          )}
 
           {images.length > 1 && (
             <button
+              type="button"
               onClick={nextImage}
               className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full bg-white/90 px-4 py-3 text-xl font-bold text-black"
             >
