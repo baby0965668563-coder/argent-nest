@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import Header from "@/app/components/Header";
 
 export const metadata: Metadata = {
   title: "Argent Nest 🥛🤍｜療癒系女孩選物店",
@@ -41,7 +42,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="zh-Hant">
-      <body>{children}</body>
+      <body className="bg-[#faf7f2] text-[#4b4038]">
+        <Header />
+        <main>{children}</main>
+      </body>
     </html>
   );
 }
