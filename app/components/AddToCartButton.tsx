@@ -5,6 +5,7 @@ import { useState } from "react";
 interface Props {
   product: any;
   selectedOptions?: Record<string, string>;
+customerNote?: string;
   disabled?: boolean;
 }
 
@@ -18,6 +19,7 @@ function sameOptions(
 export default function AddToCartButton({
   product,
   selectedOptions = {},
+customerNote = "",
   disabled = false,
 }: Props) {
   const [added, setAdded] = useState(false);
@@ -48,6 +50,7 @@ export default function AddToCartButton({
         price: product.price,
         image,
         options: selectedOptions,
+note: customerNote,
         quantity: 1,
       });
     }
