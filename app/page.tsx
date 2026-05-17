@@ -493,6 +493,58 @@ const newestProducts = [...allProducts]
         </div>
       </section>
 
+<section className="px-5 pb-16 md:px-10">
+  <div className="mx-auto max-w-6xl">
+    <div className="mb-8 text-center">
+      <p className="mb-2 text-[11px] uppercase tracking-[0.35em] text-[#a08060]">
+        SHOPPING NOTICE
+      </p>
+
+      <h3 className="text-3xl font-bold tracking-tight">
+        安心購買小提醒 ☁️
+      </h3>
+
+      <p className="mt-3 text-sm leading-7 text-[#8b7b6e]">
+        下單前先看一下，購買會更安心。
+      </p>
+    </div>
+
+    <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+      <div className="rounded-[2rem] bg-white p-5 shadow-sm">
+        <p className="mb-3 text-3xl">📦</p>
+        <h4 className="mb-2 font-bold">預購時間</h4>
+        <p className="text-sm leading-7 text-[#8b7b6e]">
+          預購約 14–21 天，不含假日與連續假期。
+        </p>
+      </div>
+
+      <div className="rounded-[2rem] bg-white p-5 shadow-sm">
+        <p className="mb-3 text-3xl">🎥</p>
+        <h4 className="mb-2 font-bold">開箱錄影</h4>
+        <p className="text-sm leading-7 text-[#8b7b6e]">
+          收到商品請全程錄影，一鏡到底不剪輯。
+        </p>
+      </div>
+
+      <div className="rounded-[2rem] bg-white p-5 shadow-sm">
+        <p className="mb-3 text-3xl">💬</p>
+        <h4 className="mb-2 font-bold">急單確認</h4>
+        <p className="text-sm leading-7 text-[#8b7b6e]">
+          急件請先私訊確認，避免等待時間不符合需求。
+        </p>
+      </div>
+
+      <div className="rounded-[2rem] bg-white p-5 shadow-sm">
+        <p className="mb-3 text-3xl">🤍</p>
+        <h4 className="mb-2 font-bold">闆娘選物</h4>
+        <p className="text-sm leading-7 text-[#8b7b6e]">
+          每款都會盡量挑選有質感、療癒、適合日常的小物。
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
       <section className="px-5 pb-24 md:px-10">
         <div className="mx-auto max-w-5xl overflow-hidden rounded-[2.5rem] bg-[#efe7de]">
           <div className="grid gap-10 px-8 py-14 md:grid-cols-2 md:px-14 md:py-20">
