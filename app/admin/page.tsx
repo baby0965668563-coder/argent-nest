@@ -16,6 +16,7 @@ export default function AdminPage() {
   const [description, setDescription] = useState("");
   const [isActive, setIsActive] = useState(true);
   const [isSoldOut, setIsSoldOut] = useState(false);
+  const [isFeatured, setIsFeatured] = useState(false);
   const [images, setImages] = useState<File[]>([]);
   const [products, setProducts] = useState<any[]>([]);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -77,6 +78,7 @@ export default function AdminPage() {
     setDescription("");
     setIsActive(true);
     setIsSoldOut(false);
+    setIsFeatured(false);
     setImages([]);
     setEditingId(null);
     setEditingImages([]);
@@ -92,6 +94,7 @@ export default function AdminPage() {
     setDescription(product.description || "");
     setIsActive(product.is_active !== false);
     setIsSoldOut(product.is_sold_out === true);
+    setIsFeatured(product.is_featured === true);
 
     const oldImages =
       Array.isArray(product.images) && product.images.length > 0
@@ -102,13 +105,11 @@ export default function AdminPage() {
 
     setEditingImages(oldImages);
     setImages([]);
-
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   function removeEditingImage(index: number) {
-    const nextImages = editingImages.filter((_, i) => i !== index);
-    setEditingImages(nextImages);
+    setEditingImages(editingImages.filter((_, i) => i !== index));
   }
 
   function setCoverImage(index: number) {
@@ -173,6 +174,7 @@ export default function AdminPage() {
         description,
         is_active: isActive,
         is_sold_out: isSoldOut,
+        is_featured: isFeatured,
         image: imageUrls[0],
         images: imageUrls,
       },
@@ -224,6 +226,7 @@ export default function AdminPage() {
         description,
         is_active: isActive,
         is_sold_out: isSoldOut,
+        is_featured: isFeatured,
         image: finalImages[0] || "",
         images: finalImages,
       })
@@ -255,6 +258,16 @@ export default function AdminPage() {
       .eq("id", id);
 
     if (error) return alert("售完狀態修改失敗：" + error.message);
+    fetchProducts();
+  }
+
+  async function toggleFeatured(id: number, currentStatus: boolean) {
+    const { error } = await supabase
+      .from("products")
+      .update({ is_featured: !currentStatus })
+      .eq("id", id);
+
+    if (error) return alert("推薦狀態修改失敗：" + error.message);
     fetchProducts();
   }
 
@@ -378,6 +391,15 @@ export default function AdminPage() {
             />
           </label>
 
+          <label className="flex items-center justify-between rounded-2xl border p-4">
+            <span>{isFeatured ? "⭐ 推薦商品" : "一般商品"}</span>
+            <input
+              type="checkbox"
+              checked={isFeatured}
+              onChange={(e) => setIsFeatured(e.target.checked)}
+            />
+          </label>
+
           {editingId && editingImages.length > 0 && (
             <div className="rounded-2xl bg-[#f8f5f2] p-4">
               <p className="mb-3 text-sm font-bold text-gray-700">
@@ -387,10 +409,7 @@ export default function AdminPage() {
               <div className="grid grid-cols-2 gap-3">
                 {editingImages.map((img, index) => (
                   <div key={img} className="overflow-hidden rounded-2xl bg-white">
-                    <img
-                      src={img}
-                      className="aspect-square w-full object-cover"
-                    />
+                    <img src={img} className="aspect-square w-full object-cover" />
 
                     <div className="space-y-2 p-2">
                       {index === 0 ? (
@@ -498,10 +517,7 @@ export default function AdminPage() {
                 <div className="flex gap-4">
                   <div className="h-24 w-24 shrink-0 overflow-hidden rounded-2xl bg-[#eee5dc]">
                     {imageSrc ? (
-                      <img
-                        src={imageSrc}
-                        className="h-full w-full object-cover"
-                      />
+                      <img src={imageSrc} className="h-full w-full object-cover" />
                     ) : (
                       <div className="flex h-full items-center justify-center text-xs text-gray-400">
                         No Image
@@ -520,6 +536,26 @@ export default function AdminPage() {
                     <p className="mt-1 text-xs text-gray-400">
                       排序：{product.sort_order || 0}
                     </p>
+
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {product.is_featured && (
+                        <span className="rounded-full bg-yellow-100 px-3 py-1 text-xs text-yellow-700">
+                          HOT 推薦
+                        </span>
+                      )}
+
+                      {product.is_sold_out && (
+                        <span className="rounded-full bg-gray-200 px-3 py-1 text-xs text-gray-600">
+                          已售完
+                        </span>
+                      )}
+
+                      {product.is_active === false && (
+                        <span className="rounded-full bg-red-100 px-3 py-1 text-xs text-red-600">
+                          已下架
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -543,6 +579,15 @@ export default function AdminPage() {
                   </button>
 
                   <button
+                    onClick={() =>
+                      toggleFeatured(product.id, product.is_featured === true)
+                    }
+                    className="rounded-full border border-yellow-400 py-2 text-sm text-yellow-700"
+                  >
+                    {product.is_featured ? "取消推薦" : "設為推薦"}
+                  </button>
+
+                  <button
                     onClick={() => startEdit(product)}
                     className="rounded-full bg-[#3f332b] py-2 text-sm text-white"
                   >
@@ -551,7 +596,7 @@ export default function AdminPage() {
 
                   <button
                     onClick={() => deleteProduct(product.id)}
-                    className="rounded-full bg-red-500 py-2 text-sm text-white"
+                    className="col-span-2 rounded-full bg-red-500 py-2 text-sm text-white"
                   >
                     刪除
                   </button>
