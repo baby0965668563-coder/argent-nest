@@ -492,13 +492,13 @@ export default async function Home({ searchParams }: Props) {
             </h5>
 
             <div className="space-y-3 text-sm text-[#6b5c50]">
-              <a href="https://instagram.com" target="_blank" className="block">
+              <a href="https://www.instagram.com/argent.nest?igsh=MTF0OG9mam5yZHExeQ%3D%3D&utm_source=qr" target="_blank" className="block">
                 Instagram
               </a>
-              <a href="https://threads.net" target="_blank" className="block">
+              <a href="https://www.threads.com/@argent.nest?igshid=NTc4MTIwNjQ2YQ==" target="_blank" className="block">
                 Threads
               </a>
-              <a href="https://line.me" target="_blank" className="block">
+              <a href="https://line.me/R/ti/p/@929santn" target="_blank" className="block">
                 LINE Official
               </a>
             </div>
