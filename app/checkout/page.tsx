@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
 
 type CartItem = {
   id: string;
@@ -15,6 +16,8 @@ type CartItem = {
 
 export default function CheckoutPage() {
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [loading, setLoading] = useState(false);
+
   const [form, setForm] = useState({
     name: "",
     phone: "",
@@ -40,7 +43,7 @@ export default function CheckoutPage() {
     }));
   }
 
-  function handleSubmit() {
+  async function handleSubmit() {
     if (!form.name || !form.phone) {
       alert("請填寫姓名與電話");
       return;
@@ -51,16 +54,39 @@ export default function CheckoutPage() {
       return;
     }
 
-    const order = {
-      customer: form,
-      items: cart,
-      total,
-      createdAt: new Date().toISOString(),
-      status: "pending",
-    };
+    try {
+      setLoading(true);
 
-    console.log("order", order);
-    alert("訂單資料已建立，下一步會接 Supabase 儲存訂單 ☁️");
+      const { error } = await supabase.from("orders").insert([
+        {
+          customer_name: form.name,
+          phone: form.phone,
+          line_id: form.lineId,
+          shipping_method: form.shippingMethod,
+          customer_note: form.note,
+          items: cart,
+          total,
+          status: "pending",
+        },
+      ]);
+
+      if (error) {
+        console.error(error);
+        alert("訂單送出失敗");
+        return;
+      }
+
+      localStorage.removeItem("cart");
+
+      alert("訂單送出成功 ☁️");
+
+      window.location.href = "/";
+    } catch (err) {
+      console.error(err);
+      alert("發生錯誤");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -79,6 +105,7 @@ export default function CheckoutPage() {
             <div className="space-y-4">
               <div>
                 <p className="mb-2 text-sm text-[#6b5c50]">姓名 *</p>
+
                 <input
                   value={form.name}
                   onChange={(e) => updateForm("name", e.target.value)}
@@ -89,6 +116,7 @@ export default function CheckoutPage() {
 
               <div>
                 <p className="mb-2 text-sm text-[#6b5c50]">電話 *</p>
+
                 <input
                   value={form.phone}
                   onChange={(e) => updateForm("phone", e.target.value)}
@@ -99,16 +127,18 @@ export default function CheckoutPage() {
 
               <div>
                 <p className="mb-2 text-sm text-[#6b5c50]">LINE ID</p>
+
                 <input
                   value={form.lineId}
                   onChange={(e) => updateForm("lineId", e.target.value)}
                   className="w-full rounded-2xl border border-[#e1d3c2] px-4 py-3 text-sm outline-none"
-                  placeholder="方便後續通知到貨"
+                  placeholder="方便通知到貨"
                 />
               </div>
 
               <div>
                 <p className="mb-2 text-sm text-[#6b5c50]">取貨方式</p>
+
                 <select
                   value={form.shippingMethod}
                   onChange={(e) =>
@@ -124,11 +154,12 @@ export default function CheckoutPage() {
 
               <div>
                 <p className="mb-2 text-sm text-[#6b5c50]">訂單備註</p>
+
                 <textarea
                   value={form.note}
                   onChange={(e) => updateForm("note", e.target.value)}
                   className="min-h-[100px] w-full resize-none rounded-2xl border border-[#e1d3c2] px-4 py-3 text-sm outline-none"
-                  placeholder="例如：希望一起出貨、可接受等貨、其他提醒"
+                  placeholder="例如：一起出貨、送禮用"
                 />
               </div>
             </div>
@@ -140,16 +171,26 @@ export default function CheckoutPage() {
             </h2>
 
             {cart.length === 0 ? (
-              <p className="text-sm text-gray-500">購物車目前是空的</p>
+              <p className="text-sm text-gray-500">
+                購物車目前是空的
+              </p>
             ) : (
               <div className="space-y-4">
                 {cart.map((item, index) => (
-                  <div key={`${item.id}-${index}`} className="border-b pb-4">
-                    <p className="font-medium text-[#4b4038]">{item.name}</p>
+                  <div
+                    key={`${item.id}-${index}`}
+                    className="border-b pb-4"
+                  >
+                    <p className="font-medium text-[#4b4038]">
+                      {item.name}
+                    </p>
 
                     {item.options &&
                       Object.entries(item.options).map(([key, value]) => (
-                        <p key={key} className="mt-1 text-sm text-gray-500">
+                        <p
+                          key={key}
+                          className="mt-1 text-sm text-gray-500"
+                        >
                           {key}：{value}
                         </p>
                       ))}
@@ -170,8 +211,11 @@ export default function CheckoutPage() {
                       <span>
                         NT$ {item.price} × {item.quantity}
                       </span>
+
                       <span>
-                        NT$ {Number(item.price || 0) * Number(item.quantity || 1)}
+                        NT${" "}
+                        {Number(item.price || 0) *
+                          Number(item.quantity || 1)}
                       </span>
                     </div>
                   </div>
@@ -185,9 +229,10 @@ export default function CheckoutPage() {
                 <button
                   type="button"
                   onClick={handleSubmit}
-                  className="mt-4 w-full rounded-full bg-[#2e2e2e] py-4 text-sm font-medium text-white"
+                  disabled={loading}
+                  className="mt-4 w-full rounded-full bg-[#2e2e2e] py-4 text-sm font-medium text-white disabled:opacity-50"
                 >
-                  送出訂單
+                  {loading ? "送出中..." : "送出訂單 ☁️"}
                 </button>
               </div>
             )}
