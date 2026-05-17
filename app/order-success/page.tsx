@@ -1,8 +1,9 @@
 "use client";
 
+import { Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-export default function OrderSuccessPage() {
+function OrderSuccessContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -69,5 +70,13 @@ export default function OrderSuccessPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function OrderSuccessPage() {
+  return (
+    <Suspense fallback={null}>
+      <OrderSuccessContent />
+    </Suspense>
   );
 }
