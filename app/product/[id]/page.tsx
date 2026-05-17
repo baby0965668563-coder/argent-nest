@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import LikeButton from "@/app/components/LikeButton";
 import AddToCartButton from "@/app/components/AddToCartButton";
+import LikeButton from "@/app/components/LikeButton";
 
 type OptionGroup = {
   name: string;
@@ -39,7 +39,9 @@ export default function ProductPage() {
   const [product, setProduct] = useState<any>(null);
   const [relatedProducts, setRelatedProducts] = useState<any[]>([]);
   const [selectedImage, setSelectedImage] = useState("");
-  const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
+  const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>(
+    {}
+  );
   const [showWarning, setShowWarning] = useState(false);
   const [customerNote, setCustomerNote] = useState("");
   const [imageViewerOpen, setImageViewerOpen] = useState(false);
@@ -80,30 +82,27 @@ export default function ProductPage() {
   }
 
   if (!product) {
-  return (
-    <main className="min-h-screen bg-[#f8f5f2] px-5 py-6">
-      <div className="mx-auto max-w-md animate-pulse">
-        <div className="mb-5 h-12 rounded-full bg-[#ece5dc]" />
+    return (
+      <main className="min-h-screen bg-[#f8f5f2] px-5 py-6">
+        <div className="mx-auto max-w-md animate-pulse">
+          <div className="mb-5 h-12 rounded-full bg-[#ece5dc]" />
+          <div className="aspect-square rounded-[2rem] bg-[#ece5dc]" />
 
-        <div className="aspect-square rounded-[2rem] bg-[#ece5dc]" />
+          <div className="mt-6 rounded-[2rem] bg-white p-6">
+            <div className="mb-4 h-4 w-24 rounded-full bg-[#ece5dc]" />
+            <div className="mb-4 h-8 w-3/4 rounded-full bg-[#ece5dc]" />
+            <div className="h-10 w-40 rounded-full bg-[#ece5dc]" />
 
-        <div className="mt-6 rounded-[2rem] bg-white p-6">
-          <div className="mb-4 h-4 w-24 rounded-full bg-[#ece5dc]" />
-
-          <div className="mb-4 h-8 w-3/4 rounded-full bg-[#ece5dc]" />
-
-          <div className="h-10 w-40 rounded-full bg-[#ece5dc]" />
-
-          <div className="mt-8 space-y-3">
-            <div className="h-4 rounded-full bg-[#ece5dc]" />
-            <div className="h-4 rounded-full bg-[#ece5dc]" />
-            <div className="h-4 w-2/3 rounded-full bg-[#ece5dc]" />
+            <div className="mt-8 space-y-3">
+              <div className="h-4 rounded-full bg-[#ece5dc]" />
+              <div className="h-4 rounded-full bg-[#ece5dc]" />
+              <div className="h-4 w-2/3 rounded-full bg-[#ece5dc]" />
+            </div>
           </div>
         </div>
-      </div>
-    </main>
-  );
-}
+      </main>
+    );
+  }
 
   const images =
     Array.isArray(product.images) && product.images.length > 0
@@ -121,29 +120,26 @@ export default function ProductPage() {
   );
 
   const optionText = Object.entries(selectedOptions)
-const noteText = customerNote.trim()
-  ? `\n備註：${customerNote}`
-  : "";
     .map(([key, value]) => `${key}：${value}`)
     .join("\n");
 
   const productUrl =
-  typeof window !== "undefined" ? window.location.href : "";
+    typeof window !== "undefined" ? window.location.href : "";
 
-const lineMessage = [
-  `我想詢問：${product.name}`,
-  `價格：NT$ ${Number(product.price || 0).toLocaleString()}`,
-  product.category ? `分類：${product.category}` : "",
-  optionText ? `規格：\n${optionText}` : "",
-  customerNote ? `備註：${customerNote}` : "",
-  productUrl ? `商品連結：${productUrl}` : "",
-]
-  .filter(Boolean)
-  .join("\n\n");
+  const lineMessage = [
+    `我想詢問：${product.name}`,
+    `價格：NT$ ${Number(product.price || 0).toLocaleString()}`,
+    product.category ? `分類：${product.category}` : "",
+    optionText ? `規格：\n${optionText}` : "",
+    customerNote.trim() ? `備註：${customerNote.trim()}` : "",
+    productUrl ? `商品連結：${productUrl}` : "",
+  ]
+    .filter(Boolean)
+    .join("\n\n");
 
-const lineUrl = `https://line.me/R/oaMessage/@929santn/?${encodeURIComponent(
-  lineMessage
-)}`;
+  const lineUrl = `https://line.me/R/oaMessage/@929santn/?${encodeURIComponent(
+    lineMessage
+  )}`;
 
   function getProductImage(item: any) {
     return (
@@ -174,8 +170,8 @@ const lineUrl = `https://line.me/R/oaMessage/@929santn/?${encodeURIComponent(
     }
 
     if (optionGroups.length > 0 && !isOptionsComplete) {
-      e.preventDefault();
-      setShowWarning(true);
+      e.preventDefault
+            setShowWarning(true);
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
   }
@@ -193,14 +189,21 @@ const lineUrl = `https://line.me/R/oaMessage/@929santn/?${encodeURIComponent(
 
           <h1 className="text-sm font-bold text-black">Argent Nest 🥛🤍</h1>
 
-          <div className="w-[60px]" />
+          <a
+            href="/cart"
+            className="rounded-full border border-[#d8c5b0] px-4 py-2 text-sm text-black"
+          >
+            購物車
+          </a>
         </div>
 
         <div className="p-5">
           <button
             type="button"
             onClick={() => {
-              const index = images.findIndex((img: string) => img === selectedImage);
+              const index = images.findIndex(
+                (img: string) => img === selectedImage
+              );
               openImageViewer(index >= 0 ? index : 0);
             }}
             className="relative block w-full overflow-hidden rounded-[2rem] bg-white shadow-sm"
@@ -240,7 +243,9 @@ const lineUrl = `https://line.me/R/oaMessage/@929santn/?${encodeURIComponent(
                   type="button"
                   onClick={() => setSelectedImage(img)}
                   className={`h-20 w-20 shrink-0 overflow-hidden rounded-2xl border-2 ${
-                    selectedImage === img ? "border-black" : "border-transparent"
+                    selectedImage === img
+                      ? "border-black"
+                      : "border-transparent"
                   }`}
                 >
                   <img
@@ -266,12 +271,12 @@ const lineUrl = `https://line.me/R/oaMessage/@929santn/?${encodeURIComponent(
               NT$ {Number(product.price || 0).toLocaleString()}
             </p>
 
-<div className="mt-4">
-  <LikeButton
-    productId={product.id}
-    initialLikes={Number(product.likes || 0)}
-  />
-</div>
+            <div className="mt-4">
+              <LikeButton
+                productId={product.id}
+                initialLikes={Number(product.likes || 0)}
+              />
+            </div>
 
             <div className="mt-5 inline-block rounded-full bg-[#f5eee7] px-4 py-2 text-sm font-medium text-[#8b6f5c]">
               {product.category}
@@ -294,12 +299,12 @@ const lineUrl = `https://line.me/R/oaMessage/@929santn/?${encodeURIComponent(
               </div>
             )}
 
-<AddToCartButton
-  product={product}
-  selectedOptions={selectedOptions}
-customerNote={customerNote}
-  disabled={optionGroups.length > 0 && !isOptionsComplete}
-/>
+            <AddToCartButton
+              product={product}
+              selectedOptions={selectedOptions}
+              customerNote={customerNote}
+              disabled={optionGroups.length > 0 && !isOptionsComplete}
+            />
 
             {showWarning && (
               <div className="mt-5 rounded-2xl bg-[#fff1f1] p-4 text-sm text-red-500">
@@ -351,18 +356,16 @@ customerNote={customerNote}
               </div>
             )}
 
-<div className="mt-8 border-t border-[#eee5dc] pt-6">
-  <p className="mb-3 text-sm font-bold text-black">
-    商品備註
-  </p>
+            <div className="mt-8 border-t border-[#eee5dc] pt-6">
+              <p className="mb-3 text-sm font-bold text-black">商品備註</p>
 
-  <textarea
-    value={customerNote}
-    onChange={(e) => setCustomerNote(e.target.value)}
-    placeholder="例如：想要奶油白、送禮用途、想問現貨、其他需求 ☁️"
-    className="min-h-[120px] w-full rounded-[1.5rem] border border-[#e8ddd4] bg-white px-5 py-4 text-sm outline-none"
-  />
-</div>
+              <textarea
+                value={customerNote}
+                onChange={(e) => setCustomerNote(e.target.value)}
+                placeholder="例如：想要奶油白、送禮用途、想問現貨、其他需求 ☁️"
+                className="min-h-[120px] w-full rounded-[1.5rem] border border-[#e8ddd4] bg-white px-5 py-4 text-sm outline-none"
+              />
+            </div>
 
             {product.description && (
               <div className="mt-8 border-t border-[#eee5dc] pt-6">
@@ -437,14 +440,14 @@ customerNote={customerNote}
               </div>
             </div>
           )}
-        </div>
 
-<a
-  href="/"
-  className="mx-5 mt-6 block rounded-full border border-[#d8c5b0] bg-white py-4 text-center text-sm font-medium text-[#6b5c50]"
->
-  回首頁繼續逛逛 ☁️
-</a>
+          <a
+            href="/"
+            className="mx-5 mt-6 block rounded-full border border-[#d8c5b0] bg-white py-4 text-center text-sm font-medium text-[#6b5c50]"
+          >
+            回首頁繼續逛逛 ☁️
+          </a>
+        </div>
 
         <div className="fixed bottom-0 left-0 right-0 border-t border-[#eee5dc] bg-white p-4">
           <div className="mx-auto max-w-md">
