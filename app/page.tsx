@@ -3,6 +3,7 @@ import ProductQuickView from "./components/ProductQuickView";
 import HomeBanner from "./components/HomeBanner";
 import ProductImageHover from "./components/ProductImageHover";
 import MobileBottomNav from "./components/MobileBottomNav";
+import LineAskButton from "./components/LineAskButton";
 
 interface Props {
   searchParams: Promise<{
@@ -355,6 +356,7 @@ const { data: products } = await query;
 
                   <div className="px-4 pb-4">
                     <ProductQuickView product={product} />
+                    <LineAskButton product={product} />
                   </div>
                 </div>
               );
