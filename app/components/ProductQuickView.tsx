@@ -1,14 +1,20 @@
 "use client";
 
-import ProductQuickView from "./components/ProductQuickView";
+import { useState } from "react";
 
-function parseOptions(optionsText: string) {
+type OptionGroup = {
+  name: string;
+  values: string[];
+};
+
+function parseOptions(optionsText: string): OptionGroup[] {
   if (!optionsText) return [];
 
   return optionsText
     .split("\n")
     .map((line) => {
       const [name, values] = line.split("|");
+
       if (!name || !values) return null;
 
       return {
@@ -19,27 +25,27 @@ function parseOptions(optionsText: string) {
           .filter(Boolean),
       };
     })
-    .filter(Boolean) as { name: string; values: string[] }[];
+    .filter((item): item is OptionGroup => item !== null);
 }
 
 export default function ProductQuickView({ product }: { product: any }) {
   const [open, setOpen] = useState(false);
   const [mainImage, setMainImage] = useState("");
-  const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>(
-    {}
-  );
+  const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
   const [showOptionWarning, setShowOptionWarning] = useState(false);
 
-  const soldOut = product.is_sold_out === true;
+  const soldOut = product?.is_sold_out === true;
 
-  const images =
-    product.images && product.images.length > 0
+  const images: string[] =
+    product?.images && Array.isArray(product.images) && product.images.length > 0
       ? product.images
-      : product.image
+      : product?.image
       ? [product.image]
+      : product?.image_url
+      ? [product.image_url]
       : [];
 
-  const optionGroups = parseOptions(product.options || "");
+  const optionGroups = parseOptions(product?.options || "");
 
   const isOptionsComplete = optionGroups.every(
     (group) => selectedOptions[group.name]
@@ -49,7 +55,7 @@ export default function ProductQuickView({ product }: { product: any }) {
     .map(([key, value]) => `${key}：${value}`)
     .join("\n");
 
-  const lineMessage = `我想詢問：${product.name}${
+  const lineMessage = `我想詢問：${product?.name || ""}${
     optionText ? `\n\n規格：\n${optionText}` : ""
   }`;
 
@@ -98,7 +104,7 @@ export default function ProductQuickView({ product }: { product: any }) {
 
               <button
                 onClick={() => setOpen(false)}
-                className="rounded-full border px-4 py-2 text-sm"
+                className="rounded-full border border-[#d8c5b0] px-4 py-2 text-sm text-[#6b5c50]"
               >
                 關閉
               </button>
@@ -114,6 +120,7 @@ export default function ProductQuickView({ product }: { product: any }) {
 
                 <img
                   src={mainImage}
+                  alt={product?.name || "商品圖片"}
                   className={`aspect-[4/5] w-full object-cover ${
                     soldOut ? "grayscale opacity-60" : ""
                   }`}
@@ -123,9 +130,9 @@ export default function ProductQuickView({ product }: { product: any }) {
 
             {images.length > 1 && (
               <div className="mb-5 grid grid-cols-4 gap-3">
-                {images.map((img: string, index: number) => (
+                {images.map((img, index) => (
                   <button
-                    key={index}
+                    key={`${img}-${index}`}
                     onClick={() => setMainImage(img)}
                     className={`overflow-hidden rounded-xl border bg-[#ede6dd] ${
                       mainImage === img
@@ -135,6 +142,7 @@ export default function ProductQuickView({ product }: { product: any }) {
                   >
                     <img
                       src={img}
+                      alt={`商品圖片 ${index + 1}`}
                       className="aspect-square w-full object-cover"
                     />
                   </button>
@@ -143,15 +151,15 @@ export default function ProductQuickView({ product }: { product: any }) {
             )}
 
             <p className="text-xs tracking-[0.25em] text-[#b58b6b]">
-              {product.category}
+              {product?.category || "ARGENT NEST"}
             </p>
 
-            <h3 className="mt-2 text-2xl font-bold">
-              {product.name}
+            <h3 className="mt-2 text-2xl font-bold text-[#3f332b]">
+              {product?.name || "未命名商品"}
             </h3>
 
             <p className="mt-3 text-2xl font-bold text-[#8b6f5c]">
-              NT$ {Number(product.price).toLocaleString()}
+              NT$ {Number(product?.price || 0).toLocaleString()}
             </p>
 
             {soldOut && (
@@ -181,12 +189,12 @@ export default function ProductQuickView({ product }: { product: any }) {
 
                       <div className="flex flex-wrap gap-2">
                         {group.values.map((value) => {
-                          const active =
-                            selectedOptions[group.name] === value;
+                          const active = selectedOptions[group.name] === value;
 
                           return (
                             <button
                               key={value}
+                              type="button"
                               disabled={soldOut}
                               onClick={() => {
                                 setSelectedOptions({
@@ -213,7 +221,7 @@ export default function ProductQuickView({ product }: { product: any }) {
             )}
 
             <p className="mt-5 line-clamp-4 whitespace-pre-line text-sm leading-8 text-[#6b5c50]">
-              {product.description}
+              {product?.description || ""}
             </p>
 
             <a
@@ -237,7 +245,7 @@ export default function ProductQuickView({ product }: { product: any }) {
             </a>
 
             <a
-              href={`/product/${product.id}`}
+              href={`/product/${product?.id}`}
               className="mt-3 block rounded-full border border-[#d8c5b0] py-4 text-center text-sm text-[#6b5c50]"
             >
               查看完整商品頁
