@@ -36,8 +36,9 @@ export default async function Home({ searchParams }: Props) {
     .from("products")
     .select("*")
     .eq("is_active", true)
-    .order("sort_order", { ascending: true })
-    .order("id", { ascending: false });
+    .order("is_featured", { ascending: false })
+.order("sort_order", { ascending: true })
+.order("id", { ascending: false })
 
   const allProducts = allProductsQuery.data || [];
   const displayProducts = products || [];
