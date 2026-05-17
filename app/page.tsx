@@ -517,6 +517,7 @@ const { data: products } = await query;
           © 2026 Argent Nest 🥛🤍 · All Rights Reserved
         </div>
       </footer>
+    <MobileBottomNav />
     </main>
   );
 }
