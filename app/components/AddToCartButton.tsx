@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 interface Props {
   product: any;
@@ -22,6 +23,8 @@ export default function AddToCartButton({
   customerNote = "",
   disabled = false,
 }: Props) {
+  const router = useRouter();
+
   const [added, setAdded] = useState(false);
 
   function handleAddToCart() {
@@ -57,7 +60,6 @@ export default function AddToCartButton({
         note: customerNote,
         quantity: 1,
 
-        // 商品備註（後台設定）
         productNote:
           product.product_note ||
           product.note ||
@@ -65,7 +67,6 @@ export default function AddToCartButton({
           product.notes ||
           "",
 
-        // 額外資料
         category: product.category || "",
         createdAt: Date.now(),
       });
@@ -74,30 +75,38 @@ export default function AddToCartButton({
     localStorage.setItem("cart", JSON.stringify(existingCart));
 
     setAdded(true);
-
-    setTimeout(() => {
-      setAdded(false);
-    }, 1200);
   }
 
   return (
-    <button
-      type="button"
-      onClick={handleAddToCart}
-      disabled={disabled || product?.is_sold_out}
-      className={`mt-3 w-full rounded-full py-4 text-sm font-medium transition ${
-        disabled || product?.is_sold_out
-          ? "bg-gray-300 text-white cursor-not-allowed"
+    <div className="space-y-3">
+      <button
+        type="button"
+        onClick={handleAddToCart}
+        disabled={disabled || product?.is_sold_out}
+        className={`w-full rounded-full py-4 text-sm font-medium transition ${
+          disabled || product?.is_sold_out
+            ? "bg-gray-300 text-white cursor-not-allowed"
+            : added
+            ? "bg-[#2e2e2e] text-white"
+            : "border border-[#d8c5b0] bg-white text-[#6b5c50] hover:bg-[#f8f3ee]"
+        }`}
+      >
+        {product?.is_sold_out
+          ? "已售完"
           : added
-          ? "bg-[#2e2e2e] text-white"
-          : "border border-[#d8c5b0] bg-white text-[#6b5c50] hover:bg-[#f8f3ee]"
-      }`}
-    >
-      {product?.is_sold_out
-        ? "已售完"
-        : added
-        ? "已加入購物車 ☁️"
-        : "加入購物車 ☁️"}
-    </button>
+          ? "已加入購物車 ☁️"
+          : "加入購物車 ☁️"}
+      </button>
+
+      {added && (
+        <button
+          type="button"
+          onClick={() => router.push("/cart")}
+          className="w-full rounded-full bg-[#f6f1ea] py-3 text-sm font-medium text-[#6b5c50]"
+        >
+          查看購物車
+        </button>
+      )}
+    </div>
   );
 }
