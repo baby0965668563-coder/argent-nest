@@ -21,12 +21,12 @@ export default function MobileBottomNav() {
         </a>
 
         <a
-          href="#featured"
-          className="flex flex-col items-center justify-center py-3 text-[#6b5c50]"
-        >
-          <span className="text-lg">🔥</span>
-          <span className="mt-1 text-[10px]">熱賣</span>
-        </a>
+  href="/cart"
+  className="flex flex-col items-center justify-center py-3 text-[#6b5c50]"
+>
+  <span className="text-lg">🛒</span>
+  <span className="mt-1 text-[10px]">購物車</span>
+</a>
 
         <a
           href="https://line.me/R/ti/p/@929santn"
