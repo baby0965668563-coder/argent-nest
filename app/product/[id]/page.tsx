@@ -292,6 +292,7 @@ const lineUrl = `https://line.me/R/oaMessage/@929santn/?${encodeURIComponent(
 <AddToCartButton
   product={product}
   selectedOptions={selectedOptions}
+  disabled={optionGroups.length > 0 && !isOptionsComplete}
 />
 
             {showWarning && (
