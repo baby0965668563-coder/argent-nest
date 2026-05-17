@@ -104,13 +104,22 @@ export default function ProductPage() {
     .map(([key, value]) => `${key}：${value}`)
     .join("\n");
 
-  const lineMessage = `我想詢問：${product.name}${
-    optionText ? `\n\n規格：\n${optionText}` : ""
-  }`;
+  const productUrl =
+  typeof window !== "undefined" ? window.location.href : "";
 
-  const lineUrl = `https://line.me/R/oaMessage/@929santn/?${encodeURIComponent(
-    lineMessage
-  )}`;
+const lineMessage = [
+  `我想詢問：${product.name}`,
+  `價格：NT$ ${Number(product.price || 0).toLocaleString()}`,
+  product.category ? `分類：${product.category}` : "",
+  optionText ? `規格：\n${optionText}` : "",
+  productUrl ? `商品連結：${productUrl}` : "",
+]
+  .filter(Boolean)
+  .join("\n\n");
+
+const lineUrl = `https://line.me/R/oaMessage/@929santn/?${encodeURIComponent(
+  lineMessage
+)}`;
 
   function getProductImage(item: any) {
     return (
