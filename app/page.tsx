@@ -53,6 +53,14 @@ export default async function Home({ searchParams }: Props) {
   const featuredProducts = allProducts.filter(
     (product: any) => product.is_featured === true
   );
+const newestProducts = [...allProducts]
+  .sort((a: any, b: any) => {
+    return (
+      new Date(b.created_at || "").getTime() -
+      new Date(a.created_at || "").getTime()
+    );
+  })
+  .slice(0, 6);
 
   const getImage = (product: any) => {
     return (
@@ -233,6 +241,75 @@ export default async function Home({ searchParams }: Props) {
           </div>
         </section>
       )}
+
+<section className="px-5 pb-14 md:px-10">
+  <div className="mx-auto max-w-6xl">
+    <div className="mb-8 flex items-end justify-between">
+      <div>
+        <p className="mb-2 text-[11px] uppercase tracking-[0.35em] text-[#a08060]">
+          NEW ARRIVALS
+        </p>
+
+        <h3 className="text-3xl font-bold tracking-tight">
+          最近上架 ☁️
+        </h3>
+
+        <p className="mt-3 text-sm leading-7 text-[#8b7b6e]">
+          最近偷偷新增的小可愛們。
+        </p>
+      </div>
+
+      <a
+        href="#hot"
+        className="hidden text-sm text-[#8b6f5c] md:block"
+      >
+        查看更多 →
+      </a>
+    </div>
+
+    <div className="grid grid-cols-2 gap-4 md:grid-cols-6 md:gap-5">
+      {newestProducts.map((product: any) => {
+        const imageSrc = getImage(product);
+
+        return (
+          <a
+            key={product.id}
+            href={`/product/${product.id}`}
+            className="overflow-hidden rounded-[2rem] bg-white shadow-sm transition hover:-translate-y-1"
+          >
+            <div className="relative aspect-[4/5] overflow-hidden bg-[#f4eee8]">
+              <div className="absolute left-3 top-3 z-10 rounded-full bg-white/90 px-3 py-1 text-[10px] text-[#8b6f5c] backdrop-blur">
+                NEW
+              </div>
+
+              {imageSrc ? (
+                <img
+                  src={imageSrc}
+                  alt={product.name}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <div className="flex h-full items-center justify-center text-sm text-[#b49a88]">
+                  No Image
+                </div>
+              )}
+            </div>
+
+            <div className="p-3">
+              <p className="line-clamp-2 text-sm font-semibold leading-6">
+                {product.name}
+              </p>
+
+              <p className="mt-2 text-sm font-bold text-[#8b6f5c]">
+                NT$ {Number(product.price || 0).toLocaleString()}
+              </p>
+            </div>
+          </a>
+        );
+      })}
+    </div>
+  </div>
+</section>
 
       <section id="categories" className="px-5 pb-14 md:px-10 md:pb-16">
         <div className="mx-auto max-w-6xl">
