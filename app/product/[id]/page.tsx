@@ -78,12 +78,30 @@ export default function ProductPage() {
   }
 
   if (!product) {
-    return (
-      <main className="flex min-h-screen items-center justify-center bg-[#f8f5f2] text-black">
-        商品讀取中...
-      </main>
-    );
-  }
+  return (
+    <main className="min-h-screen bg-[#f8f5f2] px-5 py-6">
+      <div className="mx-auto max-w-md animate-pulse">
+        <div className="mb-5 h-12 rounded-full bg-[#ece5dc]" />
+
+        <div className="aspect-square rounded-[2rem] bg-[#ece5dc]" />
+
+        <div className="mt-6 rounded-[2rem] bg-white p-6">
+          <div className="mb-4 h-4 w-24 rounded-full bg-[#ece5dc]" />
+
+          <div className="mb-4 h-8 w-3/4 rounded-full bg-[#ece5dc]" />
+
+          <div className="h-10 w-40 rounded-full bg-[#ece5dc]" />
+
+          <div className="mt-8 space-y-3">
+            <div className="h-4 rounded-full bg-[#ece5dc]" />
+            <div className="h-4 rounded-full bg-[#ece5dc]" />
+            <div className="h-4 w-2/3 rounded-full bg-[#ece5dc]" />
+          </div>
+        </div>
+      </div>
+    </main>
+  );
+}
 
   const images =
     Array.isArray(product.images) && product.images.length > 0
