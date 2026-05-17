@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import ProductQuickView from "./components/ProductQuickView";
 
 function parseOptions(optionsText: string) {
   if (!optionsText) return [];
