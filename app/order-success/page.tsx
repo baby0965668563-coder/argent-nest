@@ -8,6 +8,12 @@ export default function OrderSuccessPage() {
 
   const orderId = searchParams.get("id");
 
+  const lineMessage = encodeURIComponent(
+    `您好，我想詢問 Argent Nest 訂單\n訂單編號：${orderId || "未顯示"}`
+  );
+
+  const lineUrl = `https://line.me/R/oaMessage/@929santn/?${lineMessage}`;
+
   return (
     <main className="min-h-screen bg-[#faf7f2] px-4 py-10">
       <div className="mx-auto max-w-md rounded-3xl bg-white p-8 text-center shadow-sm">
@@ -38,11 +44,11 @@ export default function OrderSuccessPage() {
 
         <div className="mt-6 space-y-3">
           <a
-            href="https://line.me/R/ti/p/@你的LINE官方帳號"
+            href={lineUrl}
             target="_blank"
             className="block w-full rounded-full bg-[#2e2e2e] py-4 text-sm font-medium text-white"
           >
-            LINE 詢問
+            LINE 詢問訂單
           </a>
 
           <button
