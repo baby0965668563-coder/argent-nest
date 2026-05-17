@@ -346,10 +346,19 @@ const { data: products } = await query;
                         NT$ {Number(product.price || 0).toLocaleString()}
                       </p>
 
-                      {soldOut && (
-                        <p className="text-xs text-gray-400">
-                          目前已售完 ☁️
-                        </p>
+                      {soldOut ? (
+  <p className="text-xs text-gray-400">
+    目前已售完 ☁️
+  </p>
+) : Number(product.stock || 0) > 0 ? (
+  <p className="text-xs text-[#2e7d32]">
+    現貨 {Number(product.stock || 0)} 件 ☁️
+  </p>
+) : (
+  <p className="text-xs text-[#8b6f5c]">
+    預購商品 ☁️
+  </p>
+)}
                       )}
                     </div>
                   </a>
