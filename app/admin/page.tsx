@@ -1,529 +1,487 @@
-"use client";
-
-import { useEffect, useState } from "react";
-import { v4 as uuidv4 } from "uuid";
 import { supabase } from "@/lib/supabase";
+import ProductQuickView from "./components/ProductQuickView";
 
-export default function AdminPage() {
-  const [authorized, setAuthorized] = useState(false);
-  const [checking, setChecking] = useState(true);
+interface Props {
+  searchParams: Promise<{
+    category?: string;
+    q?: string;
+  }>;
+}
 
-  const [name, setName] = useState("");
-  const [price, setPrice] = useState("");
-  const [category, setCategory] = useState("");
-  const [sortOrder, setSortOrder] = useState("0");
-  const [options, setOptions] = useState("");
-  const [description, setDescription] = useState("");
-  const [isActive, setIsActive] = useState(true);
-  const [isSoldOut, setIsSoldOut] = useState(false);
-  const [images, setImages] = useState<File[]>([]);
-  const [products, setProducts] = useState<any[]>([]);
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [editingImages, setEditingImages] = useState<string[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [searchText, setSearchText] = useState("");
+export default async function Home({ searchParams }: Props) {
+  const { category, q } = await searchParams;
+  const keyword = q?.trim() || "";
 
-  useEffect(() => {
-    const saved = localStorage.getItem("argent_admin_login");
+  let query = supabase
+    .from("products")
+    .select("*")
+    .eq("is_active", true)
+    .order("sort_order", { ascending: true })
+    .order("id", { ascending: false });
 
-    if (saved === "true") {
-      setAuthorized(true);
-      setChecking(false);
-      return;
-    }
-
-    const password = prompt("請輸入後台密碼");
-
-    if (password === "argentnest520") {
-      localStorage.setItem("argent_admin_login", "true");
-      setAuthorized(true);
-    } else {
-      alert("密碼錯誤 ☁️");
-    }
-
-    setChecking(false);
-  }, []);
-
-  useEffect(() => {
-    if (authorized) fetchProducts();
-  }, [authorized]);
-
-  async function fetchProducts() {
-    const { data } = await supabase
-      .from("products")
-      .select("*")
-      .order("sort_order", { ascending: true })
-      .order("id", { ascending: false });
-
-    setProducts(data || []);
+  if (category && category !== "全部") {
+    query = query.eq("category", category);
   }
 
-  const filteredProducts = products.filter((product) => {
-    const keyword = searchText.toLowerCase();
-
-    return (
-      product.name?.toLowerCase().includes(keyword) ||
-      product.category?.toLowerCase().includes(keyword) ||
-      product.description?.toLowerCase().includes(keyword)
-    );
-  });
-
-  function resetForm() {
-    setName("");
-    setPrice("");
-    setCategory("");
-    setSortOrder("0");
-    setOptions("");
-    setDescription("");
-    setIsActive(true);
-    setIsSoldOut(false);
-    setImages([]);
-    setEditingId(null);
-    setEditingImages([]);
-  }
-
-  function startEdit(product: any) {
-    setEditingId(product.id);
-    setName(product.name || "");
-    setPrice(String(product.price || ""));
-    setCategory(product.category || "");
-    setSortOrder(String(product.sort_order || 0));
-    setOptions(product.options || "");
-    setDescription(product.description || "");
-    setIsActive(product.is_active !== false);
-    setIsSoldOut(product.is_sold_out === true);
-
-    const oldImages =
-      Array.isArray(product.images) && product.images.length > 0
-        ? product.images
-        : product.image
-        ? [product.image]
-        : product.image_url
-        ? [product.image_url]
-        : [];
-
-    setEditingImages(oldImages);
-    setImages([]);
-
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }
-
-  async function uploadOneImage(file: File) {
-    const fileName = `public/${uuidv4()}.jpg`;
-
-    const { error } = await supabase.storage
-      .from("products")
-      .upload(fileName, file, {
-        cacheControl: "3600",
-        upsert: true,
-        contentType: file.type || "image/jpeg",
-      });
-
-    if (error) {
-      alert("圖片上傳失敗：" + error.message);
-      return null;
-    }
-
-    const { data } = supabase.storage.from("products").getPublicUrl(fileName);
-
-    return data.publicUrl;
-  }
-
-  async function uploadImages(files: File[]) {
-    const urls: string[] = [];
-
-    for (const file of files) {
-      const url = await uploadOneImage(file);
-      if (url) urls.push(url);
-    }
-
-    return urls;
-  }
-
-  async function addProduct() {
-    if (!name) return alert("請輸入商品名稱");
-    if (!price) return alert("請輸入價格");
-    if (!category) return alert("請選擇商品分類");
-    if (images.length === 0) return alert("請選擇至少一張圖片");
-
-    setLoading(true);
-
-    const imageUrls = await uploadImages(images);
-
-    if (imageUrls.length === 0) {
-      setLoading(false);
-      return;
-    }
-
-    const { error } = await supabase.from("products").insert([
-      {
-        name,
-        price,
-        category,
-        sort_order: Number(sortOrder) || 0,
-        options,
-        description,
-        is_active: isActive,
-        is_sold_out: isSoldOut,
-        image: imageUrls[0],
-        image_url: imageUrls[0],
-        images: imageUrls,
-      },
-    ]);
-
-    setLoading(false);
-
-    if (error) return alert("新增失敗：" + error.message);
-
-    alert("新增成功！");
-    resetForm();
-    fetchProducts();
-  }
-
-  async function updateProduct() {
-    if (!editingId) return;
-
-    setLoading(true);
-
-    let imageUrls = editingImages;
-
-    if (images.length > 0) {
-      const uploadedUrls = await uploadImages(images);
-
-      if (uploadedUrls.length === 0) {
-        setLoading(false);
-        return;
-      }
-
-      imageUrls = uploadedUrls;
-    }
-
-    const { error } = await supabase
-      .from("products")
-      .update({
-        name,
-        price,
-        category,
-        sort_order: Number(sortOrder) || 0,
-        options,
-        description,
-        is_active: isActive,
-        is_sold_out: isSoldOut,
-        image: imageUrls[0] || "",
-        image_url: imageUrls[0] || "",
-        images: imageUrls,
-      })
-      .eq("id", editingId);
-
-    setLoading(false);
-
-    if (error) return alert("修改失敗：" + error.message);
-
-    alert("修改成功！");
-    resetForm();
-    fetchProducts();
-  }
-
-  async function toggleActive(id: number, currentStatus: boolean) {
-    const { error } = await supabase
-      .from("products")
-      .update({ is_active: !currentStatus })
-      .eq("id", id);
-
-    if (error) return alert("狀態修改失敗：" + error.message);
-
-    fetchProducts();
-  }
-
-  async function toggleSoldOut(id: number, currentStatus: boolean) {
-    const { error } = await supabase
-      .from("products")
-      .update({ is_sold_out: !currentStatus })
-      .eq("id", id);
-
-    if (error) return alert("售完狀態修改失敗：" + error.message);
-
-    fetchProducts();
-  }
-
-  async function deleteProduct(id: number) {
-    if (!confirm("確定要刪除這個商品嗎？")) return;
-
-    const { error } = await supabase.from("products").delete().eq("id", id);
-
-    if (error) return alert("刪除失敗：" + error.message);
-
-    alert("刪除成功");
-    fetchProducts();
-  }
-
-  if (checking) {
-    return (
-      <main className="flex min-h-screen items-center justify-center bg-[#f8f5f2] text-black">
-        驗證中...
-      </main>
+  if (keyword) {
+    query = query.or(
+      `name.ilike.%${keyword}%,description.ilike.%${keyword}%,category.ilike.%${keyword}%`
     );
   }
 
-  if (!authorized) {
+  const { data: products } = await query;
+
+  const allProductsQuery = await supabase
+    .from("products")
+    .select("*")
+    .eq("is_active", true)
+    .order("sort_order", { ascending: true })
+    .order("id", { ascending: false });
+
+  const allProducts = allProductsQuery.data || [];
+  const displayProducts = products || [];
+
+  const getImage = (product: any) => {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-[#f8f5f2] text-black">
-        無權限 ☁️
-      </main>
+      product?.image_url ||
+      product?.image ||
+      (Array.isArray(product?.images) && product.images.length > 0
+        ? product.images[0]
+        : "")
     );
+  };
+
+  const fallbackImage =
+    "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=1200&auto=format&fit=crop";
+
+  const categories = [
+    { label: "全部", emoji: "☁️", desc: "全部商品" },
+    { label: "卡通療癒選物", emoji: "🧸", desc: "把小小快樂帶回家。" },
+    { label: "微辣韓系穿搭", emoji: "👗", desc: "韓系慵懶感女孩日常。" },
+    { label: "飾品包包", emoji: "🎀", desc: "飾品、包包與日常可愛。" },
+    { label: "花束甜點", emoji: "🍰", desc: "屬於甜甜日常的小角落。" },
+  ];
+
+  function categoryHref(label: string) {
+    const params = new URLSearchParams();
+
+    if (label !== "全部") params.set("category", label);
+    if (keyword) params.set("q", keyword);
+
+    const queryString = params.toString();
+    return queryString ? `/?${queryString}#hot` : "/#hot";
   }
 
   return (
-    <main className="min-h-screen bg-[#f8f5f2] px-5 py-8 text-[#3d3d3d]">
-      <div className="mb-8 flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">管理後台</h1>
-          <p className="mt-2 text-sm text-gray-500">
-            Argent Nest 商品管理
-          </p>
+    <main className="min-h-screen bg-[#f8f5f0] text-[#2e2e2e]">
+      <header className="sticky top-0 z-50 border-b border-[#e8ddd4]/70 bg-[#f8f5f0]/90 px-5 py-4 backdrop-blur md:px-10">
+        <div className="mx-auto flex max-w-6xl items-center justify-between">
+          <a href="/" className="text-xl font-bold tracking-tight">
+            Argent Nest 🥛🤍
+          </a>
+
+          <nav className="flex items-center gap-4 text-sm text-[#6b5c50] md:gap-5">
+            <a href="#hot">新品</a>
+            <a href="#hot">熱賣</a>
+            <a href="#categories">分類</a>
+            <a
+              href="/admin"
+              className="rounded-full border border-[#d8c5b0] px-3 py-1.5 text-xs md:px-4 md:py-2"
+            >
+              後台
+            </a>
+          </nav>
         </div>
+      </header>
 
-        <button
-          onClick={() => {
-            localStorage.removeItem("argent_admin_login");
-            location.reload();
-          }}
-          className="rounded-full border px-4 py-2 text-sm"
-        >
-          登出
-        </button>
-      </div>
-
-      <div className="rounded-3xl bg-white p-6 shadow-sm">
-        <h2 className="mb-5 text-xl font-bold">
-          {editingId ? "編輯商品" : "新增商品"}
-        </h2>
-
-        <div className="space-y-4">
-          <input
-            className="w-full rounded-2xl border p-4"
-            placeholder="商品名稱"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
-
-          <input
-            className="w-full rounded-2xl border p-4"
-            placeholder="價格"
-            value={price}
-            onChange={(e) => setPrice(e.target.value)}
-          />
-
-          <select
-            className="w-full rounded-2xl border p-4"
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-          >
-            <option value="">請選擇商品分類</option>
-            <option value="卡通療癒選物">卡通療癒選物</option>
-            <option value="微辣韓系穿搭">微辣韓系穿搭</option>
-            <option value="飾品包包">飾品包包</option>
-            <option value="花束甜點">花束甜點</option>
-          </select>
-
-          <input
-            className="w-full rounded-2xl border p-4"
-            placeholder="商品排序"
-            type="number"
-            value={sortOrder}
-            onChange={(e) => setSortOrder(e.target.value)}
-          />
-
-          <textarea
-            className="w-full rounded-2xl border p-4"
-            placeholder={`規格格式請這樣輸入：
-顏色|奶油白,黑色
-尺寸|S,M,L`}
-            value={options}
-            onChange={(e) => setOptions(e.target.value)}
-          />
-
-          <textarea
-            className="w-full rounded-2xl border p-4"
-            placeholder="商品描述"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-          />
-
-          <label className="flex items-center justify-between rounded-2xl border p-4">
-            <span>{isActive ? "上架中" : "已下架"}</span>
-            <input
-              type="checkbox"
-              checked={isActive}
-              onChange={(e) => setIsActive(e.target.checked)}
-            />
-          </label>
-
-          <label className="flex items-center justify-between rounded-2xl border p-4">
-            <span>{isSoldOut ? "已售完" : "可下單"}</span>
-            <input
-              type="checkbox"
-              checked={isSoldOut}
-              onChange={(e) => setIsSoldOut(e.target.checked)}
-            />
-          </label>
-
-          <input
-            type="file"
-            multiple
-            accept="image/*"
-            className="w-full rounded-2xl border p-4"
-            onChange={(e) => setImages(Array.from(e.target.files || []))}
-          />
-
-          {editingImages.length > 0 && images.length === 0 && (
-            <div className="rounded-2xl bg-[#f8f5f2] p-4">
-              <p className="mb-3 text-sm text-gray-600">目前商品圖片</p>
-              <div className="grid grid-cols-3 gap-3">
-                {editingImages.map((img, index) => (
-                  <img
-                    key={index}
-                    src={img}
-                    className="aspect-square w-full rounded-xl object-cover"
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {images.length > 0 && (
-            <div className="rounded-2xl bg-[#f8f5f2] p-4">
-              <p className="mb-3 text-sm text-gray-600">
-                已選擇 {images.length} 張圖片
+      <section className="px-5 py-8 md:px-10 md:py-12">
+        <div className="relative mx-auto max-w-6xl overflow-hidden rounded-[2.5rem] bg-[#ede6dd]">
+          <div className="grid items-center gap-10 px-8 py-16 md:grid-cols-2 md:px-16 md:py-24">
+            <div>
+              <p className="mb-4 text-xs uppercase tracking-[0.45em] text-[#a08060]">
+                Healing Select Shop
               </p>
 
-              <div className="grid grid-cols-3 gap-3">
-                {images.map((file, index) => (
-                  <img
-                    key={index}
-                    src={URL.createObjectURL(file)}
-                    className="aspect-square w-full rounded-xl object-cover"
-                  />
-                ))}
+              <h2 className="mb-6 text-5xl font-bold leading-[1.15] tracking-tight md:text-6xl">
+                Welcome to
+                <br />
+                Argent Nest 🥛🤍
+              </h2>
+
+              <p className="mb-8 max-w-md text-[15px] leading-8 text-[#6b5c50]">
+                把讓人心情變好的東西，都放進這裡了。
+                <br />
+                韓系療癒選物・女孩日常・微辣穿搭 ☁️
+              </p>
+
+              <div className="flex flex-wrap gap-4">
+                <a
+                  href="#hot"
+                  className="rounded-full bg-[#2e2e2e] px-8 py-4 text-sm font-medium text-white transition hover:scale-105"
+                >
+                  開始逛逛
+                </a>
+
+                <a
+                  href="#categories"
+                  className="rounded-full border border-[#c9b8a8] px-8 py-4 text-sm font-medium text-[#6b5c50]"
+                >
+                  探索分類
+                </a>
               </div>
             </div>
-          )}
 
-          <button
-            onClick={editingId ? updateProduct : addProduct}
-            disabled={loading}
-            className="w-full rounded-full bg-black py-4 text-white disabled:opacity-50"
-          >
-            {loading ? "處理中..." : editingId ? "儲存修改" : "新增商品"}
-          </button>
-
-          {editingId && (
-            <button
-              onClick={resetForm}
-              className="w-full rounded-full border py-4 text-gray-600"
-            >
-              取消編輯
-            </button>
-          )}
-        </div>
-      </div>
-
-      <div className="mt-8 rounded-3xl bg-white p-6 shadow-sm">
-        <h2 className="mb-4 text-xl font-bold">商品列表</h2>
-
-        <input
-          className="mb-5 w-full rounded-2xl border p-4"
-          placeholder="搜尋商品..."
-          value={searchText}
-          onChange={(e) => setSearchText(e.target.value)}
-        />
-
-        <div className="space-y-4">
-          {filteredProducts.map((product) => {
-            const imageSrc =
-              product.image_url ||
-              product.image ||
-              (Array.isArray(product.images) && product.images.length > 0
-                ? product.images[0]
-                : "");
-
-            return (
-              <div
-                key={product.id}
-                className="rounded-2xl border bg-[#fffdfb] p-4"
-              >
-                <div className="flex gap-4">
-                  <div className="h-24 w-24 shrink-0 overflow-hidden rounded-2xl bg-[#eee5dc]">
-                    {imageSrc ? (
-                      <img
-                        src={imageSrc}
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <div className="flex h-full items-center justify-center text-xs text-gray-400">
-                        No Image
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex-1">
-                    <p className="font-bold">{product.name}</p>
-                    <p className="mt-1 text-sm text-gray-500">
-                      {product.category}
-                    </p>
-                    <p className="mt-1 font-bold">
-                      NT$ {Number(product.price || 0).toLocaleString()}
-                    </p>
-                    <p className="mt-1 text-xs text-gray-400">
-                      排序：{product.sort_order || 0}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="mt-4 grid grid-cols-2 gap-2">
-                  <button
-                    onClick={() =>
-                      toggleActive(product.id, product.is_active !== false)
-                    }
-                    className="rounded-full border py-2 text-sm"
-                  >
-                    {product.is_active !== false ? "下架" : "上架"}
-                  </button>
-
-                  <button
-                    onClick={() =>
-                      toggleSoldOut(product.id, product.is_sold_out === true)
-                    }
-                    className="rounded-full border py-2 text-sm"
-                  >
-                    {product.is_sold_out ? "改可下單" : "改售完"}
-                  </button>
-
-                  <button
-                    onClick={() => startEdit(product)}
-                    className="rounded-full bg-[#3f332b] py-2 text-sm text-white"
-                  >
-                    編輯
-                  </button>
-
-                  <button
-                    onClick={() => deleteProduct(product.id)}
-                    className="rounded-full bg-red-500 py-2 text-sm text-white"
-                  >
-                    刪除
-                  </button>
-                </div>
+            <div className="relative flex justify-center">
+              <div className="relative overflow-hidden rounded-[2rem] shadow-[0_10px_40px_rgba(0,0,0,0.12)]">
+                <img
+                  src={getImage(allProducts[0]) || fallbackImage}
+                  alt="Argent Nest"
+                  className="h-[520px] w-full object-cover md:w-[420px]"
+                />
               </div>
-            );
-          })}
 
-          {filteredProducts.length === 0 && (
-            <p className="py-8 text-center text-sm text-gray-400">
-              目前沒有商品
-            </p>
-          )}
+              <div className="absolute bottom-5 left-0 rounded-2xl bg-white/90 px-5 py-3 shadow-lg backdrop-blur">
+                <p className="text-xs tracking-[0.2em] text-[#a08060]">
+                  GIRL&apos;S LITTLE WORLD ☁️
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
+      </section>
+
+      <section id="categories" className="px-5 pb-16 md:px-10">
+        <div className="mx-auto max-w-6xl">
+          <div className="mb-10">
+            <p className="mb-2 text-xs uppercase tracking-[0.35em] text-[#a08060]">
+              Categories
+            </p>
+
+            <h3 className="text-3xl font-bold tracking-tight">
+              逛逛屬於妳的小世界 ☁️
+            </h3>
+
+            <p className="mt-3 text-sm leading-7 text-[#8b7b6e]">
+              點分類後，下面商品會自動篩選。
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-5 md:gap-5">
+            {categories.map((cat) => {
+              const active =
+                (!category && cat.label === "全部") || category === cat.label;
+
+              return (
+                <a
+                  key={cat.label}
+                  href={categoryHref(cat.label)}
+                  className={`rounded-[2rem] p-6 transition hover:-translate-y-1 ${
+                    active
+                      ? "bg-[#2e2e2e] text-white"
+                      : "bg-white text-[#2e2e2e]"
+                  }`}
+                >
+                  <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#f8f5f0] text-3xl shadow-sm">
+                    {cat.emoji}
+                  </div>
+
+                  <h4 className="mb-2 text-lg font-bold">{cat.label}</h4>
+
+                  <p
+                    className={`text-sm leading-7 ${
+                      active ? "text-white/75" : "text-[#8b7b6e]"
+                    }`}
+                  >
+                    {cat.desc}
+                  </p>
+                </a>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      <section id="hot" className="px-5 pb-20 md:px-10">
+        <div className="mx-auto max-w-6xl">
+          <div className="mb-10">
+            <p className="mb-2 text-xs uppercase tracking-[0.35em] text-[#a08060]">
+              Popular Picks
+            </p>
+
+            <h3 className="text-3xl font-bold tracking-tight">
+              {keyword
+                ? `搜尋：${keyword} ☁️`
+                : category && category !== "全部"
+                ? `${category} ☁️`
+                : "最近大家都在偷偷收藏 ☁️"}
+            </h3>
+
+            <p className="mt-3 text-sm leading-7 text-[#8b7b6e]">
+              闆娘挑出最近最有療癒感、最想帶回家的小可愛。
+            </p>
+          </div>
+
+          <form
+            action="/"
+            className="mb-8 flex flex-col gap-3 rounded-[2rem] bg-white p-4 shadow-sm md:flex-row"
+          >
+            {category && category !== "全部" && (
+              <input type="hidden" name="category" value={category} />
+            )}
+
+            <input
+              name="q"
+              defaultValue={keyword}
+              placeholder="搜尋商品名稱，例如：包包、娃娃、衣服"
+              className="flex-1 rounded-full border border-[#e8ddd4] px-5 py-3 text-sm outline-none"
+            />
+
+            <button
+              type="submit"
+              className="rounded-full bg-[#2e2e2e] px-8 py-3 text-sm font-medium text-white"
+            >
+              搜尋
+            </button>
+
+            {keyword && (
+              <a
+                href={category ? `/?category=${category}#hot` : "/#hot"}
+                className="rounded-full border border-[#d8c5b0] px-8 py-3 text-center text-sm text-[#6b5c50]"
+              >
+                清除
+              </a>
+            )}
+          </form>
+
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-4 md:gap-5">
+            {displayProducts.map((product: any) => {
+              const soldOut = product.is_sold_out === true;
+              const imageSrc = getImage(product);
+
+              const createdAt = product.created_at
+                ? new Date(product.created_at)
+                : null;
+
+              const now = new Date();
+
+              const diffDays = createdAt
+                ? (now.getTime() - createdAt.getTime()) /
+                  (1000 * 60 * 60 * 24)
+                : 999;
+
+              const isNew = diffDays <= 7;
+
+              return (
+                <div
+                  key={product.id}
+                  className="overflow-hidden rounded-[2.2rem] bg-white/90 shadow-[0_6px_30px_rgba(70,50,35,0.08)] ring-1 ring-[#eaded4] transition duration-300 hover:-translate-y-1.5 hover:shadow-[0_16px_50px_rgba(70,50,35,0.16)]"
+                >
+                  <a href={`/product/${product.id}`}>
+                    <div className="relative aspect-[4/5] overflow-hidden bg-[#f4eee8]">
+                      <div className="absolute left-3 top-3 z-10 rounded-full bg-white/85 px-3 py-1 text-[10px] text-[#8b6f5c] backdrop-blur">
+                        {soldOut ? "SOLD OUT" : isNew ? "NEW" : "PREORDER"}
+                      </div>
+
+                      {imageSrc ? (
+                        <img
+                          src={imageSrc}
+                          alt={product.name}
+                          className={`h-full w-full object-cover transition duration-500 hover:scale-105 ${
+                            soldOut ? "opacity-60 grayscale" : ""
+                          }`}
+                        />
+                      ) : (
+                        <div className="flex h-full items-center justify-center text-sm text-[#b49a88]">
+                          No Image
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="space-y-2 p-4">
+                      <p className="text-[11px] tracking-[0.25em] text-[#b58b6b]">
+                        {product.category}
+                      </p>
+
+                      <h4 className="line-clamp-2 text-sm font-semibold leading-6">
+                        {product.name}
+                      </h4>
+
+                      <p className="pt-1 text-lg font-bold text-[#8b6f5c]">
+                        NT$ {Number(product.price || 0).toLocaleString()}
+                      </p>
+
+                      {soldOut && (
+                        <p className="text-xs text-gray-400">
+                          目前已售完 ☁️
+                        </p>
+                      )}
+                    </div>
+                  </a>
+
+                  <div className="px-4 pb-4">
+                    <ProductQuickView product={product} />
+                  </div>
+                </div>
+              );
+            })}
+
+            {displayProducts.length === 0 && (
+              <div className="col-span-full rounded-[2rem] bg-white p-10 text-center text-[#8b7b6e]">
+                找不到相關商品 ☁️
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+
+      <section className="px-5 pb-24 md:px-10">
+        <div className="mx-auto max-w-5xl overflow-hidden rounded-[2.5rem] bg-[#efe7de]">
+          <div className="grid gap-10 px-8 py-14 md:grid-cols-2 md:px-14 md:py-20">
+            <div className="flex flex-col justify-center">
+              <p className="mb-3 text-xs uppercase tracking-[0.35em] text-[#a08060]">
+                Owner&apos;s Diary
+              </p>
+
+              <h3 className="mb-6 text-4xl font-bold tracking-tight">
+                豬豬的碎念 ☁️
+              </h3>
+
+              <div className="space-y-5 text-[15px] leading-9 text-[#6b5c50]">
+                <p>最近一直覺得，生活已經夠累了。</p>
+
+                <p>
+                  所以想把一些看到會笑、摸到會安心、
+                  放在房間裡會覺得「好像有被療癒到」的東西，
+                  慢慢放進 Argent Nest 裡。
+                </p>
+
+                <p>
+                  希望妳每次逛進來，
+                  都能找到一點讓自己開心的小東西 ☁️
+                </p>
+              </div>
+            </div>
+
+            <div className="relative flex items-center justify-center">
+              <div className="overflow-hidden rounded-[2rem] shadow-[0_12px_40px_rgba(0,0,0,0.12)]">
+                <img
+                  src={
+                    getImage(allProducts[1]) ||
+                    getImage(allProducts[0]) ||
+                    fallbackImage
+                  }
+                  alt="Argent Nest Mood"
+                  className="h-[500px] w-full object-cover md:w-[380px]"
+                />
+              </div>
+
+              <div className="absolute bottom-5 right-0 rounded-2xl bg-white/90 px-5 py-3 shadow-lg backdrop-blur">
+                <p className="text-xs tracking-[0.2em] text-[#a08060]">
+                  LITTLE HEALING WORLD ☁️
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="px-5 pb-24 md:px-10">
+        <div className="mx-auto max-w-6xl">
+          <div className="mb-10 text-center">
+            <p className="mb-2 text-xs uppercase tracking-[0.35em] text-[#a08060]">
+              Today&apos;s Little Mood
+            </p>
+
+            <h3 className="text-3xl font-bold tracking-tight">
+              Argent Nest 的日常碎片 ☁️
+            </h3>
+
+            <p className="mt-3 text-sm leading-7 text-[#8b7b6e]">
+              一些讓人想停下來看看的小可愛、穿搭靈感和療癒角落。
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-4 md:gap-5">
+            {[0, 1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className={`overflow-hidden rounded-[2rem] bg-white shadow-sm ${
+                  i % 2 === 1 ? "md:mt-10" : ""
+                }`}
+              >
+                <img
+                  src={getImage(allProducts[i]) || fallbackImage}
+                  className="h-56 w-full object-cover"
+                  alt="Argent Nest daily mood"
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <footer className="border-t border-[#e8ddd4] bg-[#f6f1eb] px-5 py-16 md:px-10">
+        <div className="mx-auto grid max-w-6xl gap-12 md:grid-cols-4">
+          <div>
+            <h4 className="mb-4 text-2xl font-bold tracking-tight">
+              Argent Nest 🥛🤍
+            </h4>
+
+            <p className="text-sm leading-8 text-[#8b7b6e]">
+              韓系療癒選物 · 女孩日常 · 微辣穿搭
+              <br />
+              把讓人心情變好的東西，慢慢放進這裡 ☁️
+            </p>
+          </div>
+
+          <div>
+            <h5 className="mb-5 text-sm font-bold tracking-[0.2em] text-[#a08060]">
+              SHOP
+            </h5>
+
+            <div className="space-y-3 text-sm text-[#6b5c50]">
+              <p>卡通療癒選物</p>
+              <p>微辣韓系穿搭</p>
+              <p>飾品包包</p>
+              <p>花束甜點</p>
+            </div>
+          </div>
+
+          <div>
+            <h5 className="mb-5 text-sm font-bold tracking-[0.2em] text-[#a08060]">
+              NOTICE
+            </h5>
+
+            <div className="space-y-3 text-sm leading-7 text-[#6b5c50]">
+              <p>全館多為預購商品</p>
+              <p>出貨約 14–21 天</p>
+              <p>無法等待請勿下單</p>
+            </div>
+          </div>
+
+          <div>
+            <h5 className="mb-5 text-sm font-bold tracking-[0.2em] text-[#a08060]">
+              FOLLOW US
+            </h5>
+
+            <div className="space-y-3 text-sm text-[#6b5c50]">
+              <a href="https://instagram.com" target="_blank" className="block">
+                Instagram
+              </a>
+              <a href="https://threads.net" target="_blank" className="block">
+                Threads
+              </a>
+              <a href="https://line.me" target="_blank" className="block">
+                LINE Official
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <div className="mx-auto mt-14 max-w-6xl border-t border-[#e8ddd4] pt-6 text-center text-xs text-[#b0a090]">
+          © 2026 Argent Nest 🥛🤍 · All Rights Reserved
+        </div>
+      </footer>
     </main>
   );
 }
