@@ -395,6 +395,13 @@ const lineUrl = `https://line.me/R/oaMessage/@929santn/?${encodeURIComponent(
           )}
         </div>
 
+<a
+  href="/"
+  className="mx-5 mt-6 block rounded-full border border-[#d8c5b0] bg-white py-4 text-center text-sm font-medium text-[#6b5c50]"
+>
+  回首頁繼續逛逛 ☁️
+</a>
+
         <div className="fixed bottom-0 left-0 right-0 border-t border-[#eee5dc] bg-white p-4">
           <div className="mx-auto max-w-md">
             <a
