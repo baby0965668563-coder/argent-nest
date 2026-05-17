@@ -416,6 +416,33 @@ const newestProducts = [...allProducts]
             )}
           </form>
 
+<div className="mb-10">
+  <p className="mb-3 text-xs tracking-[0.25em] text-[#a08060]">
+    HOT SEARCH ☁️
+  </p>
+
+  <div className="flex flex-wrap gap-3">
+    {[
+      "三麗鷗",
+      "吉伊卡哇",
+      "迪士尼",
+      "韓系穿搭",
+      "奶油風",
+      "花束",
+      "飾品",
+      "包包",
+    ].map((tag) => (
+      <a
+        key={tag}
+        href={`/?q=${encodeURIComponent(tag)}#hot`}
+        className="rounded-full border border-[#e8ddd4] bg-white px-4 py-2 text-sm text-[#6b5c50] transition hover:bg-[#f5eee7]"
+      >
+        #{tag}
+      </a>
+    ))}
+  </div>
+</div>
+
           <div className="grid grid-cols-2 gap-4 md:grid-cols-4 md:gap-5">
             {displayProducts.map((product: any) => {
               const soldOut = product.is_sold_out === true;
