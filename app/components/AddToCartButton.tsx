@@ -5,7 +5,7 @@ import { useState } from "react";
 interface Props {
   product: any;
   selectedOptions?: Record<string, string>;
-customerNote?: string;
+  customerNote?: string;
   disabled?: boolean;
 }
 
@@ -19,7 +19,7 @@ function sameOptions(
 export default function AddToCartButton({
   product,
   selectedOptions = {},
-customerNote = "",
+  customerNote = "",
   disabled = false,
 }: Props) {
   const [added, setAdded] = useState(false);
@@ -37,7 +37,9 @@ customerNote = "",
 
     const foundIndex = existingCart.findIndex(
       (item: any) =>
-        item.id === product.id && sameOptions(item.options, selectedOptions)
+        item.id === product.id &&
+        sameOptions(item.options, selectedOptions) &&
+        (item.note || "") === customerNote
     );
 
     if (foundIndex >= 0) {
@@ -50,7 +52,7 @@ customerNote = "",
         price: product.price,
         image,
         options: selectedOptions,
-note: customerNote,
+        note: customerNote,
         quantity: 1,
       });
     }
