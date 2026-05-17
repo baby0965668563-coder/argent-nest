@@ -14,31 +14,32 @@ export default async function Home({ searchParams }: Props) {
   const keyword = q?.trim() || "";
 
   let query = supabase
-    .from("products")
-    .select("*")
-    .eq("is_active", true)
-    .order("sort_order", { ascending: true })
-    .order("id", { ascending: false });
+  .from("products")
+  .select("*")
+  .eq("is_active", true)
+  .order("is_featured", { ascending: false })
+  .order("sort_order", { ascending: true })
+  .order("id", { ascending: false });
 
-  if (category && category !== "全部") {
-    query = query.eq("category", category);
-  }
+if (category && category !== "全部") {
+  query = query.eq("category", category);
+}
 
-  if (keyword) {
-    query = query.or(
-      `name.ilike.%${keyword}%,description.ilike.%${keyword}%,category.ilike.%${keyword}%`
-    );
-  }
+if (keyword) {
+  query = query.or(
+    `name.ilike.%${keyword}%,description.ilike.%${keyword}%,category.ilike.%${keyword}%`
+  );
+}
 
-  const { data: products } = await query;
+const { data: products } = await query;
 
   const allProductsQuery = await supabase
-    .from("products")
-    .select("*")
-    .eq("is_active", true)
-    .order("is_featured", { ascending: false })
-.order("sort_order", { ascending: true })
-.order("id", { ascending: false })
+  .from("products")
+  .select("*")
+  .eq("is_active", true)
+  .order("is_featured", { ascending: false })
+  .order("sort_order", { ascending: true })
+  .order("id", { ascending: false });
 
   const allProducts = allProductsQuery.data || [];
   const displayProducts = products || [];
