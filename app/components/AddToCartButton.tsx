@@ -31,7 +31,9 @@ export default function AddToCartButton({
 
     const image =
       product?.image ||
-      (Array.isArray(product?.images) && product.images.length > 0
+      (typeof product?.images === "string"
+        ? product.images.split(",")[0]?.trim()
+        : Array.isArray(product?.images) && product.images.length > 0
         ? product.images[0]
         : "");
 
@@ -49,11 +51,23 @@ export default function AddToCartButton({
       existingCart.push({
         id: product.id,
         name: product.name,
-        price: product.price,
+        price: Number(product.price || 0),
         image,
         options: selectedOptions,
         note: customerNote,
         quantity: 1,
+
+        // 商品備註（後台設定）
+        productNote:
+          product.product_note ||
+          product.note ||
+          product.remark ||
+          product.notes ||
+          "",
+
+        // 額外資料
+        category: product.category || "",
+        createdAt: Date.now(),
       });
     }
 
@@ -73,10 +87,10 @@ export default function AddToCartButton({
       disabled={disabled || product?.is_sold_out}
       className={`mt-3 w-full rounded-full py-4 text-sm font-medium transition ${
         disabled || product?.is_sold_out
-          ? "bg-gray-300 text-white"
+          ? "bg-gray-300 text-white cursor-not-allowed"
           : added
           ? "bg-[#2e2e2e] text-white"
-          : "border border-[#d8c5b0] bg-white text-[#6b5c50]"
+          : "border border-[#d8c5b0] bg-white text-[#6b5c50] hover:bg-[#f8f3ee]"
       }`}
     >
       {product?.is_sold_out
