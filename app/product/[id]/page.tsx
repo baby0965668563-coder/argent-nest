@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import LikeButton from "@/app/components/LikeButton";
 
 type OptionGroup = {
   name: string;
@@ -231,6 +232,13 @@ export default function ProductPage() {
             <p className="mt-5 text-3xl font-bold text-black">
               NT$ {Number(product.price || 0).toLocaleString()}
             </p>
+
+<div className="mt-4">
+  <LikeButton
+    productId={product.id}
+    initialLikes={Number(product.likes || 0)}
+  />
+</div>
 
             <div className="mt-5 inline-block rounded-full bg-[#f5eee7] px-4 py-2 text-sm font-medium text-[#8b6f5c]">
               {product.category}
