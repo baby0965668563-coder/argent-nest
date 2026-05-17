@@ -41,7 +41,7 @@ export default function ProductPage() {
   const [selectedImage, setSelectedImage] = useState("");
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
   const [showWarning, setShowWarning] = useState(false);
-const [customerNote, setCustomerNote] = useState("");
+  const [customerNote, setCustomerNote] = useState("");
   const [imageViewerOpen, setImageViewerOpen] = useState(false);
   const [viewerIndex, setViewerIndex] = useState(0);
 
