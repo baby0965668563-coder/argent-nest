@@ -79,6 +79,57 @@ export default function AdminOrdersPage() {
     });
   }
 
+  function buildOrderText(order: Order) {
+    const itemsText = (order.items || [])
+      .map((item, index) => {
+        const optionsText = item.options
+          ? Object.entries(item.options)
+              .map(([key, value]) => `${key}：${value}`)
+              .join("\n")
+          : "";
+
+        return [
+          `${index + 1}. ${item.name}`,
+          optionsText,
+          item.productNote ? `商品備註：${item.productNote}` : "",
+          item.note ? `顧客備註：${item.note}` : "",
+          `數量：${item.quantity}`,
+          `單價：NT$ ${item.price}`,
+          `小計：NT$ ${
+            Number(item.price || 0) * Number(item.quantity || 1)
+          }`,
+        ]
+          .filter(Boolean)
+          .join("\n");
+      })
+      .join("\n\n");
+
+    return `【Argent Nest 訂單】
+
+訂單時間：${formatDate(order.created_at)}
+訂單狀態：${order.status || "pending"}
+
+姓名：${order.customer_name}
+電話：${order.phone}
+LINE ID：${order.line_id || "未填"}
+取貨方式：${order.shipping_method || "未填"}
+
+訂單備註：
+${order.customer_note || "無"}
+
+商品明細：
+${itemsText}
+
+訂單總金額：NT$ ${order.total}`;
+  }
+
+  async function copyOrder(order: Order) {
+    const text = buildOrderText(order);
+
+    await navigator.clipboard.writeText(text);
+    alert("已複製訂單內容 ☁️");
+  }
+
   return (
     <main className="min-h-screen bg-[#faf7f2] px-4 py-6">
       <div className="mx-auto max-w-5xl">
@@ -154,14 +205,22 @@ export default function AdminOrdersPage() {
                       }
                       className="rounded-full border border-[#d8c5b0] bg-white px-3 py-2 text-sm text-[#6b5c50] outline-none"
                     >
-                      <option value="pending">pending</option>
-                      <option value="paid">paid</option>
-                      <option value="ordered">ordered</option>
-                      <option value="arrived">arrived</option>
-                      <option value="shipped">shipped</option>
-                      <option value="done">done</option>
-                      <option value="cancelled">cancelled</option>
+                      <option value="pending">待確認</option>
+                      <option value="paid">已付款</option>
+                      <option value="ordered">已訂貨</option>
+                      <option value="arrived">已到貨</option>
+                      <option value="shipped">已出貨</option>
+                      <option value="done">已完成</option>
+                      <option value="cancelled">已取消</option>
                     </select>
+
+                    <button
+                      type="button"
+                      onClick={() => copyOrder(order)}
+                      className="rounded-full bg-[#2e2e2e] px-4 py-2 text-sm text-white"
+                    >
+                      複製訂單
+                    </button>
                   </div>
                 </div>
 
@@ -215,6 +274,7 @@ export default function AdminOrdersPage() {
                             <span>
                               NT$ {item.price} × {item.quantity}
                             </span>
+
                             <span>
                               NT${" "}
                               {Number(item.price || 0) *
