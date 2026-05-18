@@ -70,22 +70,30 @@ export default function CheckoutPage() {
     try {
       setLoading(true);
 
-      const { data, error } = await supabase
-        .from("orders")
-        .insert([
-          {
-            customer_name: form.name,
-            phone: form.phone,
-            line_id: form.lineId,
-            shipping_method: form.shippingMethod,
-            customer_note: form.customerNote,
-            items: cart,
-            total,
-            status: "pending",
-          },
-        ])
-        .select("id")
-        .single();
+      const orderId =
+        typeof crypto !== "undefined" && "randomUUID" in crypto
+          ? crypto.randomUUID()
+          : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+      const { error } = await supabase.from("orders").insert([
+        {
+          id: orderId,
+          customer_name: form.name,
+          phone: form.phone,
+          line_id: form.lineId,
+          shipping_method: `${form.shippingMethod}${
+            form.shippingMethod === "超商取貨"
+              ? `｜${form.storeName}${
+                  form.storeAddress ? `｜${form.storeAddress}` : ""
+                }`
+              : ""
+          }`,
+          customer_note: form.customerNote,
+          items: cart,
+          total,
+          status: "pending",
+        },
+      ]);
 
       if (error) {
         console.error(error);
@@ -94,8 +102,7 @@ export default function CheckoutPage() {
       }
 
       localStorage.removeItem("cart");
-
-      window.location.href = `/order-success?id=${data.id}`;
+      window.location.href = `/order-success?id=${orderId}`;
     } finally {
       setLoading(false);
     }
