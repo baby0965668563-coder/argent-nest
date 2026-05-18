@@ -11,7 +11,7 @@ type CartItem = {
   quantity: number;
   options?: Record<string, string>;
   note?: string;
-  productNote?: string;
+ productNote?: string;
 };
 
 export default function CheckoutPage() {
@@ -70,14 +70,8 @@ export default function CheckoutPage() {
     try {
       setLoading(true);
 
-      const orderId =
-        typeof crypto !== "undefined" && "randomUUID" in crypto
-          ? crypto.randomUUID()
-          : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-
       const { error } = await supabase.from("orders").insert([
         {
-          id: orderId,
           customer_name: form.name,
           phone: form.phone,
           line_id: form.lineId,
@@ -102,7 +96,8 @@ export default function CheckoutPage() {
       }
 
       localStorage.removeItem("cart");
-      window.location.href = `/order-success?id=${orderId}`;
+
+      window.location.href = "/order-success";
     } finally {
       setLoading(false);
     }
