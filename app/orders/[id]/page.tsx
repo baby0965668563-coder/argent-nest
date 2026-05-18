@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
 type CartItem = {
@@ -26,6 +26,7 @@ type Order = {
   items: CartItem[];
   total: number;
   status: string;
+  order_token?: string;
 };
 
 const statusText: Record<string, string> = {
@@ -41,27 +42,36 @@ const statusText: Record<string, string> = {
 export default function OrderDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [loading, setLoading] = useState(true);
   const [order, setOrder] = useState<Order | null>(null);
 
   useEffect(() => {
-    if (params?.id) {
-      fetchOrder(String(params.id));
-    }
-  }, [params]);
+    const orderId = String(params?.id || "");
+    const token = searchParams.get("token") || "";
 
-  async function fetchOrder(orderId: string) {
+    if (!orderId || !token) {
+      setLoading(false);
+      return;
+    }
+
+    fetchOrder(orderId, token);
+  }, [params, searchParams]);
+
+  async function fetchOrder(orderId: string, token: string) {
     setLoading(true);
 
     const { data, error } = await supabase
       .from("orders")
       .select("*")
       .eq("id", orderId)
+      .eq("order_token", token)
       .single();
 
     if (error || !data) {
       console.error(error);
+      setOrder(null);
       setLoading(false);
       return;
     }
@@ -95,7 +105,11 @@ export default function OrderDetailPage() {
       <main className="min-h-screen bg-[#faf7f2] px-4 py-10">
         <div className="mx-auto max-w-3xl rounded-3xl bg-white p-8 text-center shadow-sm">
           <p className="text-lg font-semibold text-[#4b4038]">
-            找不到此訂單 ☁️
+            找不到此訂單，或查詢連結已失效 ☁️
+          </p>
+
+          <p className="mt-3 text-sm leading-7 text-[#8c7b70]">
+            請使用下單成功頁提供的完整訂單連結查看。
           </p>
 
           <button
