@@ -11,7 +11,7 @@ type CartItem = {
   quantity: number;
   options?: Record<string, string>;
   note?: string;
- productNote?: string;
+  productNote?: string;
 };
 
 export default function CheckoutPage() {
@@ -70,8 +70,13 @@ export default function CheckoutPage() {
     try {
       setLoading(true);
 
+      const orderId = crypto.randomUUID();
+      const orderToken = crypto.randomUUID();
+
       const { error } = await supabase.from("orders").insert([
         {
+          id: orderId,
+          order_token: orderToken,
           customer_name: form.name,
           phone: form.phone,
           line_id: form.lineId,
@@ -97,7 +102,7 @@ export default function CheckoutPage() {
 
       localStorage.removeItem("cart");
 
-      window.location.href = "/order-success";
+      window.location.href = `/orders/${orderId}?token=${orderToken}`;
     } finally {
       setLoading(false);
     }
@@ -157,9 +162,7 @@ export default function CheckoutPage() {
 
                   <input
                     value={form.storeAddress}
-                    onChange={(e) =>
-                      updateForm("storeAddress", e.target.value)
-                    }
+                    onChange={(e) => updateForm("storeAddress", e.target.value)}
                     placeholder="門市地址（可選）"
                     className="w-full rounded-2xl border border-[#e1d3c2] px-4 py-3 text-sm outline-none"
                   />
