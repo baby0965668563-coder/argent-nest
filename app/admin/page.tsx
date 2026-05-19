@@ -278,15 +278,47 @@ export default function AdminPage() {
   }
 
   async function deleteProduct(id: number) {
-    if (!confirm("確定要刪除這個商品嗎？")) return;
+  if (!confirm("確定要刪除這個商品嗎？")) return;
 
-    const { error } = await supabase.from("products").delete().eq("id", id);
+  const product = products.find((p) => p.id === id);
 
-    if (error) return alert("刪除失敗：" + error.message);
-
-    alert("刪除成功");
-    fetchProducts();
+  if (!product) {
+    alert("找不到商品");
+    return;
   }
+
+  const imagesToDelete =
+    Array.isArray(product.images) && product.images.length > 0
+      ? product.images
+      : product.image
+      ? [product.image]
+      : [];
+
+  for (const imageUrl of imagesToDelete) {
+    try {
+      const path = imageUrl.split("/products/")[1];
+
+      if (path) {
+        await supabase.storage.from("products").remove([path]);
+      }
+    } catch (err) {
+      console.error("圖片刪除失敗", err);
+    }
+  }
+
+  const { error } = await supabase
+    .from("products")
+    .delete()
+    .eq("id", id);
+
+  if (error) {
+    alert("刪除失敗：" + error.message);
+    return;
+  }
+
+  alert("商品與圖片已刪除");
+  fetchProducts();
+}
 
   if (checking) {
     return (
