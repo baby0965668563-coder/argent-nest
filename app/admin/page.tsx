@@ -122,25 +122,87 @@ export default function AdminPage() {
     setEditingImages([selected, ...others]);
   }
 
-  async function uploadOneImage(file: File) {
-    const fileName = `public/${uuidv4()}.jpg`;
+  async function compressImage(file: File): Promise<File> {
+  return new Promise((resolve) => {
+    const image = new Image();
 
-    const { error } = await supabase.storage
-      .from("products")
-      .upload(fileName, file, {
-        cacheControl: "3600",
-        upsert: true,
-        contentType: file.type || "image/jpeg",
-      });
+    image.onload = () => {
+      const canvas = document.createElement("canvas");
 
-    if (error) {
-      alert("圖片上傳失敗：" + error.message);
-      return null;
-    }
+      const maxWidth = 1200;
 
-    const { data } = supabase.storage.from("products").getPublicUrl(fileName);
-    return data.publicUrl;
+      const scale = maxWidth / image.width;
+
+      canvas.width =
+        image.width > maxWidth
+          ? maxWidth
+          : image.width;
+
+      canvas.height =
+        image.width > maxWidth
+          ? image.height * scale
+          : image.height;
+
+      const ctx = canvas.getContext("2d");
+
+      ctx?.drawImage(
+        image,
+        0,
+        0,
+        canvas.width,
+        canvas.height
+      );
+
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) {
+            resolve(file);
+            return;
+          }
+
+          const compressed = new File(
+            [blob],
+            file.name.replace(/\.\w+$/, ".jpg"),
+            {
+              type: "image/jpeg",
+            }
+          );
+
+          resolve(compressed);
+        },
+        "image/jpeg",
+        0.8
+      );
+    };
+
+    image.src = URL.createObjectURL(file);
+  });
+}
+
+async function uploadOneImage(file: File) {
+  const compressedFile = await compressImage(file);
+
+  const fileName = `public/${uuidv4()}.jpg`;
+
+  const { error } = await supabase.storage
+    .from("products")
+    .upload(fileName, compressedFile, {
+      cacheControl: "3600",
+      upsert: true,
+      contentType: "image/jpeg",
+    });
+
+  if (error) {
+    alert("圖片上傳失敗：" + error.message);
+    return null;
   }
+
+  const { data } = supabase.storage
+    .from("products")
+    .getPublicUrl(fileName);
+
+  return data.publicUrl;
+}
 
   async function uploadImages(files: File[]) {
     const urls: string[] = [];
