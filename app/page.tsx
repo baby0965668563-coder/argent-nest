@@ -520,6 +520,78 @@ const newestProducts = [...allProducts]
         </div>
       </section>
 
+<div className="mb-8 grid grid-cols-2 gap-3">
+  <button
+    onClick={() =>
+      router.push("/category/healing")
+    }
+    className="rounded-3xl bg-white p-5 text-left shadow-sm"
+  >
+    <p className="text-2xl">🧸</p>
+
+    <p className="mt-3 font-semibold text-[#4b4038]">
+      卡通療癒選物
+    </p>
+
+    <p className="mt-1 text-sm text-[#8c7b70]">
+      三麗鷗・迪士尼・娃娃
+    </p>
+  </button>
+
+  <button
+    onClick={() =>
+      router.push("/category/clothes")
+    }
+    className="rounded-3xl bg-white p-5 text-left shadow-sm"
+  >
+    <p className="text-2xl">🖤</p>
+
+    <p className="mt-3 font-semibold text-[#4b4038]">
+      微辣韓系穿搭
+    </p>
+
+    <p className="mt-1 text-sm text-[#8c7b70]">
+      慵懶感・奶油色系
+    </p>
+  </button>
+
+  <button
+    onClick={() =>
+      router.push(
+        "/category/accessories"
+      )
+    }
+    className="rounded-3xl bg-white p-5 text-left shadow-sm"
+  >
+    <p className="text-2xl">🎀</p>
+
+    <p className="mt-3 font-semibold text-[#4b4038]">
+      飾品包包
+    </p>
+
+    <p className="mt-1 text-sm text-[#8c7b70]">
+      女孩日常小物
+    </p>
+  </button>
+
+  <button
+    onClick={() =>
+      router.push("/category/flowers")
+    }
+    className="rounded-3xl bg-white p-5 text-left shadow-sm"
+  >
+    <p className="text-2xl">🌷</p>
+
+    <p className="mt-3 font-semibold text-[#4b4038]">
+      花束甜點
+    </p>
+
+    <p className="mt-1 text-sm text-[#8c7b70]">
+      節日限定系列
+    </p>
+  </button>
+</div>
+
 <section className="px-5 pb-16 md:px-10">
   <div className="mx-auto max-w-6xl">
     <div className="mb-8 text-center">
