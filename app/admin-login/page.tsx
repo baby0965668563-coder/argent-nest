@@ -9,60 +9,67 @@ export default function AdminLoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
-  const ADMIN_PASSWORD =
-    process.env.NEXT_PUBLIC_ADMIN_PASSWORD || "";
-
   function handleLogin() {
-    if (!ADMIN_PASSWORD) {
-      setError("尚未設定後台密碼");
+    if (password === "argentnest520") {
+      localStorage.setItem("argent_admin_login", "true");
+      router.push("/admin");
       return;
     }
 
-    if (password !== ADMIN_PASSWORD) {
-      setError("密碼錯誤");
-      return;
-    }
-
-    localStorage.setItem("argent_admin_login", "true");
-
-    router.push("/admin/orders");
+    setError("密碼錯誤，請再確認一次 ☁️");
   }
 
   return (
     <main className="min-h-screen bg-[#faf7f2] px-4 py-10">
-      <div className="mx-auto max-w-sm rounded-3xl bg-white p-6 shadow-sm">
-        <h1 className="text-2xl font-semibold text-[#4b4038]">
-          後台登入
-        </h1>
+      <div className="mx-auto max-w-md rounded-[32px] bg-white p-8 shadow-sm">
+        <div className="text-center">
+          <div className="text-5xl">🥛</div>
 
-        <p className="mt-2 text-sm text-[#9b8b7c]">
-          請輸入管理員密碼
-        </p>
+          <h1 className="mt-5 text-3xl font-bold text-[#4b4038]">
+            Argent Nest 後台登入
+          </h1>
 
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => {
-            setPassword(e.target.value);
-            setError("");
-          }}
-          placeholder="管理員密碼"
-          className="mt-5 w-full rounded-2xl border border-[#e1d3c2] px-4 py-3 text-sm outline-none"
-        />
-
-        {error && (
-          <p className="mt-2 text-sm text-red-500">
-            {error}
+          <p className="mt-3 text-sm leading-7 text-[#8c7b70]">
+            請輸入後台密碼進入管理頁面。
           </p>
-        )}
+        </div>
 
-        <button
-          type="button"
-          onClick={handleLogin}
-          className="mt-5 w-full rounded-full bg-[#2e2e2e] py-4 text-sm font-medium text-white"
-        >
-          登入後台
-        </button>
+        <div className="mt-8 space-y-4">
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => {
+              setPassword(e.target.value);
+              setError("");
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") handleLogin();
+            }}
+            placeholder="請輸入後台密碼"
+            className="w-full rounded-2xl border border-[#cdb9a8] bg-white px-4 py-4 text-sm text-[#3f332b] placeholder:text-[#9b8b80] outline-none"
+          />
+
+          {error && (
+            <p className="text-center text-sm text-red-500">
+              {error}
+            </p>
+          )}
+
+          <button
+            type="button"
+            onClick={handleLogin}
+            className="w-full rounded-full bg-[#2e2e2e] py-4 text-sm font-semibold text-white"
+          >
+            進入後台
+          </button>
+
+          <a
+            href="/"
+            className="block w-full rounded-full border border-[#d8c5b0] bg-white py-4 text-center text-sm text-[#6b5c50]"
+          >
+            回首頁
+          </a>
+        </div>
       </div>
     </main>
   );
