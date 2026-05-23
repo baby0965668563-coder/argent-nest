@@ -50,17 +50,35 @@ export default async function Home({ searchParams }: Props) {
 
   const allProducts = allProductsQuery.data || [];
   const displayProducts = products || [];
+
   const featuredProducts = allProducts.filter(
     (product: any) => product.is_featured === true
   );
-const newestProducts = [...allProducts]
-  .sort((a: any, b: any) => {
-    return (
-      new Date(b.created_at || "").getTime() -
-      new Date(a.created_at || "").getTime()
-    );
-  })
-  .slice(0, 6);
+
+  const newestProducts = [...allProducts]
+    .sort((a: any, b: any) => {
+      return (
+        new Date(b.created_at || "").getTime() -
+        new Date(a.created_at || "").getTime()
+      );
+    })
+    .slice(0, 6);
+
+  const healingProducts = allProducts
+    .filter((product: any) => product.category === "卡通療癒選物")
+    .slice(0, 4);
+
+  const clothesProducts = allProducts
+    .filter((product: any) => product.category === "微辣韓系穿搭")
+    .slice(0, 4);
+
+  const accessoriesProducts = allProducts
+    .filter((product: any) => product.category === "飾品包包")
+    .slice(0, 4);
+
+  const flowerProducts = allProducts
+    .filter((product: any) => product.category === "花束甜點")
+    .slice(0, 4);
 
   const getImage = (product: any) => {
     return (
@@ -104,7 +122,6 @@ const newestProducts = [...allProducts]
 
   function getBadge(product: any) {
     const soldOut = product.is_sold_out === true;
-
     const createdAt = product.created_at ? new Date(product.created_at) : null;
     const now = new Date();
 
@@ -125,38 +142,104 @@ const newestProducts = [...allProducts]
     const stock = Number(product.stock || 0);
 
     if (soldOut) {
-      return (
-        <p className="text-xs text-gray-400">
-          目前已售完 ☁️
-        </p>
-      );
+      return <p className="text-xs text-gray-400">目前已售完 ☁️</p>;
     }
 
     if (stock > 0) {
       return (
         <>
-          <p className="text-xs text-[#2e7d32]">
-            現貨 {stock} 件 ☁️
-          </p>
+          <p className="text-xs text-[#2e7d32]">現貨 {stock} 件 ☁️</p>
 
           {stock <= 3 && (
-            <p className="text-xs text-red-500">
-              庫存不多了 ☁️
-            </p>
+            <p className="text-xs text-red-500">庫存不多了 ☁️</p>
           )}
         </>
       );
     }
 
+    return <p className="text-xs text-[#8b6f5c]">預購商品 ☁️</p>;
+  }
+
+  function ProductMiniCard({ product }: { product: any }) {
+    const imageSrc = getImage(product);
+
     return (
-      <p className="text-xs text-[#8b6f5c]">
-        預購商品 ☁️
-      </p>
+      <a
+        href={`/product/${product.id}`}
+        className="overflow-hidden rounded-[2rem] bg-white text-left shadow-sm transition hover:-translate-y-1"
+      >
+        <div className="aspect-square overflow-hidden bg-[#f4eee8]">
+          {imageSrc ? (
+            <img
+              src={imageSrc}
+              alt={product.name}
+              loading="lazy"
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <div className="flex h-full items-center justify-center text-sm text-[#b49a88]">
+              No Image
+            </div>
+          )}
+        </div>
+
+        <div className="p-4">
+          <p className="line-clamp-2 text-sm font-semibold leading-6 text-[#4b4038]">
+            {product.name}
+          </p>
+
+          <p className="mt-2 font-bold text-[#8b6f5c]">
+            NT$ {Number(product.price || 0).toLocaleString()}
+          </p>
+        </div>
+      </a>
+    );
+  }
+
+  function CategoryProductSection({
+    title,
+    emoji,
+    href,
+    products,
+  }: {
+    title: string;
+    emoji: string;
+    href: string;
+    products: any[];
+  }) {
+    if (products.length === 0) return null;
+
+    return (
+      <section className="px-5 pb-14 md:px-10">
+        <div className="mx-auto max-w-6xl">
+          <div className="mb-5 flex items-end justify-between">
+            <div>
+              <p className="mb-2 text-[11px] uppercase tracking-[0.35em] text-[#a08060]">
+                Category Pick
+              </p>
+
+              <h3 className="text-2xl font-bold tracking-tight text-[#4b4038] md:text-3xl">
+                {emoji} {title}
+              </h3>
+            </div>
+
+            <a href={href} className="text-sm text-[#8b6f5c]">
+              查看更多 →
+            </a>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-4 md:gap-5">
+            {products.map((product: any) => (
+              <ProductMiniCard key={product.id} product={product} />
+            ))}
+          </div>
+        </div>
+      </section>
     );
   }
 
   return (
-     <main className="min-h-screen bg-[#f8f5f0] overflow-x-hidden pb-20 text-[#2e2e2e] md:pb-0">
+    <main className="min-h-screen overflow-x-hidden bg-[#f8f5f0] pb-20 text-[#2e2e2e] md:pb-0">
       <header className="sticky top-0 z-50 border-b border-[#e8ddd4]/70 bg-[#f8f5f0]/90 px-5 py-4 backdrop-blur md:px-10">
         <div className="mx-auto flex max-w-6xl items-center justify-between">
           <a href="/" className="text-xl font-bold tracking-tight">
@@ -176,9 +259,51 @@ const newestProducts = [...allProducts]
           </nav>
         </div>
       </header>
-      
+
       <TopNoticeBar />
       <HomeBanner />
+
+      <section className="px-5 pb-14 md:px-10">
+        <div className="mx-auto grid max-w-6xl grid-cols-2 gap-3 md:grid-cols-4">
+          <a
+            href="/category/healing"
+            className="rounded-3xl bg-white p-5 text-left shadow-sm transition hover:-translate-y-1"
+          >
+            <p className="text-2xl">🧸</p>
+            <p className="mt-3 font-semibold text-[#4b4038]">卡通療癒選物</p>
+            <p className="mt-1 text-sm text-[#8c7b70]">
+              三麗鷗・迪士尼・娃娃
+            </p>
+          </a>
+
+          <a
+            href="/category/clothes"
+            className="rounded-3xl bg-white p-5 text-left shadow-sm transition hover:-translate-y-1"
+          >
+            <p className="text-2xl">🖤</p>
+            <p className="mt-3 font-semibold text-[#4b4038]">微辣韓系穿搭</p>
+            <p className="mt-1 text-sm text-[#8c7b70]">慵懶感・奶油色系</p>
+          </a>
+
+          <a
+            href="/category/accessories"
+            className="rounded-3xl bg-white p-5 text-left shadow-sm transition hover:-translate-y-1"
+          >
+            <p className="text-2xl">🎀</p>
+            <p className="mt-3 font-semibold text-[#4b4038]">飾品包包</p>
+            <p className="mt-1 text-sm text-[#8c7b70]">女孩日常小物</p>
+          </a>
+
+          <a
+            href="/category/flowers"
+            className="rounded-3xl bg-white p-5 text-left shadow-sm transition hover:-translate-y-1"
+          >
+            <p className="text-2xl">🌷</p>
+            <p className="mt-3 font-semibold text-[#4b4038]">花束甜點</p>
+            <p className="mt-1 text-sm text-[#8c7b70]">節日限定系列</p>
+          </a>
+        </div>
+      </section>
 
       {featuredProducts.length > 0 && (
         <section id="featured" className="px-5 pb-14 md:px-10">
@@ -216,6 +341,7 @@ const newestProducts = [...allProducts]
                         <img
                           src={imageSrc}
                           alt={product.name}
+                          loading="lazy"
                           className="h-full w-full object-cover"
                         />
                       ) : (
@@ -242,74 +368,102 @@ const newestProducts = [...allProducts]
         </section>
       )}
 
-<section className="px-5 pb-14 md:px-10">
-  <div className="mx-auto max-w-6xl">
-    <div className="mb-8 flex items-end justify-between">
-      <div>
-        <p className="mb-2 text-[11px] uppercase tracking-[0.35em] text-[#a08060]">
-          NEW ARRIVALS
-        </p>
+      {newestProducts.length > 0 && (
+        <section className="px-5 pb-14 md:px-10">
+          <div className="mx-auto max-w-6xl">
+            <div className="mb-8 flex items-end justify-between">
+              <div>
+                <p className="mb-2 text-[11px] uppercase tracking-[0.35em] text-[#a08060]">
+                  NEW ARRIVALS
+                </p>
 
-        <h3 className="text-3xl font-bold tracking-tight">
-          最近上架 ☁️
-        </h3>
+                <h3 className="text-3xl font-bold tracking-tight">
+                  最近上架 ☁️
+                </h3>
 
-        <p className="mt-3 text-sm leading-7 text-[#8b7b6e]">
-          最近偷偷新增的小可愛們。
-        </p>
-      </div>
-
-      <a
-        href="#hot"
-        className="hidden text-sm text-[#8b6f5c] md:block"
-      >
-        查看更多 →
-      </a>
-    </div>
-
-    <div className="grid grid-cols-2 gap-4 md:grid-cols-6 md:gap-5">
-      {newestProducts.map((product: any) => {
-        const imageSrc = getImage(product);
-
-        return (
-          <a
-            key={product.id}
-            href={`/product/${product.id}`}
-            className="overflow-hidden rounded-[2rem] bg-white shadow-sm transition hover:-translate-y-1"
-          >
-            <div className="relative aspect-[4/5] overflow-hidden bg-[#f4eee8]">
-              <div className="absolute left-3 top-3 z-10 rounded-full bg-white/90 px-3 py-1 text-[10px] text-[#8b6f5c] backdrop-blur">
-                NEW
+                <p className="mt-3 text-sm leading-7 text-[#8b7b6e]">
+                  最近偷偷新增的小可愛們。
+                </p>
               </div>
 
-              {imageSrc ? (
-                <img
-                  src={imageSrc}
-                  alt={product.name}
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <div className="flex h-full items-center justify-center text-sm text-[#b49a88]">
-                  No Image
-                </div>
-              )}
+              <a href="#hot" className="hidden text-sm text-[#8b6f5c] md:block">
+                查看更多 →
+              </a>
             </div>
 
-            <div className="p-3">
-              <p className="line-clamp-2 text-sm font-semibold leading-6">
-                {product.name}
-              </p>
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-6 md:gap-5">
+              {newestProducts.map((product: any) => {
+                const imageSrc = getImage(product);
 
-              <p className="mt-2 text-sm font-bold text-[#8b6f5c]">
-                NT$ {Number(product.price || 0).toLocaleString()}
-              </p>
+                return (
+                  <a
+                    key={product.id}
+                    href={`/product/${product.id}`}
+                    className="overflow-hidden rounded-[2rem] bg-white shadow-sm transition hover:-translate-y-1"
+                  >
+                    <div className="relative aspect-[4/5] overflow-hidden bg-[#f4eee8]">
+                      <div className="absolute left-3 top-3 z-10 rounded-full bg-white/90 px-3 py-1 text-[10px] text-[#8b6f5c] backdrop-blur">
+                        NEW
+                      </div>
+
+                      {imageSrc ? (
+                        <img
+                          src={imageSrc}
+                          alt={product.name}
+                          loading="lazy"
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-full items-center justify-center text-sm text-[#b49a88]">
+                          No Image
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="p-3">
+                      <p className="line-clamp-2 text-sm font-semibold leading-6">
+                        {product.name}
+                      </p>
+
+                      <p className="mt-2 text-sm font-bold text-[#8b6f5c]">
+                        NT$ {Number(product.price || 0).toLocaleString()}
+                      </p>
+                    </div>
+                  </a>
+                );
+              })}
             </div>
-          </a>
-        );
-      })}
-    </div>
-  </div>
-</section>
+          </div>
+        </section>
+      )}
+
+      <CategoryProductSection
+        title="卡通療癒選物"
+        emoji="🧸"
+        href="/category/healing"
+        products={healingProducts}
+      />
+
+      <CategoryProductSection
+        title="微辣韓系穿搭"
+        emoji="🖤"
+        href="/category/clothes"
+        products={clothesProducts}
+      />
+
+      <CategoryProductSection
+        title="飾品包包"
+        emoji="🎀"
+        href="/category/accessories"
+        products={accessoriesProducts}
+      />
+
+      <CategoryProductSection
+        title="花束甜點"
+        emoji="🌷"
+        href="/category/flowers"
+        products={flowerProducts}
+      />
 
       <section id="categories" className="px-5 pb-14 md:px-10 md:pb-16">
         <div className="mx-auto max-w-6xl">
@@ -416,32 +570,32 @@ const newestProducts = [...allProducts]
             )}
           </form>
 
-<div className="mb-10">
-  <p className="mb-3 text-xs tracking-[0.25em] text-[#a08060]">
-    HOT SEARCH ☁️
-  </p>
+          <div className="mb-10">
+            <p className="mb-3 text-xs tracking-[0.25em] text-[#a08060]">
+              HOT SEARCH ☁️
+            </p>
 
-  <div className="flex flex-wrap gap-3">
-    {[
-      "三麗鷗",
-      "吉伊卡哇",
-      "迪士尼",
-      "韓系穿搭",
-      "奶油風",
-      "花束",
-      "飾品",
-      "包包",
-    ].map((tag) => (
-      <a
-        key={tag}
-        href={`/?q=${encodeURIComponent(tag)}#hot`}
-        className="rounded-full border border-[#e8ddd4] bg-white px-4 py-2 text-sm text-[#6b5c50] transition hover:bg-[#f5eee7]"
-      >
-        #{tag}
-      </a>
-    ))}
-  </div>
-</div>
+            <div className="flex flex-wrap gap-3">
+              {[
+                "三麗鷗",
+                "吉伊卡哇",
+                "迪士尼",
+                "韓系穿搭",
+                "奶油風",
+                "花束",
+                "飾品",
+                "包包",
+              ].map((tag) => (
+                <a
+                  key={tag}
+                  href={`/?q=${encodeURIComponent(tag)}#hot`}
+                  className="rounded-full border border-[#e8ddd4] bg-white px-4 py-2 text-sm text-[#6b5c50] transition hover:bg-[#f5eee7]"
+                >
+                  #{tag}
+                </a>
+              ))}
+            </div>
+          </div>
 
           <div className="grid grid-cols-2 gap-4 md:grid-cols-4 md:gap-5">
             {displayProducts.map((product: any) => {
@@ -503,9 +657,9 @@ const newestProducts = [...allProducts]
                     <ProductQuickView product={product} />
                     <LineAskButton product={product} />
                     <LikeButton
-  productId={product.id}
-  initialLikes={Number(product.likes || 0)}
-/>
+                      productId={product.id}
+                      initialLikes={Number(product.likes || 0)}
+                    />
                   </div>
                 </div>
               );
@@ -520,129 +674,57 @@ const newestProducts = [...allProducts]
         </div>
       </section>
 
-<div className="mb-8 grid grid-cols-2 gap-3">
-  <button
-    onClick={() =>
-      router.push("/category/healing")
-    }
-    className="rounded-3xl bg-white p-5 text-left shadow-sm"
-  >
-    <p className="text-2xl">🧸</p>
+      <section className="px-5 pb-16 md:px-10">
+        <div className="mx-auto max-w-6xl">
+          <div className="mb-8 text-center">
+            <p className="mb-2 text-[11px] uppercase tracking-[0.35em] text-[#a08060]">
+              SHOPPING NOTICE
+            </p>
 
-    <p className="mt-3 font-semibold text-[#4b4038]">
-      卡通療癒選物
-    </p>
+            <h3 className="text-3xl font-bold tracking-tight">
+              安心購買小提醒 ☁️
+            </h3>
 
-    <p className="mt-1 text-sm text-[#8c7b70]">
-      三麗鷗・迪士尼・娃娃
-    </p>
-  </button>
+            <p className="mt-3 text-sm leading-7 text-[#8b7b6e]">
+              下單前先看一下，購買會更安心。
+            </p>
+          </div>
 
-  <button
-    onClick={() =>
-      router.push("/category/clothes")
-    }
-    className="rounded-3xl bg-white p-5 text-left shadow-sm"
-  >
-    <p className="text-2xl">🖤</p>
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+            <div className="rounded-[2rem] bg-white p-5 shadow-sm">
+              <p className="mb-3 text-3xl">📦</p>
+              <h4 className="mb-2 font-bold">預購時間</h4>
+              <p className="text-sm leading-7 text-[#8b7b6e]">
+                預購約 14–21 天，不含假日與連續假期。
+              </p>
+            </div>
 
-    <p className="mt-3 font-semibold text-[#4b4038]">
-      微辣韓系穿搭
-    </p>
+            <div className="rounded-[2rem] bg-white p-5 shadow-sm">
+              <p className="mb-3 text-3xl">🎥</p>
+              <h4 className="mb-2 font-bold">開箱錄影</h4>
+              <p className="text-sm leading-7 text-[#8b7b6e]">
+                收到商品請全程錄影，一鏡到底不剪輯。
+              </p>
+            </div>
 
-    <p className="mt-1 text-sm text-[#8c7b70]">
-      慵懶感・奶油色系
-    </p>
-  </button>
+            <div className="rounded-[2rem] bg-white p-5 shadow-sm">
+              <p className="mb-3 text-3xl">💬</p>
+              <h4 className="mb-2 font-bold">急單確認</h4>
+              <p className="text-sm leading-7 text-[#8b7b6e]">
+                急件請先私訊確認，避免等待時間不符合需求。
+              </p>
+            </div>
 
-  <button
-    onClick={() =>
-      router.push(
-        "/category/accessories"
-      )
-    }
-    className="rounded-3xl bg-white p-5 text-left shadow-sm"
-  >
-    <p className="text-2xl">🎀</p>
-
-    <p className="mt-3 font-semibold text-[#4b4038]">
-      飾品包包
-    </p>
-
-    <p className="mt-1 text-sm text-[#8c7b70]">
-      女孩日常小物
-    </p>
-  </button>
-
-  <button
-    onClick={() =>
-      router.push("/category/flowers")
-    }
-    className="rounded-3xl bg-white p-5 text-left shadow-sm"
-  >
-    <p className="text-2xl">🌷</p>
-
-    <p className="mt-3 font-semibold text-[#4b4038]">
-      花束甜點
-    </p>
-
-    <p className="mt-1 text-sm text-[#8c7b70]">
-      節日限定系列
-    </p>
-  </button>
-</div>
-
-<section className="px-5 pb-16 md:px-10">
-  <div className="mx-auto max-w-6xl">
-    <div className="mb-8 text-center">
-      <p className="mb-2 text-[11px] uppercase tracking-[0.35em] text-[#a08060]">
-        SHOPPING NOTICE
-      </p>
-
-      <h3 className="text-3xl font-bold tracking-tight">
-        安心購買小提醒 ☁️
-      </h3>
-
-      <p className="mt-3 text-sm leading-7 text-[#8b7b6e]">
-        下單前先看一下，購買會更安心。
-      </p>
-    </div>
-
-    <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-      <div className="rounded-[2rem] bg-white p-5 shadow-sm">
-        <p className="mb-3 text-3xl">📦</p>
-        <h4 className="mb-2 font-bold">預購時間</h4>
-        <p className="text-sm leading-7 text-[#8b7b6e]">
-          預購約 14–21 天，不含假日與連續假期。
-        </p>
-      </div>
-
-      <div className="rounded-[2rem] bg-white p-5 shadow-sm">
-        <p className="mb-3 text-3xl">🎥</p>
-        <h4 className="mb-2 font-bold">開箱錄影</h4>
-        <p className="text-sm leading-7 text-[#8b7b6e]">
-          收到商品請全程錄影，一鏡到底不剪輯。
-        </p>
-      </div>
-
-      <div className="rounded-[2rem] bg-white p-5 shadow-sm">
-        <p className="mb-3 text-3xl">💬</p>
-        <h4 className="mb-2 font-bold">急單確認</h4>
-        <p className="text-sm leading-7 text-[#8b7b6e]">
-          急件請先私訊確認，避免等待時間不符合需求。
-        </p>
-      </div>
-
-      <div className="rounded-[2rem] bg-white p-5 shadow-sm">
-        <p className="mb-3 text-3xl">🤍</p>
-        <h4 className="mb-2 font-bold">闆娘選物</h4>
-        <p className="text-sm leading-7 text-[#8b7b6e]">
-          每款都會盡量挑選有質感、療癒、適合日常的小物。
-        </p>
-      </div>
-    </div>
-  </div>
-</section>
+            <div className="rounded-[2rem] bg-white p-5 shadow-sm">
+              <p className="mb-3 text-3xl">🤍</p>
+              <h4 className="mb-2 font-bold">闆娘選物</h4>
+              <p className="text-sm leading-7 text-[#8b7b6e]">
+                每款都會盡量挑選有質感、療癒、適合日常的小物。
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
 
       <section className="px-5 pb-24 md:px-10">
         <div className="mx-auto max-w-5xl overflow-hidden rounded-[2.5rem] bg-[#efe7de]">
@@ -675,12 +757,9 @@ const newestProducts = [...allProducts]
             <div className="relative flex items-center justify-center">
               <div className="overflow-hidden rounded-[2rem] shadow-[0_12px_40px_rgba(0,0,0,0.12)]">
                 <img
-                  src={
-                    getImage(allProducts[1]) ||
-                    getImage(allProducts[0]) ||
-                    fallbackImage
-                  }
+                  src={getImage(allProducts[1]) || getImage(allProducts[0]) || fallbackImage}
                   alt="Argent Nest Mood"
+                  loading="lazy"
                   className="h-[500px] w-full object-cover md:w-[380px]"
                 />
               </div>
@@ -721,6 +800,7 @@ const newestProducts = [...allProducts]
               >
                 <img
                   src={getImage(allProducts[i]) || fallbackImage}
+                  loading="lazy"
                   className="h-56 w-full object-cover"
                   alt="Argent Nest daily mood"
                 />
@@ -730,49 +810,46 @@ const newestProducts = [...allProducts]
         </div>
       </section>
 
-<section className="px-5 pb-24 md:px-10">
-  <div className="mx-auto max-w-6xl">
-    <div className="mb-10 text-center">
-      <p className="mb-2 text-[11px] uppercase tracking-[0.35em] text-[#a08060]">
-        LOOKBOOK
-      </p>
+      <section className="px-5 pb-24 md:px-10">
+        <div className="mx-auto max-w-6xl">
+          <div className="mb-10 text-center">
+            <p className="mb-2 text-[11px] uppercase tracking-[0.35em] text-[#a08060]">
+              LOOKBOOK
+            </p>
 
-      <h3 className="text-3xl font-bold tracking-tight">
-        Argent Nest 的穿搭與療癒角落 ☁️
-      </h3>
+            <h3 className="text-3xl font-bold tracking-tight">
+              Argent Nest 的穿搭與療癒角落 ☁️
+            </h3>
 
-      <p className="mt-3 text-sm leading-7 text-[#8b7b6e]">
-        一些奶油色、韓系感、女生房間裡會出現的小日常。
-      </p>
-    </div>
-
-    <div className="grid grid-cols-2 gap-4 md:grid-cols-4 md:gap-5">
-      {[0, 1, 2, 3].map((i) => {
-        const product = allProducts[i];
-        const image =
-          product?.image ||
-          (Array.isArray(product?.images) && product.images.length > 0
-            ? product.images[0]
-            : fallbackImage);
-
-        return (
-          <div
-            key={i}
-            className={`overflow-hidden rounded-[2rem] bg-white shadow-sm ${
-              i === 1 || i === 3 ? "mt-8" : ""
-            }`}
-          >
-            <img
-              src={image}
-              alt="Argent Nest Lookbook"
-              className="h-64 w-full object-cover md:h-80"
-            />
+            <p className="mt-3 text-sm leading-7 text-[#8b7b6e]">
+              一些奶油色、韓系感、女生房間裡會出現的小日常。
+            </p>
           </div>
-        );
-      })}
-    </div>
-  </div>
-</section>
+
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-4 md:gap-5">
+            {[0, 1, 2, 3].map((i) => {
+              const product = allProducts[i];
+              const image = getImage(product) || fallbackImage;
+
+              return (
+                <div
+                  key={i}
+                  className={`overflow-hidden rounded-[2rem] bg-white shadow-sm ${
+                    i === 1 || i === 3 ? "mt-8" : ""
+                  }`}
+                >
+                  <img
+                    src={image}
+                    alt="Argent Nest Lookbook"
+                    loading="lazy"
+                    className="h-64 w-full object-cover md:h-80"
+                  />
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
 
       <footer className="border-t border-[#e8ddd4] bg-[#f6f1eb] px-5 py-16 md:px-10">
         <div className="mx-auto grid max-w-6xl gap-12 md:grid-cols-4">
