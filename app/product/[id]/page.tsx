@@ -41,7 +41,9 @@ export default function ProductPage() {
 
   const [product, setProduct] = useState<any>(null);
   const [selectedImage, setSelectedImage] = useState("");
-  const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
+  const [selectedOptions, setSelectedOptions] = useState<
+    Record<string, string>
+  >({});
   const [customerNote, setCustomerNote] = useState("");
   const [loading, setLoading] = useState(true);
 
@@ -68,7 +70,10 @@ export default function ProductPage() {
 
     const imgs =
       typeof data?.images === "string"
-        ? data.images.split(",").map((img: string) => img.trim()).filter(Boolean)
+        ? data.images
+            .split(",")
+            .map((img: string) => img.trim())
+            .filter(Boolean)
         : Array.isArray(data?.images)
         ? data.images
         : [];
@@ -108,13 +113,43 @@ export default function ProductPage() {
 
   const optionGroups = parseOptions(product.options || "");
 
-  const hasMissingOptions = optionGroups.some(
+  // variants
+  const variants = Array.isArray(product.variants)
+    ? product.variants
+    : [];
+
+  const variantGroup =
+    variants.length > 0
+      ? {
+          name: "款式",
+          values: variants.map((v: any) => v.name),
+        }
+      : null;
+
+  const allOptionGroups = variantGroup
+    ? [variantGroup, ...optionGroups]
+    : optionGroups;
+
+  const selectedVariant = variants.find(
+    (v: any) => v.name === selectedOptions["款式"]
+  );
+
+  const displayPrice = selectedVariant
+    ? Number(selectedVariant.price || 0)
+    : Number(product.price || 0);
+
+  const displayVipPrice = selectedVariant
+    ? Number(selectedVariant.vipPrice || 0)
+    : Number(product.vip_price || 0);
+
+  const hasMissingOptions = allOptionGroups.some(
     (group) => !selectedOptions[group.name]
   );
 
   return (
     <main className="min-h-screen bg-[#faf7f2] px-4 py-6">
       <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
+        {/* 左側圖片 */}
         <section>
           <div className="bg-white rounded-3xl overflow-hidden shadow-sm">
             {selectedImage ? (
@@ -143,13 +178,18 @@ export default function ProductPage() {
                       : "border-transparent"
                   }`}
                 >
-                  <img src={img} alt="" className="w-full h-full object-cover" />
+                  <img
+                    src={img}
+                    alt=""
+                    className="w-full h-full object-cover"
+                  />
                 </button>
               ))}
             </div>
           )}
         </section>
 
+        {/* 右側資訊 */}
         <section className="bg-white rounded-3xl p-6 shadow-sm">
           <div className="flex items-start justify-between gap-4">
             <div>
@@ -165,21 +205,23 @@ export default function ProductPage() {
             <LikeButton productId={product.id} />
           </div>
 
-           <div className="mt-5">
-  <p className="text-2xl font-semibold text-[#4b4038]">
-    NT$ {Number(product.price || 0).toLocaleString()}
-  </p>
+          {/* 價格 */}
+          <div className="mt-5">
+            <p className="text-2xl font-semibold text-[#4b4038]">
+              NT$ {displayPrice.toLocaleString()}
+            </p>
 
-  {product.vip_price && (
-    <p className="mt-2 text-sm font-semibold text-[#b07255]">
-      VIP 價 NT$ {Number(product.vip_price || 0).toLocaleString()}
-    </p>
-  )}
-</div>
+            {displayVipPrice > 0 && (
+              <p className="mt-2 text-sm font-medium text-[#b07255]">
+                VIP NT$ {displayVipPrice.toLocaleString()}
+              </p>
+            )}
+          </div>
 
-          {optionGroups.length > 0 && (
+          {/* 規格 */}
+          {allOptionGroups.length > 0 && (
             <div className="mt-6 space-y-5">
-              {optionGroups.map((group) => (
+              {allOptionGroups.map((group) => (
                 <div key={group.name}>
                   <p className="font-semibold mb-3 text-[#6b5c50]">
                     {group.name}
@@ -187,7 +229,8 @@ export default function ProductPage() {
 
                   <div className="flex flex-wrap gap-2">
                     {group.values.map((value) => {
-                      const selected = selectedOptions[group.name] === value;
+                      const selected =
+                        selectedOptions[group.name] === value;
 
                       return (
                         <button
@@ -215,6 +258,7 @@ export default function ProductPage() {
             </div>
           )}
 
+          {/* 備註 */}
           <div className="mt-6">
             <p className="mb-2 text-sm font-medium text-[#6b5c50]">
               商品備註
@@ -228,18 +272,28 @@ export default function ProductPage() {
             />
           </div>
 
+          {/* 商品描述 */}
           {product.description && (
             <div className="mt-8">
-              <h2 className="font-semibold mb-3 text-[#4b4038]">商品描述</h2>
+              <h2 className="font-semibold mb-3 text-[#4b4038]">
+                商品描述
+              </h2>
+
               <p className="text-gray-600 leading-7 whitespace-pre-line">
                 {product.description}
               </p>
             </div>
           )}
 
+          {/* 加入購物車 */}
           <div className="mt-8">
             <AddToCartButton
-              product={product}
+              product={{
+                ...product,
+                finalPrice: displayPrice,
+                finalVipPrice: displayVipPrice,
+                selectedVariant,
+              }}
               selectedOptions={selectedOptions}
               customerNote={customerNote}
               disabled={hasMissingOptions}
