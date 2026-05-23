@@ -165,9 +165,17 @@ export default function ProductPage() {
             <LikeButton productId={product.id} />
           </div>
 
-          <p className="text-2xl font-semibold mt-5 text-[#4b4038]">
-            NT$ {product.price}
-          </p>
+           <div className="mt-5">
+  <p className="text-2xl font-semibold text-[#4b4038]">
+    NT$ {Number(product.price || 0).toLocaleString()}
+  </p>
+
+  {product.vip_price && (
+    <p className="mt-2 text-sm font-semibold text-[#b07255]">
+      VIP 價 NT$ {Number(product.vip_price || 0).toLocaleString()}
+    </p>
+  )}
+</div>
 
           {optionGroups.length > 0 && (
             <div className="mt-6 space-y-5">
