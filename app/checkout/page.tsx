@@ -363,7 +363,7 @@ export default function CheckoutPage() {
                   )
                 }
                 placeholder="姓名 *"
-                className="w-full rounded-2xl border border-[#e1d3c2] bg-white px-4 py-3 text-sm"
+                className="w-full rounded-2xl border border-[#e1d3c2] bg-white px-4 py-3 text-sm text-[#4b4038] outline-none placeholder:text-gray-400"
               />
 
               <input
@@ -375,14 +375,14 @@ export default function CheckoutPage() {
                   )
                 }
                 placeholder="手機號碼 *"
-                className="w-full rounded-2xl border border-[#e1d3c2] bg-white px-4 py-3 text-sm"
+               className="w-full rounded-2xl border border-[#e1d3c2] bg-white px-4 py-3 text-sm text-[#4b4038] outline-none placeholder:text-gray-400"
               />
 
               <input
                 value={form.lineId}
                 disabled
                 placeholder="LINE會員已登入"
-                className="w-full rounded-2xl border border-[#e1d3c2] bg-[#f8f3ec] px-4 py-3 text-sm text-gray-500"
+               className="w-full rounded-2xl border border-[#e1d3c2] bg-[#f8f3ec] px-4 py-3 text-sm text-[#4b4038] outline-none placeholder:text-gray-400"
               />
 
               <select
@@ -395,7 +395,7 @@ export default function CheckoutPage() {
                     e.target.value
                   )
                 }
-                className="w-full rounded-2xl border border-[#e1d3c2] bg-white px-4 py-3 text-sm"
+               className="w-full rounded-2xl border border-[#e1d3c2] bg-white px-4 py-3 text-sm text-[#4b4038] outline-none"
               >
                 <option value="超商取貨">
                   超商取貨 $60
@@ -424,7 +424,7 @@ export default function CheckoutPage() {
                       )
                     }
                     placeholder="超商門市名稱 *"
-                    className="w-full rounded-2xl border border-[#e1d3c2] bg-white px-4 py-3 text-sm"
+                    className="w-full rounded-2xl border border-[#e1d3c2] bg-white px-4 py-3 text-sm text-[#4b4038] outline-none"
                   />
 
                   <input
@@ -438,7 +438,7 @@ export default function CheckoutPage() {
                       )
                     }
                     placeholder="門市地址（可選）"
-                    className="w-full rounded-2xl border border-[#e1d3c2] bg-white px-4 py-3 text-sm"
+                    className="w-full rounded-2xl border border-[#e1d3c2] bg-white px-4 py-3 text-sm text-[#4b4038] outline-none"
                   />
                 </>
               )}
@@ -454,7 +454,7 @@ export default function CheckoutPage() {
                   )
                 }
                 placeholder="訂單備註"
-                className="min-h-[100px] w-full resize-none rounded-2xl border border-[#e1d3c2] bg-white px-4 py-3 text-sm"
+               className="min-h-[100px] w-full resize-none rounded-2xl border border-[#e1d3c2] bg-white px-4 py-3 text-sm text-[#4b4038] outline-none placeholder:text-gray-400"
               />
             </div>
           </section>
