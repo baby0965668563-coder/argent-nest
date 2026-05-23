@@ -5,25 +5,15 @@ import { supabase } from "@/lib/supabase";
 
 type CartItem = {
   id: string;
-
   name: string;
-
   price: number;
-
   originalPrice?: number;
-
   vipPrice?: number | null;
-
   isVipPrice?: boolean;
-
   image?: string;
-
   quantity: number;
-
   options?: Record<string, string>;
-
   note?: string;
-
   productNote?: string;
 
   selectedVariant?: {
@@ -36,33 +26,53 @@ type CartItem = {
 
 export default function CheckoutPage() {
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  const [loading, setLoading] =
-    useState(false);
+  const [member, setMember] = useState<any>(null);
 
   const [form, setForm] = useState({
     name: "",
-
     phone: "",
-
     lineId: "",
-
     shippingMethod: "超商取貨",
-
     storeName: "",
-
     storeAddress: "",
-
     customerNote: "",
   });
 
   useEffect(() => {
     const savedCart = JSON.parse(
-      localStorage.getItem("cart") ||
-        "[]"
+      localStorage.getItem("cart") || "[]"
     );
 
     setCart(savedCart);
+
+    const savedUser =
+      localStorage.getItem("argent_user");
+
+    if (savedUser) {
+      try {
+        const parsedUser =
+          JSON.parse(savedUser);
+
+        setMember(parsedUser);
+
+        setForm((prev) => ({
+          ...prev,
+
+          name:
+            parsedUser?.name || "",
+
+          lineId:
+            parsedUser?.line_user_id ||
+            "",
+        }));
+      } catch {
+        localStorage.removeItem(
+          "argent_user"
+        );
+      }
+    }
   }, []);
 
   const subtotal = cart.reduce(
@@ -136,7 +146,7 @@ export default function CheckoutPage() {
     try {
       setLoading(true);
 
-      // 檢查庫存
+      // 檢查 variants 庫存
       for (const item of cart) {
         if (
           !item.selectedVariant?.name
@@ -214,7 +224,9 @@ export default function CheckoutPage() {
 
               phone: form.phone,
 
+              // 這裡改成真正會員 LINE ID
               line_id:
+                member?.line_user_id ||
                 form.lineId,
 
               shipping_method: `${
@@ -336,7 +348,6 @@ export default function CheckoutPage() {
         </h1>
 
         <div className="grid grid-cols-1 gap-6 md:grid-cols-[1fr_380px]">
-          {/* 左側 */}
           <section className="rounded-3xl bg-white p-5 shadow-sm">
             <h2 className="mb-4 font-semibold text-[#4b4038]">
               聯絡資料
@@ -352,7 +363,7 @@ export default function CheckoutPage() {
                   )
                 }
                 placeholder="姓名 *"
-                className="w-full rounded-2xl border border-[#e1d3c2] bg-white px-4 py-3 text-sm text-[#4b4038] outline-none placeholder:text-gray-400"
+                className="w-full rounded-2xl border border-[#e1d3c2] bg-white px-4 py-3 text-sm"
               />
 
               <input
@@ -364,19 +375,14 @@ export default function CheckoutPage() {
                   )
                 }
                 placeholder="手機號碼 *"
-                className="w-full rounded-2xl border border-[#e1d3c2] bg-white px-4 py-3 text-sm text-[#4b4038] outline-none placeholder:text-gray-400"
+                className="w-full rounded-2xl border border-[#e1d3c2] bg-white px-4 py-3 text-sm"
               />
 
               <input
                 value={form.lineId}
-                onChange={(e) =>
-                  updateForm(
-                    "lineId",
-                    e.target.value
-                  )
-                }
-                placeholder="LINE ID（方便通知）"
-                className="w-full rounded-2xl border border-[#e1d3c2] bg-white px-4 py-3 text-sm text-[#4b4038] outline-none placeholder:text-gray-400"
+                disabled
+                placeholder="LINE會員已登入"
+                className="w-full rounded-2xl border border-[#e1d3c2] bg-[#f8f3ec] px-4 py-3 text-sm text-gray-500"
               />
 
               <select
@@ -389,7 +395,7 @@ export default function CheckoutPage() {
                     e.target.value
                   )
                 }
-                className="w-full rounded-2xl border border-[#e1d3c2] bg-white px-4 py-3 text-sm text-[#4b4038] outline-none"
+                className="w-full rounded-2xl border border-[#e1d3c2] bg-white px-4 py-3 text-sm"
               >
                 <option value="超商取貨">
                   超商取貨 $60
@@ -418,7 +424,7 @@ export default function CheckoutPage() {
                       )
                     }
                     placeholder="超商門市名稱 *"
-                    className="w-full rounded-2xl border border-[#e1d3c2] bg-white px-4 py-3 text-sm text-[#4b4038] outline-none placeholder:text-gray-400"
+                    className="w-full rounded-2xl border border-[#e1d3c2] bg-white px-4 py-3 text-sm"
                   />
 
                   <input
@@ -432,7 +438,7 @@ export default function CheckoutPage() {
                       )
                     }
                     placeholder="門市地址（可選）"
-                    className="w-full rounded-2xl border border-[#e1d3c2] bg-white px-4 py-3 text-sm text-[#4b4038] outline-none placeholder:text-gray-400"
+                    className="w-full rounded-2xl border border-[#e1d3c2] bg-white px-4 py-3 text-sm"
                   />
                 </>
               )}
@@ -447,197 +453,116 @@ export default function CheckoutPage() {
                     e.target.value
                   )
                 }
-                placeholder="訂單備註，例如：想一起出貨、送禮用"
-                className="min-h-[100px] w-full resize-none rounded-2xl border border-[#e1d3c2] bg-white px-4 py-3 text-sm text-[#4b4038] outline-none placeholder:text-gray-400"
+                placeholder="訂單備註"
+                className="min-h-[100px] w-full resize-none rounded-2xl border border-[#e1d3c2] bg-white px-4 py-3 text-sm"
               />
             </div>
           </section>
 
-          {/* 右側 */}
           <section className="rounded-3xl bg-white p-5 shadow-sm">
             <h2 className="mb-4 font-semibold text-[#4b4038]">
               訂單明細
             </h2>
 
-            {cart.length === 0 ? (
-              <p className="text-sm text-gray-500">
-                購物車目前是空的
-              </p>
-            ) : (
-              <div className="space-y-4">
-                {cart.map(
-                  (item, index) => (
-                    <div
-                      key={`${item.id}-${index}`}
-                      className="border-b pb-4"
-                    >
-                      <p className="font-medium text-[#4b4038]">
-                        {item.name}
-                      </p>
+            <div className="space-y-4">
+              {cart.map(
+                (item, index) => (
+                  <div
+                    key={`${item.id}-${index}`}
+                    className="border-b pb-4"
+                  >
+                    <p className="font-medium text-[#4b4038]">
+                      {item.name}
+                    </p>
 
-                      {item
-                        .selectedVariant
-                        ?.name && (
-                        <p className="mt-1 text-sm text-[#9b6b4f]">
-                          款式：
-                          {
-                            item
-                              .selectedVariant
-                              .name
-                          }
-                        </p>
-                      )}
-
-                      {item.options &&
-                        Object.entries(
-                          item.options
-                        ).map(
-                          ([
-                            key,
-                            value,
-                          ]) => (
-                            <p
-                              key={key}
-                              className="mt-1 text-sm text-gray-500"
-                            >
-                              {key}：
-                              {value}
-                            </p>
-                          )
-                        )}
-
-                      {item.productNote && (
-                        <p className="mt-1 text-sm text-[#9b6b4f]">
-                          商品備註：
-                          {
-                            item.productNote
-                          }
-                        </p>
-                      )}
-
-                      {item.note && (
-                        <p className="mt-1 text-sm text-[#6b5c50]">
-                          顧客備註：
-                          {item.note}
-                        </p>
-                      )}
-
-                      <div className="mt-2">
-                        <p className="text-sm text-[#4b4038]">
-                          NT$
-                          {" "}
-                          {Number(
-                            item.price ||
-                              0
-                          ).toLocaleString()}
-                          {" "}
-                          ×
-                          {" "}
-                          {
-                            item.quantity
-                          }
-                        </p>
-
-                        {item.isVipPrice && (
-                          <>
-                            <p className="mt-1 inline-flex rounded-full bg-[#fff2e5] px-3 py-1 text-xs font-medium text-[#b07255]">
-                              VIP 價格已套用 ☁️
-                            </p>
-
-                            {item.originalPrice && (
-                              <p className="mt-1 text-xs text-gray-400 line-through">
-                                原價 NT$
-                                {" "}
-                                {Number(
-                                  item.originalPrice
-                                ).toLocaleString()}
-                              </p>
-                            )}
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  )
-                )}
-
-                <div className="space-y-2 border-t pt-4 text-sm text-[#4b4038]">
-                  <div className="flex justify-between">
-                    <span>
-                      商品小計
-                    </span>
-
-                    <span>
+                    <p className="mt-2 text-sm text-[#4b4038]">
                       NT$
                       {" "}
-                      {subtotal.toLocaleString()}
-                    </span>
-                  </div>
-
-                  {vipSaved > 0 && (
-                    <>
-                      <div className="flex justify-between text-gray-400">
-                        <span>
-                          原價總額
-                        </span>
-
-                        <span className="line-through">
-                          NT$
-                          {" "}
-                          {originalSubtotal.toLocaleString()}
-                        </span>
-                      </div>
-
-                      <div className="flex justify-between font-medium text-[#b07255]">
-                        <span>
-                          VIP 優惠
-                        </span>
-
-                        <span>
-                          - NT$
-                          {" "}
-                          {vipSaved.toLocaleString()}
-                        </span>
-                      </div>
-                    </>
-                  )}
-
-                  <div className="flex justify-between">
-                    <span>運費</span>
-
-                    <span>
-                      NT$
+                      {Number(
+                        item.price || 0
+                      ).toLocaleString()}
                       {" "}
-                      {shippingFee.toLocaleString()}
-                    </span>
-                  </div>
-
-                  <div className="flex justify-between border-t pt-3 text-lg font-semibold">
-                    <span>
-                      總金額
-                    </span>
-
-                    <span>
-                      NT$
+                      ×
                       {" "}
-                      {total.toLocaleString()}
-                    </span>
+                      {item.quantity}
+                    </p>
                   </div>
+                )
+              )}
+
+              <div className="space-y-2 border-t pt-4 text-sm">
+                <div className="flex justify-between">
+                  <span>商品小計</span>
+
+                  <span>
+                    NT$
+                    {" "}
+                    {subtotal.toLocaleString()}
+                  </span>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={
-                    handleSubmit
-                  }
-                  disabled={loading}
-                  className="mt-4 w-full rounded-full bg-[#2e2e2e] py-4 text-sm font-medium text-white disabled:opacity-50"
-                >
-                  {loading
-                    ? "送出中..."
-                    : "送出訂單 ☁️"}
-                </button>
+                {vipSaved > 0 && (
+                  <>
+                    <div className="flex justify-between text-gray-400">
+                      <span>
+                        原價總額
+                      </span>
+
+                      <span className="line-through">
+                        NT$
+                        {" "}
+                        {originalSubtotal.toLocaleString()}
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between font-medium text-[#b07255]">
+                      <span>
+                        VIP 優惠
+                      </span>
+
+                      <span>
+                        - NT$
+                        {" "}
+                        {vipSaved.toLocaleString()}
+                      </span>
+                    </div>
+                  </>
+                )}
+
+                <div className="flex justify-between">
+                  <span>運費</span>
+
+                  <span>
+                    NT$
+                    {" "}
+                    {shippingFee.toLocaleString()}
+                  </span>
+                </div>
+
+                <div className="flex justify-between border-t pt-3 text-lg font-semibold">
+                  <span>總金額</span>
+
+                  <span>
+                    NT$
+                    {" "}
+                    {total.toLocaleString()}
+                  </span>
+                </div>
               </div>
-            )}
+
+              <button
+                type="button"
+                onClick={
+                  handleSubmit
+                }
+                disabled={loading}
+                className="mt-4 w-full rounded-full bg-[#2e2e2e] py-4 text-sm font-medium text-white disabled:opacity-50"
+              >
+                {loading
+                  ? "送出中..."
+                  : "送出訂單 ☁️"}
+              </button>
+            </div>
           </section>
         </div>
       </div>
