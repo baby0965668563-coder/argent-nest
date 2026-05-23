@@ -8,14 +8,12 @@ type CartItem = {
   id: string;
   name: string;
   price: number;
-  originalPrice?: number;
-  vipPrice?: number | null;
-  isVipPrice?: boolean;
   image?: string;
   quantity: number;
   options?: Record<string, string>;
   note?: string;
   productNote?: string;
+  selectedVariant?: { name: string; price: number; vipPrice?: number; stock?: number } | null;
 };
 
 type Order = {
@@ -29,6 +27,7 @@ type Order = {
   items: CartItem[];
   total: number;
   status: string;
+  order_token?: string;
 };
 
 const statusOptions = [
@@ -44,7 +43,6 @@ const statusOptions = [
 
 export default function AdminOrdersPage() {
   const router = useRouter();
-
   const [checkedLogin, setCheckedLogin] = useState(false);
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -53,12 +51,10 @@ export default function AdminOrdersPage() {
 
   useEffect(() => {
     const isLogin = localStorage.getItem("argent_admin_login");
-
     if (isLogin !== "true") {
       router.push("/admin-login");
       return;
     }
-
     setCheckedLogin(true);
     fetchOrders();
   }, [router]);
@@ -66,77 +62,59 @@ export default function AdminOrdersPage() {
   const filteredOrders = useMemo(() => {
     return orders.filter((order) => {
       const keywordText = keyword.trim().toLowerCase();
-
       const matchKeyword =
         !keywordText ||
         order.customer_name?.toLowerCase().includes(keywordText) ||
         order.phone?.toLowerCase().includes(keywordText) ||
         order.line_id?.toLowerCase().includes(keywordText) ||
         order.id?.toLowerCase().includes(keywordText);
-
       const matchStatus =
         statusFilter === "all" || (order.status || "pending") === statusFilter;
-
       return matchKeyword && matchStatus;
     });
   }, [orders, keyword, statusFilter]);
 
   async function fetchOrders() {
     setLoading(true);
-
     const { data, error } = await supabase
       .from("orders")
       .select("*")
       .order("created_at", { ascending: false });
-
     if (error) {
       console.error(error);
       alert("讀取訂單失敗");
       setLoading(false);
       return;
     }
-
     setOrders(data || []);
     setLoading(false);
   }
 
   async function updateStatus(orderId: string, status: string) {
-    const { error } = await supabase
-      .from("orders")
-      .update({ status })
-      .eq("id", orderId);
-
+    const { error } = await supabase.from("orders").update({ status }).eq("id", orderId);
     if (error) {
       console.error(error);
       alert("更新狀態失敗");
       return;
     }
-
     fetchOrders();
   }
 
   async function cancelOrder(orderId: string) {
     const ok = window.confirm("確定要取消這筆訂單嗎？");
     if (!ok) return;
-
     await updateStatus(orderId, "cancelled");
   }
 
   async function deleteOrder(orderId: string) {
-    const ok = window.confirm(
-      "確定要永久刪除這筆訂單嗎？\n\n刪除後無法復原。"
-    );
-
+    const ok = window.confirm("確定要永久刪除這筆訂單嗎？\n\n刪除後無法復原。");
     if (!ok) return;
-
     const { error } = await supabase.from("orders").delete().eq("id", orderId);
-
     if (error) {
       console.error(error);
       alert("刪除訂單失敗");
       return;
     }
-
     alert("訂單已刪除");
     fetchOrders();
   }
@@ -160,31 +138,22 @@ export default function AdminOrdersPage() {
     const itemsText = (order.items || [])
       .map((item, index) => {
         const optionsText = item.options
-          ? Object.entries(item.options)
-              .map(([key, value]) => `${key}：${value}`)
-              .join("\n")
+          ? Object.entries(item.options).map(([key, value]) => `${key}：${value}`).join("\n")
           : "";
-
         return [
           `${index + 1}. ${item.name}`,
           optionsText,
+          item.selectedVariant?.name ? `款式：${item.selectedVariant.name}` : "",
           item.productNote ? `商品備註：${item.productNote}` : "",
           item.note ? `顧客備註：${item.note}` : "",
-          item.isVipPrice ? "VIP 價格已套用" : "",
-          item.isVipPrice && item.originalPrice
-            ? `原價：NT$ ${Number(item.originalPrice || 0).toLocaleString()}`
-            : "",
           `數量：${item.quantity}`,
-          `單價：NT$ ${Number(item.price || 0).toLocaleString()}`,
-          `小計：NT$ ${(
-            Number(item.price || 0) * Number(item.quantity || 1)
-          ).toLocaleString()}`,
+          `單價：NT$ ${item.price}`,
+          `小計：NT$ ${Number(item.price || 0) * Number(item.quantity || 1)}`,
         ]
           .filter(Boolean)
           .join("\n");
       })
       .join("\n\n");
-
     return `【Argent Nest 訂單】
 
 訂單編號：${order.id}
@@ -202,7 +171,7 @@ ${order.customer_note || "無"}
 商品明細：
 ${itemsText}
 
-訂單總金額：NT$ ${Number(order.total || 0).toLocaleString()}`;
+訂單總金額：NT$ ${order.total}`;
   }
 
   async function copyOrder(order: Order) {
@@ -225,21 +194,15 @@ ${itemsText}
     <main className="min-h-screen bg-[#faf7f2] px-4 py-6">
       <div className="mx-auto max-w-5xl">
         <div className="mb-5 flex items-center justify-between gap-3">
-          <h1 className="text-2xl font-semibold text-[#4b4038]">
-            訂單後台
-          </h1>
-
+          <h1 className="text-2xl font-semibold text-[#4b4038]">訂單後台</h1>
           <div className="flex gap-2">
             <button
-              type="button"
               onClick={fetchOrders}
               className="rounded-full border border-[#d8c5b0] bg-white px-4 py-2 text-sm text-[#6b5c50]"
             >
               重新整理
             </button>
-
             <button
-              type="button"
               onClick={logout}
               className="rounded-full bg-[#2e2e2e] px-4 py-2 text-sm text-white"
             >
@@ -272,7 +235,6 @@ ${itemsText}
               </button>
             ))}
           </div>
-
           <p className="mt-3 text-xs text-gray-400">
             目前顯示 {filteredOrders.length} 筆訂單
           </p>
@@ -289,62 +251,28 @@ ${itemsText}
         ) : (
           <div className="space-y-5">
             {filteredOrders.map((order) => (
-              <div
-                key={order.id}
-                className="rounded-3xl bg-white p-5 shadow-sm"
-              >
+              <div key={order.id} className="rounded-3xl bg-white p-5 shadow-sm">
                 <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                   <div>
-                    <p className="text-xs text-gray-400">
-                      {formatDate(order.created_at)}
-                    </p>
-
-                    <p className="mt-1 break-all text-xs text-gray-400">
-                      訂單編號：{order.id}
-                    </p>
-
-                    <h2 className="mt-2 text-lg font-semibold text-[#4b4038]">
-                      {order.customer_name}
-                    </h2>
-
-                    <p className="mt-1 text-sm text-[#6b5c50]">
-                      電話：{order.phone}
-                    </p>
-
-                    {order.line_id && (
-                      <p className="mt-1 text-sm text-[#6b5c50]">
-                        LINE ID：{order.line_id}
-                      </p>
-                    )}
-
-                    <p className="mt-1 text-sm text-[#6b5c50]">
-                      取貨方式：{order.shipping_method || "未填"}
-                    </p>
-
-                    {order.customer_note && (
-                      <p className="mt-2 rounded-2xl bg-[#f6f1ea] px-3 py-2 text-sm text-[#6b5c50]">
-                        訂單備註：{order.customer_note}
-                      </p>
-                    )}
+                    <p className="text-xs text-gray-400">{formatDate(order.created_at)}</p>
+                    <p className="mt-1 break-all text-xs text-gray-400">訂單編號：{order.id}</p>
+                    <h2 className="mt-2 text-lg font-semibold text-[#4b4038]">{order.customer_name}</h2>
+                    <p className="mt-1 text-sm text-[#6b5c50]">電話：{order.phone}</p>
+                    {order.line_id && <p className="mt-1 text-sm text-[#6b5c50]">LINE ID：{order.line_id}</p>}
+                    <p className="mt-1 text-sm text-[#6b5c50]">取貨方式：{order.shipping_method || "未填"}</p>
+                    {order.customer_note && <p className="mt-2 rounded-2xl bg-[#f6f1ea] px-3 py-2 text-sm text-[#6b5c50]">訂單備註：{order.customer_note}</p>}
                   </div>
 
                   <div className="flex flex-col gap-2 md:items-end">
-                    <span className="w-fit rounded-full bg-[#fff7ef] px-3 py-1 text-sm text-[#9b6b4f]">
-                      {order.status || "pending"}
-                    </span>
-
+                    <span className="w-fit rounded-full bg-[#fff7ef] px-3 py-1 text-sm text-[#9b6b4f]">{order.status || "pending"}</span>
                     <select
                       value={order.status || "pending"}
                       onChange={(e) => updateStatus(order.id, e.target.value)}
                       className="rounded-full border border-[#d8c5b0] bg-white px-3 py-2 text-sm text-[#6b5c50] outline-none"
                     >
-                      {statusOptions
-                        .filter((s) => s.value !== "all")
-                        .map((s) => (
-                          <option key={s.value} value={s.value}>
-                            {s.label}
-                          </option>
-                        ))}
+                      {statusOptions.filter((s) => s.value !== "all").map((s) => (
+                        <option key={s.value} value={s.value}>{s.label}</option>
+                      ))}
                     </select>
 
                     <button
@@ -377,81 +305,24 @@ ${itemsText}
 
                 <div className="space-y-3 border-t border-[#f0e6dc] pt-4">
                   {(order.items || []).map((item, index) => (
-                    <div
-                      key={`${item.id}-${index}`}
-                      className="rounded-2xl bg-[#faf7f2] p-3"
-                    >
+                    <div key={`${item.id}-${index}`} className="rounded-2xl bg-[#faf7f2] p-3">
                       <div className="flex gap-3">
                         {item.image ? (
-                          <img
-                            src={item.image}
-                            alt={item.name}
-                            loading="lazy"
-                            className="h-16 w-16 rounded-xl object-cover"
-                          />
+                          <img src={item.image} alt={item.name} className="h-16 w-16 rounded-xl object-cover" />
                         ) : (
-                          <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-white text-xs text-gray-400">
-                            無圖
-                          </div>
+                          <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-white text-xs text-gray-400">無圖</div>
                         )}
-
                         <div className="flex-1">
-                          <p className="font-medium text-[#4b4038]">
-                            {item.name}
-                          </p>
-
-                          {item.options &&
-                            Object.entries(item.options).map(([key, value]) => (
-                              <p
-                                key={key}
-                                className="mt-1 text-sm text-gray-500"
-                              >
-                                {key}：{value}
-                              </p>
-                            ))}
-
-                          {item.productNote && (
-                            <p className="mt-1 text-sm text-[#9b6b4f]">
-                              商品備註：{item.productNote}
-                            </p>
-                          )}
-
-                          {item.note && (
-                            <p className="mt-1 text-sm text-[#6b5c50]">
-                              顧客備註：{item.note}
-                            </p>
-                          )}
-
-                          <div className="mt-2 flex justify-between gap-4 text-sm text-[#4b4038]">
-                            <div>
-                              <p>
-                                NT$ {Number(item.price || 0).toLocaleString()} ×{" "}
-                                {item.quantity}
-                              </p>
-
-                              {item.isVipPrice && (
-                                <p className="mt-1 text-xs font-semibold text-[#b07255]">
-                                  VIP 價格已套用
-                                </p>
-                              )}
-
-                              {item.isVipPrice && item.originalPrice && (
-                                <p className="mt-1 text-xs text-gray-400 line-through">
-                                  原價 NT${" "}
-                                  {Number(
-                                    item.originalPrice || 0
-                                  ).toLocaleString()}
-                                </p>
-                              )}
-                            </div>
-
-                            <span className="shrink-0 font-semibold">
-                              NT${" "}
-                              {(
-                                Number(item.price || 0) *
-                                Number(item.quantity || 1)
-                              ).toLocaleString()}
-                            </span>
+                          <p className="font-medium text-[#4b4038]">{item.name}</p>
+                          {item.selectedVariant?.name && <p className="mt-1 text-sm text-[#9b6b4f]">款式：{item.selectedVariant.name}</p>}
+                          {item.options && Object.entries(item.options).map(([key, value]) => (
+                            <p key={key} className="mt-1 text-sm text-[#7a6a5d]">{key}：{value}</p>
+                          ))}
+                          {item.productNote && <p className="mt-1 text-sm text-[#9b6b4f]">商品備註：{item.productNote}</p>}
+                          {item.note && <p className="mt-1 text-sm text-[#6b5c50]">顧客備註：{item.note}</p>}
+                          <div className="mt-2 flex justify-between text-sm text-[#4b4038]">
+                            <span>NT$ {item.price} × {item.quantity}</span>
+                            <span>NT$ {Number(item.price || 0) * Number(item.quantity || 1)}</span>
                           </div>
                         </div>
                       </div>
@@ -461,7 +332,7 @@ ${itemsText}
 
                 <div className="mt-4 flex justify-between text-lg font-semibold text-[#4b4038]">
                   <span>訂單總金額</span>
-                  <span>NT$ {Number(order.total || 0).toLocaleString()}</span>
+                  <span>NT$ {order.total}</span>
                 </div>
               </div>
             ))}
