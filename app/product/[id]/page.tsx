@@ -228,7 +228,7 @@ export default function ProductPage() {
                   </p>
 
                   <div className="flex flex-wrap gap-2">
-                    {group.values.map((value) => {
+                    {group.values.map((value: string) => {
                       const selected =
                         selectedOptions[group.name] === value;
 
