@@ -7,6 +7,9 @@ type CartItem = {
   id: string;
   name: string;
   price: number;
+  originalPrice?: number;
+  vipPrice?: number | null;
+  isVipPrice?: boolean;
   image?: string;
   quantity: number;
   options?: Record<string, string>;
@@ -209,25 +212,39 @@ export default function CheckoutPage() {
                     )}
 
                     <p className="mt-2 text-sm text-[#4b4038]">
-                      NT$ {item.price} × {item.quantity}
+                      NT$ {Number(item.price || 0).toLocaleString()} ×{" "}
+                      {item.quantity}
                     </p>
+
+                    {item.isVipPrice && (
+                      <p className="mt-1 text-xs font-semibold text-[#b07255]">
+                        VIP 價格已套用
+                      </p>
+                    )}
+
+                    {item.isVipPrice && item.originalPrice && (
+                      <p className="mt-1 text-xs text-gray-400 line-through">
+                        原價 NT${" "}
+                        {Number(item.originalPrice || 0).toLocaleString()}
+                      </p>
+                    )}
                   </div>
                 ))}
 
                 <div className="space-y-2 pt-2 text-sm text-[#4b4038]">
                   <div className="flex justify-between">
                     <span>商品小計</span>
-                    <span>NT$ {subtotal}</span>
+                    <span>NT$ {Number(subtotal || 0).toLocaleString()}</span>
                   </div>
 
                   <div className="flex justify-between">
                     <span>運費</span>
-                    <span>NT$ {shippingFee}</span>
+                    <span>NT$ {Number(shippingFee || 0).toLocaleString()}</span>
                   </div>
 
                   <div className="flex justify-between border-t pt-3 text-lg font-semibold">
                     <span>總金額</span>
-                    <span>NT$ {total}</span>
+                    <span>NT$ {Number(total || 0).toLocaleString()}</span>
                   </div>
                 </div>
 
