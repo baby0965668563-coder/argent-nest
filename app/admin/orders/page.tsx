@@ -1,190 +1,151 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
 
-type CartItem = {
-  id: string;
-  name: string;
-  price: number;
-  image?: string;
-  quantity: number;
-  options?: Record<string, string>;
-  note?: string;
-  productNote?: string;
-  selectedVariant?: { name: string; price: number; vipPrice?: number; stock?: number } | null;
-};
+import { supabase } from "@/lib/supabase";
 
 type Order = {
   id: string;
+
   created_at: string;
+
   customer_name: string;
+
   phone: string;
+
   line_id?: string;
+
   shipping_method?: string;
+
   customer_note?: string;
-  items: CartItem[];
+
   total: number;
+
   status: string;
+
   order_token?: string;
 };
 
-const statusOptions = [
-  { value: "all", label: "全部" },
-  { value: "pending", label: "待確認" },
-  { value: "paid", label: "已付款" },
-  { value: "ordered", label: "已訂貨" },
-  { value: "arrived", label: "已到貨" },
-  { value: "shipped", label: "已出貨" },
-  { value: "done", label: "已完成" },
-  { value: "cancelled", label: "已取消" },
-];
+const statusText: Record<string, string> = {
+  pending: "待確認",
 
-export default function AdminOrdersPage() {
+  paid: "已付款",
+
+  ordered: "已訂貨",
+
+  arrived: "已到貨",
+
+  shipped: "已出貨",
+
+  done: "已完成",
+
+  cancelled: "已取消",
+};
+
+export default function OrdersPage() {
   const router = useRouter();
-  const [checkedLogin, setCheckedLogin] = useState(false);
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [keyword, setKeyword] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
+
+  const [loading, setLoading] =
+    useState(true);
+
+  const [orders, setOrders] =
+    useState<Order[]>([]);
+
+  const [user, setUser] =
+    useState<any>(null);
 
   useEffect(() => {
-    const isLogin = localStorage.getItem("argent_admin_login");
-    if (isLogin !== "true") {
-      router.push("/admin-login");
-      return;
+    init();
+  }, []);
+
+  async function init() {
+    try {
+      const savedUser =
+        localStorage.getItem(
+          "argent_user"
+        );
+
+      if (!savedUser) {
+        router.push("/login");
+        return;
+      }
+
+      const parsedUser =
+        JSON.parse(savedUser);
+
+      setUser(parsedUser);
+
+      await fetchOrders(
+        parsedUser
+      );
+    } catch (err) {
+      console.error(err);
+
+      localStorage.removeItem(
+        "argent_user"
+      );
+
+      router.push("/login");
     }
-    setCheckedLogin(true);
-    fetchOrders();
-  }, [router]);
+  }
 
-  const filteredOrders = useMemo(() => {
-    return orders.filter((order) => {
-      const keywordText = keyword.trim().toLowerCase();
-      const matchKeyword =
-        !keywordText ||
-        order.customer_name?.toLowerCase().includes(keywordText) ||
-        order.phone?.toLowerCase().includes(keywordText) ||
-        order.line_id?.toLowerCase().includes(keywordText) ||
-        order.id?.toLowerCase().includes(keywordText);
-      const matchStatus =
-        statusFilter === "all" || (order.status || "pending") === statusFilter;
-      return matchKeyword && matchStatus;
-    });
-  }, [orders, keyword, statusFilter]);
-
-  async function fetchOrders() {
+  async function fetchOrders(
+    currentUser: any
+  ) {
     setLoading(true);
-    const { data, error } = await supabase
+
+    const {
+      data,
+      error,
+    } = await supabase
       .from("orders")
       .select("*")
-      .order("created_at", { ascending: false });
+      .eq(
+        "line_id",
+        currentUser?.line_user_id
+      )
+      .order("created_at", {
+        ascending: false,
+      });
+
     if (error) {
       console.error(error);
-      alert("讀取訂單失敗");
+
+      setOrders([]);
+
       setLoading(false);
+
       return;
     }
+
     setOrders(data || []);
+
     setLoading(false);
   }
 
-  async function updateStatus(orderId: string, status: string) {
-    const { error } = await supabase.from("orders").update({ status }).eq("id", orderId);
-    if (error) {
-      console.error(error);
-      alert("更新狀態失敗");
-      return;
-    }
-    fetchOrders();
+  function formatDate(
+    date: string
+  ) {
+    return new Date(date)
+      .toLocaleString("zh-TW", {
+        year: "numeric",
+
+        month: "2-digit",
+
+        day: "2-digit",
+
+        hour: "2-digit",
+
+        minute: "2-digit",
+      });
   }
 
-  async function cancelOrder(orderId: string) {
-    const ok = window.confirm("確定要取消這筆訂單嗎？");
-    if (!ok) return;
-    await updateStatus(orderId, "cancelled");
-  }
-
-  async function deleteOrder(orderId: string) {
-    const ok = window.confirm("確定要永久刪除這筆訂單嗎？\n\n刪除後無法復原。");
-    if (!ok) return;
-    const { error } = await supabase.from("orders").delete().eq("id", orderId);
-    if (error) {
-      console.error(error);
-      alert("刪除訂單失敗");
-      return;
-    }
-    alert("訂單已刪除");
-    fetchOrders();
-  }
-
-  function logout() {
-    localStorage.removeItem("argent_admin_login");
-    router.push("/admin-login");
-  }
-
-  function formatDate(date: string) {
-    return new Date(date).toLocaleString("zh-TW", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  }
-
-  function buildOrderText(order: Order) {
-    const itemsText = (order.items || [])
-      .map((item, index) => {
-        const optionsText = item.options
-          ? Object.entries(item.options).map(([key, value]) => `${key}：${value}`).join("\n")
-          : "";
-        return [
-          `${index + 1}. ${item.name}`,
-          optionsText,
-          item.selectedVariant?.name ? `款式：${item.selectedVariant.name}` : "",
-          item.productNote ? `商品備註：${item.productNote}` : "",
-          item.note ? `顧客備註：${item.note}` : "",
-          `數量：${item.quantity}`,
-          `單價：NT$ ${item.price}`,
-          `小計：NT$ ${Number(item.price || 0) * Number(item.quantity || 1)}`,
-        ]
-          .filter(Boolean)
-          .join("\n");
-      })
-      .join("\n\n");
-    return `【Argent Nest 訂單】
-
-訂單編號：${order.id}
-訂單時間：${formatDate(order.created_at)}
-訂單狀態：${order.status || "pending"}
-
-姓名：${order.customer_name}
-電話：${order.phone}
-LINE ID：${order.line_id || "未填"}
-取貨方式：${order.shipping_method || "未填"}
-
-訂單備註：
-${order.customer_note || "無"}
-
-商品明細：
-${itemsText}
-
-訂單總金額：NT$ ${order.total}`;
-  }
-
-  async function copyOrder(order: Order) {
-    const text = buildOrderText(order);
-    await navigator.clipboard.writeText(text);
-    alert("已複製訂單內容 ☁️");
-  }
-
-  if (!checkedLogin) {
+  if (loading) {
     return (
-      <main className="min-h-screen bg-[#faf7f2] px-4 py-10">
-        <div className="mx-auto max-w-sm rounded-3xl bg-white p-8 text-center text-gray-500 shadow-sm">
-          檢查登入狀態中...
+      <main className="flex min-h-screen items-center justify-center bg-[#faf7f2] px-4">
+        <div className="rounded-3xl bg-white px-8 py-6 text-[#6b5c50] shadow-sm">
+          訂單載入中...
         </div>
       </main>
     );
@@ -192,152 +153,105 @@ ${itemsText}
 
   return (
     <main className="min-h-screen bg-[#faf7f2] px-4 py-6">
-      <div className="mx-auto max-w-5xl">
-        <div className="mb-5 flex items-center justify-between gap-3">
-          <h1 className="text-2xl font-semibold text-[#4b4038]">訂單後台</h1>
-          <div className="flex gap-2">
-            <button
-              onClick={fetchOrders}
-              className="rounded-full border border-[#d8c5b0] bg-white px-4 py-2 text-sm text-[#6b5c50]"
-            >
-              重新整理
-            </button>
-            <button
-              onClick={logout}
-              className="rounded-full bg-[#2e2e2e] px-4 py-2 text-sm text-white"
-            >
-              登出
-            </button>
+      <div className="mx-auto max-w-4xl">
+        {/* Header */}
+        <div className="mb-6 text-center">
+          <div className="text-5xl">
+            ☁️
           </div>
-        </div>
 
-        <div className="mb-5 rounded-3xl bg-white p-4 shadow-sm">
-          <input
-            value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
-            placeholder="搜尋姓名、電話、LINE ID、訂單編號"
-            className="w-full rounded-2xl border border-[#e1d3c2] px-4 py-3 text-sm outline-none"
-          />
+          <h1 className="mt-4 text-3xl font-bold text-[#4b4038]">
+            我的訂單
+          </h1>
 
-          <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
-            {statusOptions.map((status) => (
-              <button
-                key={status.value}
-                type="button"
-                onClick={() => setStatusFilter(status.value)}
-                className={`shrink-0 rounded-full px-4 py-2 text-sm transition ${
-                  statusFilter === status.value
-                    ? "bg-[#2e2e2e] text-white"
-                    : "border border-[#d8c5b0] bg-white text-[#6b5c50]"
-                }`}
-              >
-                {status.label}
-              </button>
-            ))}
-          </div>
-          <p className="mt-3 text-xs text-gray-400">
-            目前顯示 {filteredOrders.length} 筆訂單
+          <p className="mt-3 text-sm text-[#8c7b70]">
+            Argent Nest 訂單紀錄
           </p>
         </div>
 
-        {loading ? (
-          <div className="rounded-3xl bg-white p-8 text-center text-gray-500 shadow-sm">
-            訂單載入中...
-          </div>
-        ) : filteredOrders.length === 0 ? (
-          <div className="rounded-3xl bg-white p-8 text-center text-gray-500 shadow-sm">
-            沒有符合條件的訂單 ☁️
+        {orders.length === 0 ? (
+          <div className="rounded-[32px] bg-white p-10 text-center shadow-sm">
+            <p className="text-lg font-semibold text-[#4b4038]">
+              目前還沒有訂單 ☁️
+            </p>
+
+            <p className="mt-3 text-sm leading-7 text-[#8c7b70]">
+              去逛逛療癒小物吧 🤍
+            </p>
+
+            <button
+              type="button"
+              onClick={() =>
+                router.push("/")
+              }
+              className="mt-6 rounded-full bg-[#2e2e2e] px-6 py-3 text-sm text-white"
+            >
+              回首頁
+            </button>
           </div>
         ) : (
-          <div className="space-y-5">
-            {filteredOrders.map((order) => (
-              <div key={order.id} className="rounded-3xl bg-white p-5 shadow-sm">
-                <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+          <div className="space-y-4">
+            {orders.map((order) => (
+              <button
+                key={order.id}
+                type="button"
+                onClick={() =>
+                  router.push(
+                    `/orders/${order.id}?token=${order.order_token}`
+                  )
+                }
+                className="w-full rounded-[32px] bg-white p-5 text-left shadow-sm transition hover:translate-y-[-2px]"
+              >
+                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                   <div>
-                    <p className="text-xs text-gray-400">{formatDate(order.created_at)}</p>
-                    <p className="mt-1 break-all text-xs text-gray-400">訂單編號：{order.id}</p>
-                    <h2 className="mt-2 text-lg font-semibold text-[#4b4038]">{order.customer_name}</h2>
-                    <p className="mt-1 text-sm text-[#6b5c50]">電話：{order.phone}</p>
-                    {order.line_id && <p className="mt-1 text-sm text-[#6b5c50]">LINE ID：{order.line_id}</p>}
-                    <p className="mt-1 text-sm text-[#6b5c50]">取貨方式：{order.shipping_method || "未填"}</p>
-                    {order.customer_note && <p className="mt-2 rounded-2xl bg-[#f6f1ea] px-3 py-2 text-sm text-[#6b5c50]">訂單備註：{order.customer_note}</p>}
+                    <p className="text-xs text-gray-400">
+                      訂單編號
+                    </p>
+
+                    <p className="mt-1 break-all font-medium text-[#4b4038]">
+                      {order.id}
+                    </p>
+
+                    <p className="mt-3 text-sm text-[#8c7b70]">
+                      {formatDate(
+                        order.created_at
+                      )}
+                    </p>
                   </div>
 
-                  <div className="flex flex-col gap-2 md:items-end">
-                    <span className="w-fit rounded-full bg-[#fff7ef] px-3 py-1 text-sm text-[#9b6b4f]">{order.status || "pending"}</span>
-                    <select
-                      value={order.status || "pending"}
-                      onChange={(e) => updateStatus(order.id, e.target.value)}
-                      className="rounded-full border border-[#d8c5b0] bg-white px-3 py-2 text-sm text-[#6b5c50] outline-none"
-                    >
-                      {statusOptions.filter((s) => s.value !== "all").map((s) => (
-                        <option key={s.value} value={s.value}>{s.label}</option>
-                      ))}
-                    </select>
+                  <div className="flex flex-col items-start gap-3 md:items-end">
+                    <span className="rounded-full bg-[#f6efe7] px-4 py-2 text-xs font-medium text-[#9b6b4f]">
+                      {statusText[
+                        order.status
+                      ] || order.status}
+                    </span>
 
-                    <button
-                      type="button"
-                      onClick={() => copyOrder(order)}
-                      className="rounded-full bg-[#2e2e2e] px-4 py-2 text-sm text-white"
-                    >
-                      複製訂單
-                    </button>
-
-                    {order.status !== "cancelled" && (
-                      <button
-                        type="button"
-                        onClick={() => cancelOrder(order.id)}
-                        className="rounded-full border border-[#d8c5b0] bg-white px-4 py-2 text-sm text-[#9b6b4f]"
-                      >
-                        取消訂單
-                      </button>
-                    )}
-
-                    <button
-                      type="button"
-                      onClick={() => deleteOrder(order.id)}
-                      className="rounded-full bg-[#b85c5c] px-4 py-2 text-sm text-white"
-                    >
-                      刪除訂單
-                    </button>
+                    <p className="text-lg font-semibold text-[#4b4038]">
+                      NT$
+                      {" "}
+                      {Number(
+                        order.total || 0
+                      ).toLocaleString()}
+                    </p>
                   </div>
                 </div>
-
-                <div className="space-y-3 border-t border-[#f0e6dc] pt-4">
-                  {(order.items || []).map((item, index) => (
-                    <div key={`${item.id}-${index}`} className="rounded-2xl bg-[#faf7f2] p-3">
-                      <div className="flex gap-3">
-                        {item.image ? (
-                          <img src={item.image} alt={item.name} className="h-16 w-16 rounded-xl object-cover" />
-                        ) : (
-                          <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-white text-xs text-gray-400">無圖</div>
-                        )}
-                        <div className="flex-1">
-                          <p className="font-medium text-[#4b4038]">{item.name}</p>
-                          {item.selectedVariant?.name && <p className="mt-1 text-sm text-[#9b6b4f]">款式：{item.selectedVariant.name}</p>}
-                          {item.options && Object.entries(item.options).map(([key, value]) => (
-                            <p key={key} className="mt-1 text-sm text-[#7a6a5d]">{key}：{value}</p>
-                          ))}
-                          {item.productNote && <p className="mt-1 text-sm text-[#9b6b4f]">商品備註：{item.productNote}</p>}
-                          {item.note && <p className="mt-1 text-sm text-[#6b5c50]">顧客備註：{item.note}</p>}
-                          <div className="mt-2 flex justify-between text-sm text-[#4b4038]">
-                            <span>NT$ {item.price} × {item.quantity}</span>
-                            <span>NT$ {Number(item.price || 0) * Number(item.quantity || 1)}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="mt-4 flex justify-between text-lg font-semibold text-[#4b4038]">
-                  <span>訂單總金額</span>
-                  <span>NT$ {order.total}</span>
-                </div>
-              </div>
+              </button>
             ))}
           </div>
         )}
+
+        {/* bottom */}
+        <div className="mt-8">
+          <button
+            type="button"
+            onClick={() =>
+              router.push("/member")
+            }
+            className="w-full rounded-full border border-[#d8c5b0] bg-white py-4 text-sm text-[#6b5c50]"
+          >
+            返回會員中心
+          </button>
+        </div>
       </div>
     </main>
   );
