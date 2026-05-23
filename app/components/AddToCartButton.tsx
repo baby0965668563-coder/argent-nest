@@ -24,7 +24,6 @@ export default function AddToCartButton({
   disabled = false,
 }: Props) {
   const router = useRouter();
-
   const [added, setAdded] = useState(false);
 
   function handleAddToCart() {
@@ -40,11 +39,17 @@ export default function AddToCartButton({
         ? product.images[0]
         : "");
 
+    const normalPrice = Number(product.price || 0);
+    const vipPrice = product.vip_price ? Number(product.vip_price) : null;
+
+    const finalPrice = vipPrice || normalPrice;
+
     const foundIndex = existingCart.findIndex(
       (item: any) =>
         item.id === product.id &&
         sameOptions(item.options, selectedOptions) &&
-        (item.note || "") === customerNote
+        (item.note || "") === customerNote &&
+        Number(item.price || 0) === finalPrice
     );
 
     if (foundIndex >= 0) {
@@ -54,7 +59,10 @@ export default function AddToCartButton({
       existingCart.push({
         id: product.id,
         name: product.name,
-        price: Number(product.price || 0),
+        price: finalPrice,
+        originalPrice: normalPrice,
+        vipPrice: vipPrice,
+        isVipPrice: vipPrice !== null,
         image,
         options: selectedOptions,
         note: customerNote,
@@ -73,7 +81,6 @@ export default function AddToCartButton({
     }
 
     localStorage.setItem("cart", JSON.stringify(existingCart));
-
     setAdded(true);
   }
 
