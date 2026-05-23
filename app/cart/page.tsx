@@ -7,6 +7,9 @@ type CartItem = {
   id: string;
   name: string;
   price: number;
+  originalPrice?: number;
+  vipPrice?: number | null;
+  isVipPrice?: boolean;
   image?: string;
   quantity: number;
   options?: Record<string, string>;
@@ -80,6 +83,7 @@ export default function CartPage() {
                       <img
                         src={item.image}
                         alt={item.name}
+                        loading="lazy"
                         className="h-24 w-24 rounded-2xl object-cover"
                       />
                     ) : (
@@ -116,9 +120,23 @@ export default function CartPage() {
                         </p>
                       )}
 
-                      <p className="mt-2 font-semibold text-[#4b4038]">
-                        NT$ {item.price}
-                      </p>
+                      <div className="mt-2">
+                        <p className="font-semibold text-[#4b4038]">
+                          NT$ {Number(item.price || 0).toLocaleString()}
+                        </p>
+
+                        {item.isVipPrice && (
+                          <p className="mt-1 text-xs font-semibold text-[#b07255]">
+                            VIP 價格已套用
+                          </p>
+                        )}
+
+                        {item.isVipPrice && item.originalPrice && (
+                          <p className="mt-1 text-xs text-gray-400 line-through">
+                            原價 NT$ {Number(item.originalPrice || 0).toLocaleString()}
+                          </p>
+                        )}
+                      </div>
                     </div>
                   </div>
 
@@ -160,7 +178,7 @@ export default function CartPage() {
             <div className="mt-6 rounded-3xl bg-white p-5 shadow-sm">
               <div className="flex items-center justify-between text-lg font-semibold text-[#4b4038]">
                 <span>小計</span>
-                <span>NT$ {total}</span>
+                <span>NT$ {Number(total || 0).toLocaleString()}</span>
               </div>
 
               <button
