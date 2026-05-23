@@ -127,27 +127,27 @@ export default function CheckoutPage() {
                 value={form.name}
                 onChange={(e) => updateForm("name", e.target.value)}
                 placeholder="姓名 *"
-                className="w-full rounded-2xl border border-[#e1d3c2] px-4 py-3 text-sm outline-none"
+                className="w-full rounded-2xl border border-[#cdb9a8] px-4 py-3 text-sm text-[#3f332b] placeholder:text-[#9b8b80] outline-none"
               />
 
               <input
                 value={form.phone}
                 onChange={(e) => updateForm("phone", e.target.value)}
                 placeholder="手機號碼 *"
-                className="w-full rounded-2xl border border-[#e1d3c2] px-4 py-3 text-sm outline-none"
+                className="w-full rounded-2xl border border-[#cdb9a8] px-4 py-3 text-sm text-[#3f332b] placeholder:text-[#9b8b80] outline-none"
               />
 
               <input
                 value={form.lineId}
                 onChange={(e) => updateForm("lineId", e.target.value)}
                 placeholder="LINE ID（方便通知）"
-                className="w-full rounded-2xl border border-[#e1d3c2] px-4 py-3 text-sm outline-none"
+                className="w-full rounded-2xl border border-[#cdb9a8] px-4 py-3 text-sm text-[#3f332b] placeholder:text-[#9b8b80] outline-none"
               />
 
               <select
                 value={form.shippingMethod}
                 onChange={(e) => updateForm("shippingMethod", e.target.value)}
-                className="w-full rounded-2xl border border-[#e1d3c2] bg-white px-4 py-3 text-sm outline-none"
+                className="w-full rounded-2xl border border-[#cdb9a8] bg-white px-4 py-3 text-sm text-[#3f332b] placeholder:text-[#9b8b80] outline-none"
               >
                 <option value="超商取貨">超商取貨 $60</option>
                 <option value="宅配">宅配 $130</option>
@@ -160,14 +160,14 @@ export default function CheckoutPage() {
                     value={form.storeName}
                     onChange={(e) => updateForm("storeName", e.target.value)}
                     placeholder="超商門市名稱 *"
-                    className="w-full rounded-2xl border border-[#e1d3c2] px-4 py-3 text-sm outline-none"
+                    className="w-full rounded-2xl border border-[#cdb9a8] px-4 py-3 text-sm text-[#3f332b] placeholder:text-[#9b8b80] outline-none"
                   />
 
                   <input
                     value={form.storeAddress}
                     onChange={(e) => updateForm("storeAddress", e.target.value)}
                     placeholder="門市地址（可選）"
-                    className="w-full rounded-2xl border border-[#e1d3c2] px-4 py-3 text-sm outline-none"
+                    className="w-full rounded-2xl border border-[#cdb9a8] px-4 py-3 text-sm text-[#3f332b] placeholder:text-[#9b8b80] outline-none"
                   />
                 </>
               )}
@@ -176,7 +176,7 @@ export default function CheckoutPage() {
                 value={form.customerNote}
                 onChange={(e) => updateForm("customerNote", e.target.value)}
                 placeholder="訂單備註，例如：想一起出貨、送禮用"
-                className="min-h-[100px] w-full resize-none rounded-2xl border border-[#e1d3c2] px-4 py-3 text-sm outline-none"
+                className="min-h-[100px] w-full resize-none rounded-2xl border border-[#cdb9a8] bg-white px-4 py-3 text-sm text-[#3f332b] placeholder:text-[#9b8b80] outline-none"
               />
             </div>
           </section>
