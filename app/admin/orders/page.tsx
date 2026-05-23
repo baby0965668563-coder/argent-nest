@@ -8,6 +8,9 @@ type CartItem = {
   id: string;
   name: string;
   price: number;
+  originalPrice?: number;
+  vipPrice?: number | null;
+  isVipPrice?: boolean;
   image?: string;
   quantity: number;
   options?: Record<string, string>;
@@ -167,11 +170,15 @@ export default function AdminOrdersPage() {
           optionsText,
           item.productNote ? `商品備註：${item.productNote}` : "",
           item.note ? `顧客備註：${item.note}` : "",
+          item.isVipPrice ? "VIP 價格已套用" : "",
+          item.isVipPrice && item.originalPrice
+            ? `原價：NT$ ${Number(item.originalPrice || 0).toLocaleString()}`
+            : "",
           `數量：${item.quantity}`,
-          `單價：NT$ ${item.price}`,
-          `小計：NT$ ${
+          `單價：NT$ ${Number(item.price || 0).toLocaleString()}`,
+          `小計：NT$ ${(
             Number(item.price || 0) * Number(item.quantity || 1)
-          }`,
+          ).toLocaleString()}`,
         ]
           .filter(Boolean)
           .join("\n");
@@ -195,7 +202,7 @@ ${order.customer_note || "無"}
 商品明細：
 ${itemsText}
 
-訂單總金額：NT$ ${order.total}`;
+訂單總金額：NT$ ${Number(order.total || 0).toLocaleString()}`;
   }
 
   async function copyOrder(order: Order) {
@@ -379,6 +386,7 @@ ${itemsText}
                           <img
                             src={item.image}
                             alt={item.name}
+                            loading="lazy"
                             className="h-16 w-16 rounded-xl object-cover"
                           />
                         ) : (
@@ -414,15 +422,35 @@ ${itemsText}
                             </p>
                           )}
 
-                          <div className="mt-2 flex justify-between text-sm text-[#4b4038]">
-                            <span>
-                              NT$ {item.price} × {item.quantity}
-                            </span>
+                          <div className="mt-2 flex justify-between gap-4 text-sm text-[#4b4038]">
+                            <div>
+                              <p>
+                                NT$ {Number(item.price || 0).toLocaleString()} ×{" "}
+                                {item.quantity}
+                              </p>
 
-                            <span>
+                              {item.isVipPrice && (
+                                <p className="mt-1 text-xs font-semibold text-[#b07255]">
+                                  VIP 價格已套用
+                                </p>
+                              )}
+
+                              {item.isVipPrice && item.originalPrice && (
+                                <p className="mt-1 text-xs text-gray-400 line-through">
+                                  原價 NT${" "}
+                                  {Number(
+                                    item.originalPrice || 0
+                                  ).toLocaleString()}
+                                </p>
+                              )}
+                            </div>
+
+                            <span className="shrink-0 font-semibold">
                               NT${" "}
-                              {Number(item.price || 0) *
-                                Number(item.quantity || 1)}
+                              {(
+                                Number(item.price || 0) *
+                                Number(item.quantity || 1)
+                              ).toLocaleString()}
                             </span>
                           </div>
                         </div>
@@ -433,7 +461,7 @@ ${itemsText}
 
                 <div className="mt-4 flex justify-between text-lg font-semibold text-[#4b4038]">
                   <span>訂單總金額</span>
-                  <span>NT$ {order.total}</span>
+                  <span>NT$ {Number(order.total || 0).toLocaleString()}</span>
                 </div>
               </div>
             ))}
