@@ -491,7 +491,7 @@ export default function CheckoutPage() {
               )}
 
               <div className="space-y-2 border-t pt-4 text-sm">
-                <div className="flex justify-between">
+                <div className="mb-4 font-semibold text-[#4b4038]">
                   <span>商品小計</span>
 
                   <span>
@@ -503,7 +503,7 @@ export default function CheckoutPage() {
 
                 {vipSaved > 0 && (
                   <>
-                    <div className="flex justify-between text-gray-400">
+                    <div className="mb-4 font-semibold text-[#4b4038]">
                       <span>
                         原價總額
                       </span>
@@ -529,7 +529,7 @@ export default function CheckoutPage() {
                   </>
                 )}
 
-                <div className="flex justify-between">
+                <div  className="mb-4 font-semibold text-[#4b4038]">
                   <span>運費</span>
 
                   <span>
@@ -539,7 +539,7 @@ export default function CheckoutPage() {
                   </span>
                 </div>
 
-                <div className="flex justify-between border-t pt-3 text-lg font-semibold">
+                <div  className="mb-4 font-semibold text-[#4b4038]">
                   <span>總金額</span>
 
                   <span>
