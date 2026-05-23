@@ -7,41 +7,64 @@ type CartItem = {
   id: string;
   name: string;
   price: number;
-  originalPrice?: number;
-  vipPrice?: number | null;
-  isVipPrice?: boolean;
   image?: string;
   quantity: number;
+
   options?: Record<string, string>;
+
   note?: string;
+
   productNote?: string;
+
   category?: string;
+
+  selectedVariant?: {
+    name: string;
+    price: number;
+    vipPrice?: number;
+    stock?: number;
+  } | null;
+
+  vipPrice?: number | null;
 };
 
 export default function CartPage() {
   const router = useRouter();
+
   const [cart, setCart] = useState<CartItem[]>([]);
 
   useEffect(() => {
-    const savedCart = JSON.parse(localStorage.getItem("cart") || "[]");
+    const savedCart = JSON.parse(
+      localStorage.getItem("cart") || "[]"
+    );
+
     setCart(savedCart);
   }, []);
 
   function updateCart(newCart: CartItem[]) {
     setCart(newCart);
-    localStorage.setItem("cart", JSON.stringify(newCart));
+
+    localStorage.setItem(
+      "cart",
+      JSON.stringify(newCart)
+    );
   }
 
   function removeItem(index: number) {
     const newCart = cart.filter((_, i) => i !== index);
+
     updateCart(newCart);
   }
 
-  function changeQuantity(index: number, amount: number) {
+  function changeQuantity(
+    index: number,
+    amount: number
+  ) {
     const newCart = [...cart];
 
     newCart[index].quantity =
-      Number(newCart[index].quantity || 1) + amount;
+      Number(newCart[index].quantity || 1) +
+      amount;
 
     if (newCart[index].quantity <= 0) {
       newCart.splice(index, 1);
@@ -55,7 +78,10 @@ export default function CartPage() {
   }
 
   const total = cart.reduce(
-    (sum, item) => sum + Number(item.price || 0) * Number(item.quantity || 1),
+    (sum, item) =>
+      sum +
+      Number(item.price || 0) *
+        Number(item.quantity || 1),
     0
   );
 
@@ -83,7 +109,6 @@ export default function CartPage() {
                       <img
                         src={item.image}
                         alt={item.name}
-                        loading="lazy"
                         className="h-24 w-24 rounded-2xl object-cover"
                       />
                     ) : (
@@ -94,46 +119,61 @@ export default function CartPage() {
 
                     <div className="flex-1">
                       <p className="text-xs text-gray-400">
-                        {item.category || "Argent Nest Select"}
+                        {item.category ||
+                          "Argent Nest Select"}
                       </p>
 
                       <h2 className="mt-1 font-semibold leading-relaxed text-[#4b4038]">
                         {item.name}
                       </h2>
 
+                      {item.selectedVariant?.name && (
+                        <p className="mt-1 text-sm text-[#9b6b4f]">
+                          款式：
+                          {item.selectedVariant.name}
+                        </p>
+                      )}
+
                       {item.options &&
-                        Object.entries(item.options).map(([key, value]) => (
-                          <p key={key} className="mt-1 text-sm text-gray-500">
+                        Object.entries(
+                          item.options
+                        ).map(([key, value]) => (
+                          <p
+                            key={key}
+                            className="mt-1 text-sm text-gray-500"
+                          >
                             {key}：{value}
                           </p>
                         ))}
 
                       {item.productNote && (
                         <p className="mt-2 rounded-2xl bg-[#fff7ef] px-3 py-2 text-sm text-[#9b6b4f]">
-                          商品備註：{item.productNote}
+                          商品備註：
+                          {item.productNote}
                         </p>
                       )}
 
                       {item.note && (
                         <p className="mt-2 rounded-2xl bg-[#f6f1ea] px-3 py-2 text-sm text-[#6b5c50]">
-                          顧客備註：{item.note}
+                          顧客備註：
+                          {item.note}
                         </p>
                       )}
 
                       <div className="mt-2">
                         <p className="font-semibold text-[#4b4038]">
-                          NT$ {Number(item.price || 0).toLocaleString()}
+                          NT${" "}
+                          {Number(
+                            item.price || 0
+                          ).toLocaleString()}
                         </p>
 
-                        {item.isVipPrice && (
-                          <p className="mt-1 text-xs font-semibold text-[#b07255]">
-                            VIP 價格已套用
-                          </p>
-                        )}
-
-                        {item.isVipPrice && item.originalPrice && (
-                          <p className="mt-1 text-xs text-gray-400 line-through">
-                            原價 NT$ {Number(item.originalPrice || 0).toLocaleString()}
+                        {item.vipPrice && (
+                          <p className="mt-1 text-xs text-[#b07255]">
+                            VIP NT${" "}
+                            {Number(
+                              item.vipPrice
+                            ).toLocaleString()}
                           </p>
                         )}
                       </div>
@@ -144,7 +184,12 @@ export default function CartPage() {
                     <div className="flex items-center gap-3">
                       <button
                         type="button"
-                        onClick={() => changeQuantity(index, -1)}
+                        onClick={() =>
+                          changeQuantity(
+                            index,
+                            -1
+                          )
+                        }
                         className="h-8 w-8 rounded-full border border-[#d8c5b0] text-[#6b5c50]"
                       >
                         -
@@ -156,7 +201,12 @@ export default function CartPage() {
 
                       <button
                         type="button"
-                        onClick={() => changeQuantity(index, 1)}
+                        onClick={() =>
+                          changeQuantity(
+                            index,
+                            1
+                          )
+                        }
                         className="h-8 w-8 rounded-full border border-[#d8c5b0] text-[#6b5c50]"
                       >
                         +
@@ -165,7 +215,9 @@ export default function CartPage() {
 
                     <button
                       type="button"
-                      onClick={() => removeItem(index)}
+                      onClick={() =>
+                        removeItem(index)
+                      }
                       className="text-sm text-gray-400 underline"
                     >
                       移除
@@ -178,12 +230,17 @@ export default function CartPage() {
             <div className="mt-6 rounded-3xl bg-white p-5 shadow-sm">
               <div className="flex items-center justify-between text-lg font-semibold text-[#4b4038]">
                 <span>小計</span>
-                <span>NT$ {Number(total || 0).toLocaleString()}</span>
+
+                <span>
+                  NT$ {total.toLocaleString()}
+                </span>
               </div>
 
               <button
                 type="button"
-                onClick={() => router.push("/checkout")}
+                onClick={() =>
+                  router.push("/checkout")
+                }
                 className="mt-5 w-full rounded-full bg-[#2e2e2e] py-4 text-sm font-medium text-white"
               >
                 前往結帳
