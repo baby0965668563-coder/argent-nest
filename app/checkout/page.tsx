@@ -42,6 +42,7 @@ export default function CheckoutPage() {
 
   const [form, setForm] = useState({
     name: "",
+
     phone: "",
 
     lineId: "",
@@ -49,6 +50,7 @@ export default function CheckoutPage() {
     shippingMethod: "超商取貨",
 
     storeName: "",
+
     storeAddress: "",
 
     customerNote: "",
@@ -70,6 +72,24 @@ export default function CheckoutPage() {
         Number(item.quantity || 1),
     0
   );
+
+  const originalSubtotal =
+    cart.reduce(
+      (sum, item) =>
+        sum +
+        Number(
+          item.originalPrice ||
+            item.price ||
+            0
+        ) *
+          Number(
+            item.quantity || 1
+          ),
+      0
+    );
+
+  const vipSaved =
+    originalSubtotal - subtotal;
 
   const shippingFee =
     form.shippingMethod ===
@@ -504,56 +524,89 @@ export default function CheckoutPage() {
 
                       <div className="mt-2">
                         <p className="text-sm text-[#4b4038]">
-                          NT${" "}
+                          NT$
+                          {" "}
                           {Number(
                             item.price ||
                               0
-                          ).toLocaleString()}{" "}
-                          ×{" "}
+                          ).toLocaleString()}
+                          {" "}
+                          ×
+                          {" "}
                           {
                             item.quantity
                           }
                         </p>
 
                         {item.isVipPrice && (
-                          <p className="mt-1 text-xs font-semibold text-[#b07255]">
-                            VIP 價格已套用
-                          </p>
-                        )}
-
-                        {item.isVipPrice &&
-                          item.originalPrice && (
-                            <p className="mt-1 text-xs text-gray-400 line-through">
-                              原價
-                              NT${" "}
-                              {Number(
-                                item.originalPrice ||
-                                  0
-                              ).toLocaleString()}
+                          <>
+                            <p className="mt-1 inline-flex rounded-full bg-[#fff2e5] px-3 py-1 text-xs font-medium text-[#b07255]">
+                              VIP 價格已套用 ☁️
                             </p>
-                          )}
+
+                            {item.originalPrice && (
+                              <p className="mt-1 text-xs text-gray-400 line-through">
+                                原價 NT$
+                                {" "}
+                                {Number(
+                                  item.originalPrice
+                                ).toLocaleString()}
+                              </p>
+                            )}
+                          </>
+                        )}
                       </div>
                     </div>
                   )
                 )}
 
-                <div className="space-y-2 pt-2 text-sm text-[#4b4038]">
+                <div className="space-y-2 border-t pt-4 text-sm text-[#4b4038]">
                   <div className="flex justify-between">
                     <span>
                       商品小計
                     </span>
 
                     <span>
-                      NT${" "}
+                      NT$
+                      {" "}
                       {subtotal.toLocaleString()}
                     </span>
                   </div>
+
+                  {vipSaved > 0 && (
+                    <>
+                      <div className="flex justify-between text-gray-400">
+                        <span>
+                          原價總額
+                        </span>
+
+                        <span className="line-through">
+                          NT$
+                          {" "}
+                          {originalSubtotal.toLocaleString()}
+                        </span>
+                      </div>
+
+                      <div className="flex justify-between font-medium text-[#b07255]">
+                        <span>
+                          VIP 優惠
+                        </span>
+
+                        <span>
+                          - NT$
+                          {" "}
+                          {vipSaved.toLocaleString()}
+                        </span>
+                      </div>
+                    </>
+                  )}
 
                   <div className="flex justify-between">
                     <span>運費</span>
 
                     <span>
-                      NT${" "}
+                      NT$
+                      {" "}
                       {shippingFee.toLocaleString()}
                     </span>
                   </div>
@@ -564,7 +617,8 @@ export default function CheckoutPage() {
                     </span>
 
                     <span>
-                      NT${" "}
+                      NT$
+                      {" "}
                       {total.toLocaleString()}
                     </span>
                   </div>
