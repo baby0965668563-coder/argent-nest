@@ -10,6 +10,7 @@ export default function AdminPage() {
 
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
+  const [vipPrice, setVipPrice] = useState("");
   const [category, setCategory] = useState("");
   const [sortOrder, setSortOrder] = useState("0");
   const [stock, setStock] = useState("0");
@@ -74,6 +75,7 @@ export default function AdminPage() {
   function resetForm() {
     setName("");
     setPrice("");
+    setVipPrice("");
     setCategory("");
     setSortOrder("0");
     setStock("0");
@@ -91,6 +93,7 @@ export default function AdminPage() {
     setEditingId(product.id);
     setName(product.name || "");
     setPrice(String(product.price || ""));
+    setVipPrice(String(product.vip_price || ""));
     setCategory(product.category || "");
     setSortOrder(String(product.sort_order || 0));
     setStock(String(product.stock || 0));
@@ -287,6 +290,7 @@ async function uploadOneImage(file: File) {
       .update({
         name,
         price,
+        vip_price: vipPrice || null,
         category,
         sort_order: Number(sortOrder) || 0,
         stock: Number(stock) || 0,
@@ -436,6 +440,13 @@ async function uploadOneImage(file: File) {
             value={price}
             onChange={(e) => setPrice(e.target.value)}
           />
+
+           <input
+  className="w-full rounded-2xl border p-4"
+  placeholder="VIP 價格（可不填）"
+  value={vipPrice}
+  onChange={(e) => setVipPrice(e.target.value)}
+/>
 
           <select
             className="w-full rounded-2xl border p-4"
