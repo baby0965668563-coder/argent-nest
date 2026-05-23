@@ -5,8 +5,16 @@ import { supabase } from "@/lib/supabase";
 
 type CartItem = {
   id: string;
+
   name: string;
+
   price: number;
+
+  originalPrice?: number;
+
+  vipPrice?: number | null;
+
+  isVipPrice?: boolean;
 
   image?: string;
 
@@ -24,18 +32,18 @@ type CartItem = {
     vipPrice?: number;
     stock?: number;
   } | null;
-
-  vipPrice?: number | null;
 };
 
 export default function CheckoutPage() {
   const [cart, setCart] = useState<CartItem[]>([]);
 
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] =
+    useState(false);
 
   const [form, setForm] = useState({
     name: "",
     phone: "",
+
     lineId: "",
 
     shippingMethod: "超商取貨",
@@ -48,7 +56,8 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     const savedCart = JSON.parse(
-      localStorage.getItem("cart") || "[]"
+      localStorage.getItem("cart") ||
+        "[]"
     );
 
     setCart(savedCart);
@@ -63,13 +72,16 @@ export default function CheckoutPage() {
   );
 
   const shippingFee =
-    form.shippingMethod === "超商取貨"
+    form.shippingMethod ===
+    "超商取貨"
       ? 60
-      : form.shippingMethod === "宅配"
+      : form.shippingMethod ===
+        "宅配"
       ? 130
       : 0;
 
-  const total = subtotal + shippingFee;
+  const total =
+    subtotal + shippingFee;
 
   function updateForm(
     key: string,
@@ -93,7 +105,8 @@ export default function CheckoutPage() {
     }
 
     if (
-      form.shippingMethod === "超商取貨" &&
+      form.shippingMethod ===
+        "超商取貨" &&
       !form.storeName
     ) {
       alert("請填寫超商門市名稱");
@@ -103,48 +116,110 @@ export default function CheckoutPage() {
     try {
       setLoading(true);
 
-      const orderId = crypto.randomUUID();
+      // 檢查庫存
+      for (const item of cart) {
+        if (
+          !item.selectedVariant?.name
+        )
+          continue;
+
+        const {
+          data: productData,
+        } = await supabase
+          .from("products")
+          .select(
+            "id, name, variants"
+          )
+          .eq("id", item.id)
+          .single();
+
+        if (!productData)
+          continue;
+
+        const variants =
+          Array.isArray(
+            productData.variants
+          )
+            ? productData.variants
+            : [];
+
+        const currentVariant =
+          variants.find(
+            (variant: any) =>
+              variant.name ===
+              item.selectedVariant
+                ?.name
+          );
+
+        const currentStock =
+          Number(
+            currentVariant?.stock ||
+              0
+          );
+
+        if (
+          currentStock <
+          Number(
+            item.quantity || 1
+          )
+        ) {
+          alert(
+            `${item.name}（${item.selectedVariant.name}）庫存不足`
+          );
+
+          setLoading(false);
+
+          return;
+        }
+      }
+
+      const orderId =
+        crypto.randomUUID();
 
       const orderToken =
         crypto.randomUUID();
 
-      const { error } = await supabase
-        .from("orders")
-        .insert([
-          {
-            id: orderId,
+      const { error } =
+        await supabase
+          .from("orders")
+          .insert([
+            {
+              id: orderId,
 
-            order_token: orderToken,
+              order_token:
+                orderToken,
 
-            customer_name: form.name,
+              customer_name:
+                form.name,
 
-            phone: form.phone,
+              phone: form.phone,
 
-            line_id: form.lineId,
+              line_id:
+                form.lineId,
 
-            shipping_method: `${
-              form.shippingMethod
-            }${
-              form.shippingMethod ===
-              "超商取貨"
-                ? `｜${form.storeName}${
-                    form.storeAddress
-                      ? `｜${form.storeAddress}`
-                      : ""
-                  }`
-                : ""
-            }`,
+              shipping_method: `${
+                form.shippingMethod
+              }${
+                form.shippingMethod ===
+                "超商取貨"
+                  ? `｜${form.storeName}${
+                      form.storeAddress
+                        ? `｜${form.storeAddress}`
+                        : ""
+                    }`
+                  : ""
+              }`,
 
-            customer_note:
-              form.customerNote,
+              customer_note:
+                form.customerNote,
 
-            items: cart,
+              items: cart,
 
-            total,
+              total,
 
-            status: "pending",
-          },
-        ]);
+              status: "pending",
+            },
+          ]);
 
       if (error) {
         console.error(error);
@@ -156,7 +231,76 @@ export default function CheckoutPage() {
         return;
       }
 
-      localStorage.removeItem("cart");
+      // 扣 variants 庫存
+      for (const item of cart) {
+        if (
+          !item.selectedVariant?.name
+        )
+          continue;
+
+        const {
+          data: productData,
+        } = await supabase
+          .from("products")
+          .select(
+            "id, variants"
+          )
+          .eq("id", item.id)
+          .single();
+
+        if (!productData)
+          continue;
+
+        const variants =
+          Array.isArray(
+            productData.variants
+          )
+            ? productData.variants
+            : [];
+
+        const updatedVariants =
+          variants.map(
+            (variant: any) => {
+              if (
+                variant.name ===
+                item
+                  .selectedVariant
+                  ?.name
+              ) {
+                return {
+                  ...variant,
+
+                  stock:
+                    Math.max(
+                      0,
+                      Number(
+                        variant.stock ||
+                          0
+                      ) -
+                        Number(
+                          item.quantity ||
+                            1
+                        )
+                    ),
+                };
+              }
+
+              return variant;
+            }
+          );
+
+        await supabase
+          .from("products")
+          .update({
+            variants:
+              updatedVariants,
+          })
+          .eq("id", item.id);
+      }
+
+      localStorage.removeItem(
+        "cart"
+      );
 
       window.location.href = `/orders/${orderId}?token=${orderToken}`;
     } finally {
@@ -216,7 +360,9 @@ export default function CheckoutPage() {
               />
 
               <select
-                value={form.shippingMethod}
+                value={
+                  form.shippingMethod
+                }
                 onChange={(e) =>
                   updateForm(
                     "shippingMethod",
@@ -242,7 +388,9 @@ export default function CheckoutPage() {
                 "超商取貨" && (
                 <>
                   <input
-                    value={form.storeName}
+                    value={
+                      form.storeName
+                    }
                     onChange={(e) =>
                       updateForm(
                         "storeName",
@@ -254,7 +402,9 @@ export default function CheckoutPage() {
                   />
 
                   <input
-                    value={form.storeAddress}
+                    value={
+                      form.storeAddress
+                    }
                     onChange={(e) =>
                       updateForm(
                         "storeAddress",
@@ -268,7 +418,9 @@ export default function CheckoutPage() {
               )}
 
               <textarea
-                value={form.customerNote}
+                value={
+                  form.customerNote
+                }
                 onChange={(e) =>
                   updateForm(
                     "customerNote",
@@ -293,80 +445,103 @@ export default function CheckoutPage() {
               </p>
             ) : (
               <div className="space-y-4">
-                {cart.map((item, index) => (
-                  <div
-                    key={`${item.id}-${index}`}
-                    className="border-b pb-4"
-                  >
-                    <p className="font-medium text-[#4b4038]">
-                      {item.name}
-                    </p>
-
-                    {item.selectedVariant
-                      ?.name && (
-                      <p className="mt-1 text-sm text-[#9b6b4f]">
-                        款式：
-                        {
-                          item.selectedVariant
-                            .name
-                        }
-                      </p>
-                    )}
-
-                    {item.options &&
-                      Object.entries(
-                        item.options
-                      ).map(
-                        ([key, value]) => (
-                          <p
-                            key={key}
-                            className="mt-1 text-sm text-gray-500"
-                          >
-                            {key}：{value}
-                          </p>
-                        )
-                      )}
-
-                    {item.productNote && (
-                      <p className="mt-1 text-sm text-[#9b6b4f]">
-                        商品備註：
-                        {
-                          item.productNote
-                        }
-                      </p>
-                    )}
-
-                    {item.note && (
-                      <p className="mt-1 text-sm text-[#6b5c50]">
-                        顧客備註：
-                        {item.note}
-                      </p>
-                    )}
-
-                    <div className="mt-2">
-                      <p className="text-sm text-[#4b4038]">
-                        NT${" "}
-                        {Number(
-                          item.price || 0
-                        ).toLocaleString()}{" "}
-                        × {item.quantity}
+                {cart.map(
+                  (item, index) => (
+                    <div
+                      key={`${item.id}-${index}`}
+                      className="border-b pb-4"
+                    >
+                      <p className="font-medium text-[#4b4038]">
+                        {item.name}
                       </p>
 
-                      {item.vipPrice && (
-                        <p className="mt-1 text-xs text-[#b07255]">
-                          VIP NT${" "}
-                          {Number(
-                            item.vipPrice
-                          ).toLocaleString()}
+                      {item
+                        .selectedVariant
+                        ?.name && (
+                        <p className="mt-1 text-sm text-[#9b6b4f]">
+                          款式：
+                          {
+                            item
+                              .selectedVariant
+                              .name
+                          }
                         </p>
                       )}
+
+                      {item.options &&
+                        Object.entries(
+                          item.options
+                        ).map(
+                          ([
+                            key,
+                            value,
+                          ]) => (
+                            <p
+                              key={key}
+                              className="mt-1 text-sm text-gray-500"
+                            >
+                              {key}：
+                              {value}
+                            </p>
+                          )
+                        )}
+
+                      {item.productNote && (
+                        <p className="mt-1 text-sm text-[#9b6b4f]">
+                          商品備註：
+                          {
+                            item.productNote
+                          }
+                        </p>
+                      )}
+
+                      {item.note && (
+                        <p className="mt-1 text-sm text-[#6b5c50]">
+                          顧客備註：
+                          {item.note}
+                        </p>
+                      )}
+
+                      <div className="mt-2">
+                        <p className="text-sm text-[#4b4038]">
+                          NT${" "}
+                          {Number(
+                            item.price ||
+                              0
+                          ).toLocaleString()}{" "}
+                          ×{" "}
+                          {
+                            item.quantity
+                          }
+                        </p>
+
+                        {item.isVipPrice && (
+                          <p className="mt-1 text-xs font-semibold text-[#b07255]">
+                            VIP 價格已套用
+                          </p>
+                        )}
+
+                        {item.isVipPrice &&
+                          item.originalPrice && (
+                            <p className="mt-1 text-xs text-gray-400 line-through">
+                              原價
+                              NT${" "}
+                              {Number(
+                                item.originalPrice ||
+                                  0
+                              ).toLocaleString()}
+                            </p>
+                          )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  )
+                )}
 
                 <div className="space-y-2 pt-2 text-sm text-[#4b4038]">
                   <div className="flex justify-between">
-                    <span>商品小計</span>
+                    <span>
+                      商品小計
+                    </span>
 
                     <span>
                       NT${" "}
@@ -384,17 +559,22 @@ export default function CheckoutPage() {
                   </div>
 
                   <div className="flex justify-between border-t pt-3 text-lg font-semibold">
-                    <span>總金額</span>
+                    <span>
+                      總金額
+                    </span>
 
                     <span>
-                      NT$ {total.toLocaleString()}
+                      NT${" "}
+                      {total.toLocaleString()}
                     </span>
                   </div>
                 </div>
 
                 <button
                   type="button"
-                  onClick={handleSubmit}
+                  onClick={
+                    handleSubmit
+                  }
                   disabled={loading}
                   className="mt-4 w-full rounded-full bg-[#2e2e2e] py-4 text-sm font-medium text-white disabled:opacity-50"
                 >
