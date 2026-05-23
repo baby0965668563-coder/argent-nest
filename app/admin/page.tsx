@@ -15,6 +15,7 @@ export default function AdminPage() {
   const [sortOrder, setSortOrder] = useState("0");
   const [stock, setStock] = useState("0");
   const [options, setOptions] = useState("");
+  const [variantsText, setVariantsText] = useState("");
   const [description, setDescription] = useState("");
   const [isActive, setIsActive] = useState(true);
   const [isSoldOut, setIsSoldOut] = useState(false);
@@ -72,6 +73,69 @@ export default function AdminPage() {
     );
   });
 
+  function parseVariants(text: string) {
+    if (!text.trim()) return [];
+
+    const lines = text
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean);
+
+    return lines.map((line) => {
+      const parts = line.split(/[|｜]/).map((part) => part.trim());
+
+      return {
+        name: parts[0] || "",
+        price: Number(parts[1] || 0),
+        vipPrice: parts[2] ? Number(parts[2]) : null,
+        stock: parts[3] ? Number(parts[3]) : 0,
+      };
+    });
+  }
+
+  function variantsToText(variants: any) {
+    if (!Array.isArray(variants)) return "";
+
+    return variants
+      .map((variant) => {
+        return [
+          variant.name || "",
+          variant.price || "",
+          variant.vipPrice || "",
+          variant.stock || 0,
+        ].join("|");
+      })
+      .join("\n");
+  }
+
+  function validateVariants() {
+    const variants = parseVariants(variantsText);
+
+    for (const variant of variants) {
+      if (!variant.name) {
+        alert("款式名稱不能空白");
+        return null;
+      }
+
+      if (!variant.price || Number.isNaN(variant.price)) {
+        alert(`款式「${variant.name}」的一般價格有問題`);
+        return null;
+      }
+
+      if (variant.vipPrice !== null && Number.isNaN(variant.vipPrice)) {
+        alert(`款式「${variant.name}」的 VIP 價格有問題`);
+        return null;
+      }
+
+      if (Number.isNaN(variant.stock)) {
+        alert(`款式「${variant.name}」的庫存有問題`);
+        return null;
+      }
+    }
+
+    return variants;
+  }
+
   function resetForm() {
     setName("");
     setPrice("");
@@ -80,6 +144,7 @@ export default function AdminPage() {
     setSortOrder("0");
     setStock("0");
     setOptions("");
+    setVariantsText("");
     setDescription("");
     setIsActive(true);
     setIsSoldOut(false);
@@ -98,6 +163,7 @@ export default function AdminPage() {
     setSortOrder(String(product.sort_order || 0));
     setStock(String(product.stock || 0));
     setOptions(product.options || "");
+    setVariantsText(variantsToText(product.variants));
     setDescription(product.description || "");
     setIsActive(product.is_active !== false);
     setIsSoldOut(product.is_sold_out === true);
@@ -126,86 +192,65 @@ export default function AdminPage() {
   }
 
   async function compressImage(file: File): Promise<File> {
-  return new Promise((resolve) => {
-    const image = new Image();
+    return new Promise((resolve) => {
+      const image = new Image();
 
-    image.onload = () => {
-      const canvas = document.createElement("canvas");
+      image.onload = () => {
+        const canvas = document.createElement("canvas");
+        const maxWidth = 1200;
+        const scale = maxWidth / image.width;
 
-      const maxWidth = 1200;
+        canvas.width = image.width > maxWidth ? maxWidth : image.width;
+        canvas.height =
+          image.width > maxWidth ? image.height * scale : image.height;
 
-      const scale = maxWidth / image.width;
+        const ctx = canvas.getContext("2d");
+        ctx?.drawImage(image, 0, 0, canvas.width, canvas.height);
 
-      canvas.width =
-        image.width > maxWidth
-          ? maxWidth
-          : image.width;
-
-      canvas.height =
-        image.width > maxWidth
-          ? image.height * scale
-          : image.height;
-
-      const ctx = canvas.getContext("2d");
-
-      ctx?.drawImage(
-        image,
-        0,
-        0,
-        canvas.width,
-        canvas.height
-      );
-
-      canvas.toBlob(
-        (blob) => {
-          if (!blob) {
-            resolve(file);
-            return;
-          }
-
-          const compressed = new File(
-            [blob],
-            file.name.replace(/\.\w+$/, ".jpg"),
-            {
-              type: "image/jpeg",
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) {
+              resolve(file);
+              return;
             }
-          );
 
-          resolve(compressed);
-        },
-        "image/jpeg",
-        0.8
-      );
-    };
+            const compressed = new File(
+              [blob],
+              file.name.replace(/\.\w+$/, ".jpg"),
+              { type: "image/jpeg" }
+            );
 
-    image.src = URL.createObjectURL(file);
-  });
-}
+            resolve(compressed);
+          },
+          "image/jpeg",
+          0.8
+        );
+      };
 
-async function uploadOneImage(file: File) {
-  const compressedFile = await compressImage(file);
-
-  const fileName = `public/${uuidv4()}.jpg`;
-
-  const { error } = await supabase.storage
-    .from("products")
-    .upload(fileName, compressedFile, {
-      cacheControl: "3600",
-      upsert: true,
-      contentType: "image/jpeg",
+      image.src = URL.createObjectURL(file);
     });
-
-  if (error) {
-    alert("圖片上傳失敗：" + error.message);
-    return null;
   }
 
-  const { data } = supabase.storage
-    .from("products")
-    .getPublicUrl(fileName);
+  async function uploadOneImage(file: File) {
+    const compressedFile = await compressImage(file);
+    const fileName = `public/${uuidv4()}.jpg`;
 
-  return data.publicUrl;
-}
+    const { error } = await supabase.storage
+      .from("products")
+      .upload(fileName, compressedFile, {
+        cacheControl: "3600",
+        upsert: true,
+        contentType: "image/jpeg",
+      });
+
+    if (error) {
+      alert("圖片上傳失敗：" + error.message);
+      return null;
+    }
+
+    const { data } = supabase.storage.from("products").getPublicUrl(fileName);
+    return data.publicUrl;
+  }
 
   async function uploadImages(files: File[]) {
     const urls: string[] = [];
@@ -224,6 +269,9 @@ async function uploadOneImage(file: File) {
     if (!category) return alert("請選擇商品分類");
     if (images.length === 0) return alert("請選擇至少一張圖片");
 
+    const variants = validateVariants();
+    if (variants === null) return;
+
     setLoading(true);
 
     const imageUrls = await uploadImages(images);
@@ -237,10 +285,12 @@ async function uploadOneImage(file: File) {
       {
         name,
         price,
+        vip_price: vipPrice || null,
         category,
         sort_order: Number(sortOrder) || 0,
         stock: Number(stock) || 0,
         options,
+        variants,
         description,
         is_active: isActive,
         is_sold_out: isSoldOut,
@@ -264,6 +314,9 @@ async function uploadOneImage(file: File) {
     if (!name) return alert("請輸入商品名稱");
     if (!price) return alert("請輸入價格");
     if (!category) return alert("請選擇商品分類");
+
+    const variants = validateVariants();
+    if (variants === null) return;
 
     setLoading(true);
 
@@ -295,6 +348,7 @@ async function uploadOneImage(file: File) {
         sort_order: Number(sortOrder) || 0,
         stock: Number(stock) || 0,
         options,
+        variants,
         description,
         is_active: isActive,
         is_sold_out: isSoldOut,
@@ -344,47 +398,44 @@ async function uploadOneImage(file: File) {
   }
 
   async function deleteProduct(id: number) {
-  if (!confirm("確定要刪除這個商品嗎？")) return;
+    if (!confirm("確定要刪除這個商品嗎？")) return;
 
-  const product = products.find((p) => p.id === id);
+    const product = products.find((p) => p.id === id);
 
-  if (!product) {
-    alert("找不到商品");
-    return;
-  }
-
-  const imagesToDelete =
-    Array.isArray(product.images) && product.images.length > 0
-      ? product.images
-      : product.image
-      ? [product.image]
-      : [];
-
-  for (const imageUrl of imagesToDelete) {
-    try {
-      const path = imageUrl.split("/products/")[1];
-
-      if (path) {
-        await supabase.storage.from("products").remove([path]);
-      }
-    } catch (err) {
-      console.error("圖片刪除失敗", err);
+    if (!product) {
+      alert("找不到商品");
+      return;
     }
+
+    const imagesToDelete =
+      Array.isArray(product.images) && product.images.length > 0
+        ? product.images
+        : product.image
+        ? [product.image]
+        : [];
+
+    for (const imageUrl of imagesToDelete) {
+      try {
+        const path = imageUrl.split("/products/")[1];
+
+        if (path) {
+          await supabase.storage.from("products").remove([path]);
+        }
+      } catch (err) {
+        console.error("圖片刪除失敗", err);
+      }
+    }
+
+    const { error } = await supabase.from("products").delete().eq("id", id);
+
+    if (error) {
+      alert("刪除失敗：" + error.message);
+      return;
+    }
+
+    alert("商品與圖片已刪除");
+    fetchProducts();
   }
-
-  const { error } = await supabase
-    .from("products")
-    .delete()
-    .eq("id", id);
-
-  if (error) {
-    alert("刪除失敗：" + error.message);
-    return;
-  }
-
-  alert("商品與圖片已刪除");
-  fetchProducts();
-}
 
   if (checking) {
     return (
@@ -441,12 +492,12 @@ async function uploadOneImage(file: File) {
             onChange={(e) => setPrice(e.target.value)}
           />
 
-           <input
-  className="w-full rounded-2xl border p-4"
-  placeholder="VIP 價格（可不填）"
-  value={vipPrice}
-  onChange={(e) => setVipPrice(e.target.value)}
-/>
+          <input
+            className="w-full rounded-2xl border p-4"
+            placeholder="VIP 價格（可不填）"
+            value={vipPrice}
+            onChange={(e) => setVipPrice(e.target.value)}
+          />
 
           <select
             className="w-full rounded-2xl border p-4"
@@ -483,6 +534,19 @@ async function uploadOneImage(file: File) {
 尺寸|S,M,L`}
             value={options}
             onChange={(e) => setOptions(e.target.value)}
+          />
+
+          <textarea
+            className="w-full rounded-2xl border p-4"
+            placeholder={`不同款式價格格式：
+小吊飾|390|350|3
+大娃娃|890|790|1
+禮盒組|1290|1190|2
+
+格式：
+款式名稱|一般價格|VIP價格|庫存`}
+            value={variantsText}
+            onChange={(e) => setVariantsText(e.target.value)}
           />
 
           <textarea
@@ -528,7 +592,10 @@ async function uploadOneImage(file: File) {
               <div className="grid grid-cols-2 gap-3">
                 {editingImages.map((img, index) => (
                   <div key={img} className="overflow-hidden rounded-2xl bg-white">
-                    <img src={img} className="aspect-square w-full object-cover" />
+                    <img
+                      src={img}
+                      className="aspect-square w-full object-cover"
+                    />
 
                     <div className="space-y-2 p-2">
                       {index === 0 ? (
@@ -628,6 +695,10 @@ async function uploadOneImage(file: File) {
                 ? product.images[0]
                 : "");
 
+            const variants = Array.isArray(product.variants)
+              ? product.variants
+              : [];
+
             return (
               <div
                 key={product.id}
@@ -636,7 +707,10 @@ async function uploadOneImage(file: File) {
                 <div className="flex gap-4">
                   <div className="h-24 w-24 shrink-0 overflow-hidden rounded-2xl bg-[#eee5dc]">
                     {imageSrc ? (
-                      <img src={imageSrc} className="h-full w-full object-cover" />
+                      <img
+                        src={imageSrc}
+                        className="h-full w-full object-cover"
+                      />
                     ) : (
                       <div className="flex h-full items-center justify-center text-xs text-gray-400">
                         No Image
@@ -646,18 +720,51 @@ async function uploadOneImage(file: File) {
 
                   <div className="flex-1">
                     <p className="font-bold">{product.name}</p>
+
                     <p className="mt-1 text-sm text-gray-500">
                       {product.category}
                     </p>
+
                     <p className="mt-1 font-bold">
                       NT$ {Number(product.price || 0).toLocaleString()}
                     </p>
+
+                    {product.vip_price && (
+                      <p className="mt-1 text-xs font-semibold text-[#b07255]">
+                        VIP NT$ {Number(product.vip_price || 0).toLocaleString()}
+                      </p>
+                    )}
+
                     <p className="mt-1 text-xs text-gray-400">
                       排序：{product.sort_order || 0}
                     </p>
+
                     <p className="mt-1 text-xs text-gray-400">
                       庫存：{Number(product.stock || 0)}
                     </p>
+
+                    {variants.length > 0 && (
+                      <div className="mt-2 rounded-2xl bg-[#f8f5f2] p-3">
+                        <p className="mb-1 text-xs font-bold text-[#6b5c50]">
+                          款式價格
+                        </p>
+
+                        <div className="space-y-1">
+                          {variants.map((variant: any, index: number) => (
+                            <p
+                              key={`${variant.name}-${index}`}
+                              className="text-xs text-[#6b5c50]"
+                            >
+                              {variant.name}｜NT$ {variant.price}
+                              {variant.vipPrice
+                                ? `｜VIP NT$ ${variant.vipPrice}`
+                                : ""}
+                              ｜庫存 {variant.stock}
+                            </p>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
                     <div className="mt-2 flex flex-wrap gap-2">
                       {product.is_featured && (
@@ -672,11 +779,12 @@ async function uploadOneImage(file: File) {
                         </span>
                       )}
 
-                      {Number(product.stock || 0) === 0 && !product.is_sold_out && (
-                        <span className="rounded-full bg-blue-100 px-3 py-1 text-xs text-blue-700">
-                          預購
-                        </span>
-                      )}
+                      {Number(product.stock || 0) === 0 &&
+                        !product.is_sold_out && (
+                          <span className="rounded-full bg-blue-100 px-3 py-1 text-xs text-blue-700">
+                            預購
+                          </span>
+                        )}
 
                       {product.is_sold_out && (
                         <span className="rounded-full bg-gray-200 px-3 py-1 text-xs text-gray-600">
