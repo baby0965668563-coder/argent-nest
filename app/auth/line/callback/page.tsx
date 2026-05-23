@@ -8,22 +8,16 @@ export default function LineCallbackPage() {
   const router = useRouter();
 
   useEffect(() => {
-    handleLineLogin();
+    handleLineCallback();
   }, []);
 
-  async function handleLineLogin() {
+  async function handleLineCallback() {
     try {
-      const params = new URLSearchParams(
-        window.location.search
-      );
+      const params = new URLSearchParams(window.location.search);
 
       const code = params.get("code");
       const state = params.get("state");
-
-      const savedState =
-        localStorage.getItem(
-          "line_login_state"
-        );
+      const savedState = localStorage.getItem("line_login_state");
 
       if (!code || !state) {
         alert("LINE 登入失敗");
@@ -37,72 +31,93 @@ export default function LineCallbackPage() {
         return;
       }
 
-      const response = await fetch(
-        "https://api.line.me/oauth2/v2.1/token",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type":
-              "application/x-www-form-urlencoded",
-          },
-          body: new URLSearchParams({
-            grant_type: "authorization_code",
-            code,
-            redirect_uri:
-              `${window.location.origin}/auth/line/callback`,
-            client_id:
-              process.env
-                .NEXT_PUBLIC_LINE_CHANNEL_ID || "",
-            client_secret:
-              process.env
-                .NEXT_PUBLIC_LINE_CHANNEL_SECRET || "",
-          }),
-        }
-      );
+      const tokenResponse = await fetch("/api/line/token", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          code,
+          redirectUri: `${window.location.origin}/auth/line/callback`,
+        }),
+      });
 
-      const tokenData =
-        await response.json();
+      const tokenData = await tokenResponse.json();
 
-      const profileResponse =
-        await fetch(
-          "https://api.line.me/v2/profile",
-          {
-            headers: {
-              Authorization: `Bearer ${tokenData.access_token}`,
-            },
-          }
-        );
+      if (!tokenResponse.ok || !tokenData.access_token) {
+        console.error(tokenData);
+        alert("LINE 登入失敗，無法取得 token");
+        router.push("/login");
+        return;
+      }
 
-      const profile =
-        await profileResponse.json();
+      const profileResponse = await fetch("https://api.line.me/v2/profile", {
+        headers: {
+          Authorization: `Bearer ${tokenData.access_token}`,
+        },
+      });
 
-      const userData = {
+      const profile = await profileResponse.json();
+
+      if (!profile?.userId) {
+        alert("LINE 登入失敗，無法取得會員資料");
+        router.push("/login");
+        return;
+      }
+
+      const userPayload = {
         line_user_id: profile.userId,
-        name: profile.displayName,
-        picture: profile.pictureUrl,
+        name: profile.displayName || "",
+        avatar_url: profile.pictureUrl || "",
       };
 
-      await supabase
+      const { data: existingUser } = await supabase
         .from("users")
-        .upsert(userData, {
-          onConflict: "line_user_id",
-        });
+        .select("*")
+        .eq("line_user_id", profile.userId)
+        .maybeSingle();
+
+      if (existingUser) {
+        await supabase
+          .from("users")
+          .update({
+            name: userPayload.name,
+            avatar_url: userPayload.avatar_url,
+          })
+          .eq("line_user_id", profile.userId);
+      } else {
+        await supabase.from("users").insert([
+          {
+            ...userPayload,
+            is_vip: false,
+            level: "normal",
+          },
+        ]);
+      }
+
+      const { data: finalUser } = await supabase
+        .from("users")
+        .select("*")
+        .eq("line_user_id", profile.userId)
+        .maybeSingle();
 
       localStorage.setItem(
         "argent_user",
-        JSON.stringify(userData)
+        JSON.stringify(finalUser || userPayload)
       );
 
+      localStorage.removeItem("line_login_state");
+
       router.push("/");
-    } catch (err) {
-      console.error(err);
-      alert("LINE 登入失敗");
+    } catch (error) {
+      console.error(error);
+      alert("LINE 登入失敗，請稍後再試");
       router.push("/login");
     }
   }
 
   return (
-    <main className="min-h-screen bg-[#faf7f2] flex items-center justify-center px-4">
+    <main className="flex min-h-screen items-center justify-center bg-[#faf7f2] px-4">
       <div className="rounded-[32px] bg-white p-8 text-center shadow-sm">
         <div className="text-5xl">☁️</div>
 
@@ -111,7 +126,7 @@ export default function LineCallbackPage() {
         </h1>
 
         <p className="mt-3 text-sm text-[#8c7b70]">
-          正在幫妳登入會員
+          正在幫妳同步會員資料
         </p>
       </div>
     </main>
