@@ -8,6 +8,9 @@ type CartItem = {
   id: string;
   name: string;
   price: number;
+  originalPrice?: number;
+  vipPrice?: number | null;
+  isVipPrice?: boolean;
   image?: string;
   quantity: number;
   options?: Record<string, string>;
@@ -135,9 +138,7 @@ export default function OrderDetailPage() {
               訂單查詢
             </h1>
 
-            <p className="mt-3 text-sm text-[#8c7b70]">
-              感謝你的訂購 🤍
-            </p>
+            <p className="mt-3 text-sm text-[#8c7b70]">感謝你的訂購 🤍</p>
           </div>
 
           <div className="rounded-3xl bg-[#f8f3ec] p-5">
@@ -154,7 +155,6 @@ export default function OrderDetailPage() {
 
               <div className="flex justify-between gap-4">
                 <span className="text-gray-500">訂單狀態</span>
-
                 <span className="rounded-full bg-white px-3 py-1 text-xs text-[#9b6b4f]">
                   {statusText[order.status] || order.status}
                 </span>
@@ -210,6 +210,7 @@ export default function OrderDetailPage() {
                       <img
                         src={item.image}
                         alt={item.name}
+                        loading="lazy"
                         className="h-24 w-24 rounded-2xl object-cover"
                       />
                     ) : (
@@ -225,10 +226,7 @@ export default function OrderDetailPage() {
 
                       {item.options &&
                         Object.entries(item.options).map(([key, value]) => (
-                          <p
-                            key={key}
-                            className="mt-1 text-sm text-[#7a6a5d]"
-                          >
+                          <p key={key} className="mt-1 text-sm text-[#7a6a5d]">
                             {key}：{value}
                           </p>
                         ))}
@@ -246,14 +244,32 @@ export default function OrderDetailPage() {
                       )}
 
                       <div className="mt-3 flex items-center justify-between text-sm text-[#4b4038]">
-                        <span>
-                          NT$ {item.price} × {item.quantity}
-                        </span>
+                        <div>
+                          <p>
+                            NT$ {Number(item.price || 0).toLocaleString()} ×{" "}
+                            {item.quantity}
+                          </p>
+
+                          {item.isVipPrice && (
+                            <p className="mt-1 text-xs font-semibold text-[#b07255]">
+                              VIP 價格已套用
+                            </p>
+                          )}
+
+                          {item.isVipPrice && item.originalPrice && (
+                            <p className="mt-1 text-xs text-gray-400 line-through">
+                              原價 NT${" "}
+                              {Number(item.originalPrice || 0).toLocaleString()}
+                            </p>
+                          )}
+                        </div>
 
                         <span className="font-semibold">
                           NT${" "}
-                          {Number(item.price || 0) *
-                            Number(item.quantity || 1)}
+                          {(
+                            Number(item.price || 0) *
+                            Number(item.quantity || 1)
+                          ).toLocaleString()}
                         </span>
                       </div>
                     </div>
@@ -266,7 +282,7 @@ export default function OrderDetailPage() {
           <div className="mt-6 rounded-3xl bg-[#f8f3ec] p-5">
             <div className="flex items-center justify-between text-lg font-semibold text-[#4b4038]">
               <span>訂單總金額</span>
-              <span>NT$ {order.total}</span>
+              <span>NT$ {Number(order.total || 0).toLocaleString()}</span>
             </div>
           </div>
 
