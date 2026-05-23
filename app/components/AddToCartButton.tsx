@@ -24,32 +24,37 @@ export default function AddToCartButton({
   disabled = false,
 }: Props) {
   const router = useRouter();
+
   const [added, setAdded] = useState(false);
 
   function handleAddToCart() {
     if (disabled || product?.is_sold_out) return;
 
-    const existingCart = JSON.parse(localStorage.getItem("cart") || "[]");
+    const existingCart = JSON.parse(
+      localStorage.getItem("cart") || "[]"
+    );
 
     const image =
       product?.image ||
       (typeof product?.images === "string"
         ? product.images.split(",")[0]?.trim()
-        : Array.isArray(product?.images) && product.images.length > 0
+        : Array.isArray(product?.images) &&
+          product.images.length > 0
         ? product.images[0]
         : "");
 
-    const normalPrice = Number(product.price || 0);
-    const vipPrice = product.vip_price ? Number(product.vip_price) : null;
-
-    const finalPrice = vipPrice || normalPrice;
+    const finalPrice = Number(
+      product.finalPrice ||
+        product.vip_price ||
+        product.price ||
+        0
+    );
 
     const foundIndex = existingCart.findIndex(
       (item: any) =>
         item.id === product.id &&
         sameOptions(item.options, selectedOptions) &&
-        (item.note || "") === customerNote &&
-        Number(item.price || 0) === finalPrice
+        (item.note || "") === customerNote
     );
 
     if (foundIndex >= 0) {
@@ -58,15 +63,24 @@ export default function AddToCartButton({
     } else {
       existingCart.push({
         id: product.id,
+
         name: product.name,
+
         price: finalPrice,
-        originalPrice: normalPrice,
-        vipPrice: vipPrice,
-        isVipPrice: vipPrice !== null,
+
+        vipPrice:
+          Number(product.finalVipPrice || 0) || null,
+
         image,
+
         options: selectedOptions,
+
         note: customerNote,
+
         quantity: 1,
+
+        selectedVariant:
+          product.selectedVariant || null,
 
         productNote:
           product.product_note ||
@@ -76,11 +90,16 @@ export default function AddToCartButton({
           "",
 
         category: product.category || "",
+
         createdAt: Date.now(),
       });
     }
 
-    localStorage.setItem("cart", JSON.stringify(existingCart));
+    localStorage.setItem(
+      "cart",
+      JSON.stringify(existingCart)
+    );
+
     setAdded(true);
   }
 
