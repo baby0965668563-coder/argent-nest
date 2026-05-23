@@ -515,7 +515,7 @@ export default function CheckoutPage() {
                       </span>
                     </div>
 
-                    <div className="flex justify-between font-medium text-[#b07255]">
+                    <div className="flex justify-between font-medium text-[#4b4038]">
                       <span>
                         VIP 優惠
                       </span>
@@ -556,7 +556,7 @@ export default function CheckoutPage() {
                   handleSubmit
                 }
                 disabled={loading}
-                className="mt-4 w-full rounded-full bg-[#2e2e2e] py-4 text-sm font-medium text-white disabled:opacity-50"
+                className="w-full rounded-2xl border border-[#e1d3c2] bg-white px-4 py-3 text-sm text-[#4b4038] outline-none"
               >
                 {loading
                   ? "送出中..."
