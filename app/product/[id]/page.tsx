@@ -40,11 +40,16 @@ export default function ProductPage() {
   const params = useParams();
 
   const [product, setProduct] = useState<any>(null);
-  const [selectedImage, setSelectedImage] = useState("");
-  const [selectedOptions, setSelectedOptions] = useState<
-    Record<string, string>
-  >({});
-  const [customerNote, setCustomerNote] = useState("");
+
+  const [selectedImage, setSelectedImage] =
+    useState("");
+
+  const [selectedOptions, setSelectedOptions] =
+    useState<Record<string, string>>({});
+
+  const [customerNote, setCustomerNote] =
+    useState("");
+
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -54,11 +59,12 @@ export default function ProductPage() {
   async function fetchProduct() {
     setLoading(true);
 
-    const { data, error } = await supabase
-      .from("products")
-      .select("*")
-      .eq("id", params.id)
-      .single();
+    const { data, error } =
+      await supabase
+        .from("products")
+        .select("*")
+        .eq("id", params.id)
+        .single();
 
     if (error) {
       console.error(error);
@@ -72,7 +78,9 @@ export default function ProductPage() {
       typeof data?.images === "string"
         ? data.images
             .split(",")
-            .map((img: string) => img.trim())
+            .map((img: string) =>
+              img.trim()
+            )
             .filter(Boolean)
         : Array.isArray(data?.images)
         ? data.images
@@ -88,7 +96,9 @@ export default function ProductPage() {
   if (loading) {
     return (
       <main className="min-h-screen bg-[#faf7f2] flex items-center justify-center">
-        <p className="text-gray-500">商品載入中...</p>
+        <p className="text-gray-500">
+          商品載入中...
+        </p>
       </main>
     );
   }
@@ -96,7 +106,9 @@ export default function ProductPage() {
   if (!product) {
     return (
       <main className="min-h-screen bg-[#faf7f2] flex items-center justify-center">
-        <p className="text-gray-500">找不到商品</p>
+        <p className="text-gray-500">
+          找不到商品
+        </p>
       </main>
     );
   }
@@ -105,16 +117,22 @@ export default function ProductPage() {
     typeof product.images === "string"
       ? product.images
           .split(",")
-          .map((img: string) => img.trim())
+          .map((img: string) =>
+            img.trim()
+          )
           .filter(Boolean)
       : Array.isArray(product.images)
       ? product.images
       : [];
 
-  const optionGroups = parseOptions(product.options || "");
+  const optionGroups = parseOptions(
+    product.options || ""
+  );
 
   // variants
-  const variants = Array.isArray(product.variants)
+  const variants = Array.isArray(
+    product.variants
+  )
     ? product.variants
     : [];
 
@@ -122,7 +140,9 @@ export default function ProductPage() {
     variants.length > 0
       ? {
           name: "款式",
-          values: variants.map((v: any) => v.name),
+          values: variants.map(
+            (v: any) => v.name
+          ),
         }
       : null;
 
@@ -131,20 +151,42 @@ export default function ProductPage() {
     : optionGroups;
 
   const selectedVariant = variants.find(
-    (v: any) => v.name === selectedOptions["款式"]
+    (v: any) =>
+      v.name ===
+      selectedOptions["款式"]
   );
 
+  // variant stock
+  const variantStock = Number(
+    selectedVariant?.stock || 0
+  );
+
+  const variantSoldOut =
+    selectedVariant &&
+    variantStock <= 0;
+
+  // price
   const displayPrice = selectedVariant
-    ? Number(selectedVariant.price || 0)
+    ? Number(
+        selectedVariant.price || 0
+      )
     : Number(product.price || 0);
 
-  const displayVipPrice = selectedVariant
-    ? Number(selectedVariant.vipPrice || 0)
-    : Number(product.vip_price || 0);
+  const displayVipPrice =
+    selectedVariant
+      ? Number(
+          selectedVariant.vipPrice ||
+            0
+        )
+      : Number(
+          product.vip_price || 0
+        );
 
-  const hasMissingOptions = allOptionGroups.some(
-    (group) => !selectedOptions[group.name]
-  );
+  const hasMissingOptions =
+    allOptionGroups.some(
+      (group) =>
+        !selectedOptions[group.name]
+    ) || Boolean(variantSoldOut);
 
   return (
     <main className="min-h-screen bg-[#faf7f2] px-4 py-6">
@@ -167,24 +209,31 @@ export default function ProductPage() {
 
           {images.length > 1 && (
             <div className="flex gap-3 mt-4 overflow-x-auto">
-              {images.map((img: string) => (
-                <button
-                  key={img}
-                  type="button"
-                  onClick={() => setSelectedImage(img)}
-                  className={`w-20 h-20 rounded-2xl overflow-hidden border ${
-                    selectedImage === img
-                      ? "border-[#4b4038]"
-                      : "border-transparent"
-                  }`}
-                >
-                  <img
-                    src={img}
-                    alt=""
-                    className="w-full h-full object-cover"
-                  />
-                </button>
-              ))}
+              {images.map(
+                (img: string) => (
+                  <button
+                    key={img}
+                    type="button"
+                    onClick={() =>
+                      setSelectedImage(
+                        img
+                      )
+                    }
+                    className={`w-20 h-20 rounded-2xl overflow-hidden border ${
+                      selectedImage ===
+                      img
+                        ? "border-[#4b4038]"
+                        : "border-transparent"
+                    }`}
+                  >
+                    <img
+                      src={img}
+                      alt=""
+                      className="w-full h-full object-cover"
+                    />
+                  </button>
+                )
+              )}
             </div>
           )}
         </section>
@@ -194,7 +243,8 @@ export default function ProductPage() {
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-sm text-gray-400 mb-2">
-                {product.category || "Argent Nest Select"}
+                {product.category ||
+                  "Argent Nest Select"}
               </p>
 
               <h1 className="text-2xl font-semibold leading-relaxed text-[#4b4038]">
@@ -202,59 +252,102 @@ export default function ProductPage() {
               </h1>
             </div>
 
-            <LikeButton productId={product.id} />
+            <LikeButton
+              productId={product.id}
+            />
           </div>
 
           {/* 價格 */}
           <div className="mt-5">
             <p className="text-2xl font-semibold text-[#4b4038]">
-              NT$ {displayPrice.toLocaleString()}
+              NT${" "}
+              {displayPrice.toLocaleString()}
             </p>
 
-            {displayVipPrice > 0 && (
+            {displayVipPrice >
+              0 && (
               <p className="mt-2 text-sm font-medium text-[#b07255]">
-                VIP NT$ {displayVipPrice.toLocaleString()}
+                VIP NT${" "}
+                {displayVipPrice.toLocaleString()}
+              </p>
+            )}
+
+            {/* 庫存 */}
+            {selectedVariant && (
+              <p className="mt-2 text-sm text-[#8c7b70]">
+                剩餘庫存：
+                {variantStock}
+              </p>
+            )}
+
+            {/* 售完 */}
+            {variantSoldOut && (
+              <p className="mt-2 text-sm font-semibold text-[#c25b5b]">
+                此款式已售完
               </p>
             )}
           </div>
 
           {/* 規格 */}
-          {allOptionGroups.length > 0 && (
+          {allOptionGroups.length >
+            0 && (
             <div className="mt-6 space-y-5">
-              {allOptionGroups.map((group) => (
-                <div key={group.name}>
-                  <p className="font-semibold mb-3 text-[#6b5c50]">
-                    {group.name}
-                  </p>
+              {allOptionGroups.map(
+                (group) => (
+                  <div
+                    key={group.name}
+                  >
+                    <p className="font-semibold mb-3 text-[#6b5c50]">
+                      {group.name}
+                    </p>
 
-                  <div className="flex flex-wrap gap-2">
-                    {group.values.map((value: string) => {
-                      const selected =
-                        selectedOptions[group.name] === value;
+                    <div className="flex flex-wrap gap-2">
+                      {group.values.map(
+                        (
+                          value: string
+                        ) => {
+                          const selected =
+                            selectedOptions[
+                              group
+                                .name
+                            ] ===
+                            value;
 
-                      return (
-                        <button
-                          key={value}
-                          type="button"
-                          onClick={() =>
-                            setSelectedOptions({
-                              ...selectedOptions,
-                              [group.name]: value,
-                            })
-                          }
-                          className={`px-4 py-2 rounded-full border text-sm transition ${
-                            selected
-                              ? "bg-[#2e2e2e] text-white border-[#2e2e2e]"
-                              : "bg-white text-[#6b5c50] border-[#d8c5b0]"
-                          }`}
-                        >
-                          {value}
-                        </button>
-                      );
-                    })}
+                          return (
+                            <button
+                              key={
+                                value
+                              }
+                              type="button"
+                              onClick={() =>
+                                setSelectedOptions(
+                                  {
+                                    ...selectedOptions,
+                                    [
+                                      group
+                                        .name
+                                    ]:
+                                      value,
+                                  }
+                                )
+                              }
+                              className={`px-4 py-2 rounded-full border text-sm transition ${
+                                selected
+                                  ? "bg-[#2e2e2e] text-white border-[#2e2e2e]"
+                                  : "bg-white text-[#6b5c50] border-[#d8c5b0]"
+                              }`}
+                            >
+                              {
+                                value
+                              }
+                            </button>
+                          );
+                        }
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                )
+              )}
             </div>
           )}
 
@@ -266,7 +359,11 @@ export default function ProductPage() {
 
             <textarea
               value={customerNote}
-              onChange={(e) => setCustomerNote(e.target.value)}
+              onChange={(e) =>
+                setCustomerNote(
+                  e.target.value
+                )
+              }
               placeholder="有想備註的地方可以寫這裡，例如：送禮用、不要太甜、指定款式提醒"
               className="min-h-[96px] w-full resize-none rounded-3xl border border-[#e1d3c2] bg-white px-4 py-3 text-sm text-[#4b4038] outline-none placeholder:text-gray-400"
             />
@@ -280,7 +377,9 @@ export default function ProductPage() {
               </h2>
 
               <p className="text-gray-600 leading-7 whitespace-pre-line">
-                {product.description}
+                {
+                  product.description
+                }
               </p>
             </div>
           )}
@@ -288,22 +387,34 @@ export default function ProductPage() {
           {/* 加入購物車 */}
           <div className="mt-8">
             <AddToCartButton
+              soldOut={Boolean(
+                variantSoldOut
+              )}
               product={{
                 ...product,
-                finalPrice: displayPrice,
-                finalVipPrice: displayVipPrice,
+                finalPrice:
+                  displayPrice,
+                finalVipPrice:
+                  displayVipPrice,
                 selectedVariant,
               }}
-              selectedOptions={selectedOptions}
-              customerNote={customerNote}
-              disabled={hasMissingOptions}
+              selectedOptions={
+                selectedOptions
+              }
+              customerNote={
+                customerNote
+              }
+              disabled={
+                hasMissingOptions
+              }
             />
 
-            {hasMissingOptions && (
-              <p className="mt-2 text-center text-xs text-[#9b6b4f]">
-                請先選擇商品規格
-              </p>
-            )}
+            {hasMissingOptions &&
+              !variantSoldOut && (
+                <p className="mt-2 text-center text-xs text-[#9b6b4f]">
+                  請先選擇商品規格
+                </p>
+              )}
           </div>
         </section>
       </div>
