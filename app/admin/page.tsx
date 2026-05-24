@@ -23,11 +23,11 @@ export default function AdminPage() {
   const [stock, setStock] = useState("0");
   const [description, setDescription] = useState("");
 
-  const [spec1Name, setSpec1Name] = useState("款式");
-  const [spec1Text, setSpec1Text] = useState("");
-  const [spec2Name, setSpec2Name] = useState("規格");
-  const [spec2Text, setSpec2Text] = useState("");
-
+  const [variantMode, setVariantMode] = useState<"quick" | "dynamic">(
+    "dynamic"
+  );
+  const [quickVariantsText, setQuickVariantsText] = useState("");
+  const [dynamicVariants, setDynamicVariants] = useState<string[]>([""]);
   const [variants, setVariants] = useState<Variant[]>([]);
 
   const [isActive, setIsActive] = useState(true);
@@ -87,7 +87,7 @@ export default function AdminPage() {
     );
   });
 
-  function parseList(text: string) {
+  function parseQuickList(text: string) {
     return text
       .split("\n")
       .map((item) => item.trim())
@@ -95,39 +95,39 @@ export default function AdminPage() {
   }
 
   function generateVariants() {
-    const list1 = parseList(spec1Text);
-    const list2 = parseList(spec2Text);
+    const names =
+      variantMode === "quick"
+        ? parseQuickList(quickVariantsText)
+        : dynamicVariants.map((item) => item.trim()).filter(Boolean);
 
-    if (list1.length === 0) {
-      alert("請至少輸入規格1選項");
+    if (names.length === 0) {
+      alert("請至少輸入一個款式");
       return;
     }
 
-    const basePrice = Number(price || 0);
-    const baseVipPrice = Number(vipPrice || 0);
-    const baseStock = Number(stock || 0);
-
-    let generated: Variant[] = [];
-
-    if (list2.length > 0) {
-      generated = list1.flatMap((a) =>
-        list2.map((b) => ({
-          name: `${a}｜${b}`,
-          price: basePrice,
-          vipPrice: baseVipPrice || null,
-          stock: baseStock,
-        }))
-      );
-    } else {
-      generated = list1.map((a) => ({
-        name: a,
-        price: basePrice,
-        vipPrice: baseVipPrice || null,
-        stock: baseStock,
-      }));
-    }
+    const generated = names.map((variantName) => ({
+      name: variantName,
+      price: Number(price || 0),
+      vipPrice: Number(vipPrice || 0) || null,
+      stock: Number(stock || 0),
+    }));
 
     setVariants(generated);
+  }
+
+  function addDynamicVariantField() {
+    setDynamicVariants([...dynamicVariants, ""]);
+  }
+
+  function updateDynamicVariant(index: number, value: string) {
+    const updated = [...dynamicVariants];
+    updated[index] = value;
+    setDynamicVariants(updated);
+  }
+
+  function removeDynamicVariant(index: number) {
+    const updated = dynamicVariants.filter((_, i) => i !== index);
+    setDynamicVariants(updated.length > 0 ? updated : [""]);
   }
 
   function updateVariant(index: number, field: keyof Variant, value: string) {
@@ -154,10 +154,9 @@ export default function AdminPage() {
     setSortOrder("0");
     setStock("0");
     setDescription("");
-    setSpec1Name("款式");
-    setSpec1Text("");
-    setSpec2Name("規格");
-    setSpec2Text("");
+    setVariantMode("dynamic");
+    setQuickVariantsText("");
+    setDynamicVariants([""]);
     setVariants([]);
     setIsActive(true);
     setIsSoldOut(false);
@@ -177,12 +176,14 @@ export default function AdminPage() {
     setStock(String(product.stock || 0));
     setDescription(product.description || "");
 
-    setSpec1Name(product.spec1_name || "款式");
-    setSpec1Text(Array.isArray(product.spec1_values) ? product.spec1_values.join("\n") : "");
-    setSpec2Name(product.spec2_name || "規格");
-    setSpec2Text(Array.isArray(product.spec2_values) ? product.spec2_values.join("\n") : "");
+    const oldVariants = Array.isArray(product.variants) ? product.variants : [];
+    setVariants(oldVariants);
 
-    setVariants(Array.isArray(product.variants) ? product.variants : []);
+    const variantNames = oldVariants.map((variant: any) => variant.name || "");
+    setDynamicVariants(variantNames.length > 0 ? variantNames : [""]);
+    setQuickVariantsText(variantNames.join("\n"));
+    setVariantMode("dynamic");
+
     setIsActive(product.is_active !== false);
     setIsSoldOut(product.is_sold_out === true);
     setIsFeatured(product.is_featured === true);
@@ -196,7 +197,6 @@ export default function AdminPage() {
 
     setEditingImages(oldImages);
     setImages([]);
-
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -220,7 +220,8 @@ export default function AdminPage() {
         const scale = maxWidth / image.width;
 
         canvas.width = image.width > maxWidth ? maxWidth : image.width;
-        canvas.height = image.width > maxWidth ? image.height * scale : image.height;
+        canvas.height =
+          image.width > maxWidth ? image.height * scale : image.height;
 
         const ctx = canvas.getContext("2d");
         ctx?.drawImage(image, 0, 0, canvas.width, canvas.height);
@@ -279,6 +280,10 @@ export default function AdminPage() {
     return urls;
   }
 
+  function getSpecValuesFromVariants() {
+    return variants.map((variant) => variant.name).filter(Boolean);
+  }
+
   async function addProduct() {
     if (!name) return alert("請輸入商品名稱");
     if (!price) return alert("請輸入價格");
@@ -303,10 +308,10 @@ export default function AdminPage() {
         sort_order: Number(sortOrder) || 0,
         stock: Number(stock) || 0,
         description,
-        spec1_name: spec1Name,
-        spec1_values: parseList(spec1Text),
-        spec2_name: spec2Name,
-        spec2_values: parseList(spec2Text),
+        spec1_name: "款式",
+        spec1_values: getSpecValuesFromVariants(),
+        spec2_name: "",
+        spec2_values: [],
         options: "",
         variants,
         is_active: isActive,
@@ -359,10 +364,10 @@ export default function AdminPage() {
         sort_order: Number(sortOrder) || 0,
         stock: Number(stock) || 0,
         description,
-        spec1_name: spec1Name,
-        spec1_values: parseList(spec1Text),
-        spec2_name: spec2Name,
-        spec2_values: parseList(spec2Text),
+        spec1_name: "款式",
+        spec1_values: getSpecValuesFromVariants(),
+        spec2_name: "",
+        spec2_values: [],
         options: "",
         variants,
         is_active: isActive,
@@ -383,17 +388,29 @@ export default function AdminPage() {
   }
 
   async function toggleActive(id: number, currentStatus: boolean) {
-    await supabase.from("products").update({ is_active: !currentStatus }).eq("id", id);
+    await supabase
+      .from("products")
+      .update({ is_active: !currentStatus })
+      .eq("id", id);
+
     fetchProducts();
   }
 
   async function toggleSoldOut(id: number, currentStatus: boolean) {
-    await supabase.from("products").update({ is_sold_out: !currentStatus }).eq("id", id);
+    await supabase
+      .from("products")
+      .update({ is_sold_out: !currentStatus })
+      .eq("id", id);
+
     fetchProducts();
   }
 
   async function toggleFeatured(id: number, currentStatus: boolean) {
-    await supabase.from("products").update({ is_featured: !currentStatus }).eq("id", id);
+    await supabase
+      .from("products")
+      .update({ is_featured: !currentStatus })
+      .eq("id", id);
+
     fetchProducts();
   }
 
@@ -432,11 +449,17 @@ export default function AdminPage() {
         </div>
 
         <div className="flex flex-wrap gap-2">
-          <a href="/admin/orders" className="rounded-full border border-[#d8c5b0] bg-white px-4 py-2 text-sm text-[#6b5c50]">
+          <a
+            href="/admin/orders"
+            className="rounded-full border border-[#d8c5b0] bg-white px-4 py-2 text-sm text-[#6b5c50]"
+          >
             訂單後台
           </a>
 
-          <a href="/admin/users" className="rounded-full border border-[#d8c5b0] bg-white px-4 py-2 text-sm text-[#6b5c50]">
+          <a
+            href="/admin/users"
+            className="rounded-full border border-[#d8c5b0] bg-white px-4 py-2 text-sm text-[#6b5c50]"
+          >
             會員管理
           </a>
 
@@ -458,13 +481,32 @@ export default function AdminPage() {
         </h2>
 
         <div className="space-y-4">
-          <input className="w-full rounded-2xl border border-[#ddd] bg-white p-4 text-[#333]" placeholder="商品名稱" value={name} onChange={(e) => setName(e.target.value)} />
+          <input
+            className="w-full rounded-2xl border border-[#ddd] bg-white p-4 text-[#333]"
+            placeholder="商品名稱"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
 
-          <input className="w-full rounded-2xl border border-[#ddd] bg-white p-4 text-[#333]" placeholder="商品基礎價格，例如 390" value={price} onChange={(e) => setPrice(e.target.value)} />
+          <input
+            className="w-full rounded-2xl border border-[#ddd] bg-white p-4 text-[#333]"
+            placeholder="商品基礎價格，例如 390"
+            value={price}
+            onChange={(e) => setPrice(e.target.value)}
+          />
 
-          <input className="w-full rounded-2xl border border-[#ddd] bg-white p-4 text-[#333]" placeholder="VIP 基礎價格，可不填" value={vipPrice} onChange={(e) => setVipPrice(e.target.value)} />
+          <input
+            className="w-full rounded-2xl border border-[#ddd] bg-white p-4 text-[#333]"
+            placeholder="VIP 基礎價格，可不填"
+            value={vipPrice}
+            onChange={(e) => setVipPrice(e.target.value)}
+          />
 
-          <select className="w-full rounded-2xl border border-[#ddd] bg-white p-4 text-[#333]" value={category} onChange={(e) => setCategory(e.target.value)}>
+          <select
+            className="w-full rounded-2xl border border-[#ddd] bg-white p-4 text-[#333]"
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+          >
             <option value="">請選擇商品分類</option>
             <option value="卡通療癒選物">卡通療癒選物</option>
             <option value="微辣韓系穿搭">微辣韓系穿搭</option>
@@ -472,54 +514,108 @@ export default function AdminPage() {
             <option value="花束甜點">花束甜點</option>
           </select>
 
-          <input className="w-full rounded-2xl border border-[#ddd] bg-white p-4 text-[#333]" placeholder="商品排序" type="number" value={sortOrder} onChange={(e) => setSortOrder(e.target.value)} />
+          <input
+            className="w-full rounded-2xl border border-[#ddd] bg-white p-4 text-[#333]"
+            placeholder="商品排序"
+            type="number"
+            value={sortOrder}
+            onChange={(e) => setSortOrder(e.target.value)}
+          />
 
-          <input className="w-full rounded-2xl border border-[#ddd] bg-white p-4 text-[#333]" placeholder="預設庫存，生成款式時會套用" type="number" value={stock} onChange={(e) => setStock(e.target.value)} />
+          <input
+            className="w-full rounded-2xl border border-[#ddd] bg-white p-4 text-[#333]"
+            placeholder="預設庫存，生成款式時會套用"
+            type="number"
+            value={stock}
+            onChange={(e) => setStock(e.target.value)}
+          />
 
           <div className="rounded-3xl border border-[#ece3d7] bg-[#faf7f2] p-5">
             <h3 className="mb-4 text-lg font-semibold text-[#4b4038]">
-              雙規格自動生成
+              款式建立
             </h3>
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div>
-                <input className="mb-3 w-full rounded-2xl border border-[#ddd] bg-white p-3 text-sm text-[#333]" placeholder="規格1名稱，例如：款式" value={spec1Name} onChange={(e) => setSpec1Name(e.target.value)} />
+            <div className="mb-4 grid grid-cols-2 gap-2 rounded-full bg-white p-1">
+              <button
+                type="button"
+                onClick={() => setVariantMode("dynamic")}
+                className={`rounded-full py-3 text-sm ${
+                  variantMode === "dynamic"
+                    ? "bg-black text-white"
+                    : "text-[#6b5c50]"
+                }`}
+              >
+                動態新增
+              </button>
 
-                <textarea
-                  className="min-h-[180px] w-full rounded-2xl border border-[#ddd] bg-white p-3 text-sm text-[#333]"
-                  placeholder={`規格1選項，一行一個：
+              <button
+                type="button"
+                onClick={() => setVariantMode("quick")}
+                className={`rounded-full py-3 text-sm ${
+                  variantMode === "quick"
+                    ? "bg-black text-white"
+                    : "text-[#6b5c50]"
+                }`}
+              >
+                快速貼上
+              </button>
+            </div>
+
+            {variantMode === "dynamic" ? (
+              <div className="space-y-3">
+                {dynamicVariants.map((item, index) => (
+                  <div key={index} className="flex gap-2">
+                    <input
+                      className="flex-1 rounded-2xl border border-[#ddd] bg-white p-3 text-sm text-[#333]"
+                      placeholder={`款式 ${index + 1}，例如：變裝款｜烤焦熊`}
+                      value={item}
+                      onChange={(e) =>
+                        updateDynamicVariant(index, e.target.value)
+                      }
+                    />
+
+                    <button
+                      type="button"
+                      onClick={() => removeDynamicVariant(index)}
+                      className="rounded-2xl bg-red-500 px-4 text-sm text-white"
+                    >
+                      刪除
+                    </button>
+                  </div>
+                ))}
+
+                <button
+                  type="button"
+                  onClick={addDynamicVariantField}
+                  className="w-full rounded-full border border-[#d8c5b0] bg-white py-3 text-sm text-[#6b5c50]"
+                >
+                  ＋ 新增一個款式
+                </button>
+              </div>
+            ) : (
+              <textarea
+                className="min-h-[180px] w-full rounded-2xl border border-[#ddd] bg-white p-3 text-sm text-[#333]"
+                placeholder={`一行一個款式：
 變裝款｜烤焦熊
 變裝款｜牛仔藍格
 變裝款｜櫻桃小狗🍒`}
-                  value={spec1Text}
-                  onChange={(e) => setSpec1Text(e.target.value)}
-                />
-              </div>
+                value={quickVariantsText}
+                onChange={(e) => setQuickVariantsText(e.target.value)}
+              />
+            )}
 
-              <div>
-                <input className="mb-3 w-full rounded-2xl border border-[#ddd] bg-white p-3 text-sm text-[#333]" placeholder="規格2名稱，例如：尺寸" value={spec2Name} onChange={(e) => setSpec2Name(e.target.value)} />
-
-                <textarea
-                  className="min-h-[180px] w-full rounded-2xl border border-[#ddd] bg-white p-3 text-sm text-[#333]"
-                  placeholder={`規格2選項，一行一個，可不填：
-約 13 cm
-S
-M
-L`}
-                  value={spec2Text}
-                  onChange={(e) => setSpec2Text(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <button type="button" onClick={generateVariants} className="mt-4 w-full rounded-full bg-black py-3 text-sm text-white">
-              自動生成款式
+            <button
+              type="button"
+              onClick={generateVariants}
+              className="mt-4 w-full rounded-full bg-black py-3 text-sm text-white"
+            >
+              生成款式
             </button>
           </div>
 
           <div className="rounded-3xl border border-[#ece3d7] bg-[#faf7f2] p-5">
             <h3 className="mb-4 text-lg font-semibold text-[#4b4038]">
-              款式 Variants
+              款式價格 / VIP / 庫存
             </h3>
 
             {variants.length === 0 ? (
@@ -531,16 +627,51 @@ L`}
                 {variants.map((variant, index) => (
                   <div key={index} className="rounded-2xl bg-white p-4">
                     <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
-                      <input value={variant.name} onChange={(e) => updateVariant(index, "name", e.target.value)} placeholder="款式名稱" className="rounded-2xl border border-[#ddd] p-3 text-sm" />
+                      <input
+                        value={variant.name}
+                        onChange={(e) =>
+                          updateVariant(index, "name", e.target.value)
+                        }
+                        placeholder="款式名稱"
+                        className="rounded-2xl border border-[#ddd] p-3 text-sm"
+                      />
 
-                      <input type="number" value={variant.price} onChange={(e) => updateVariant(index, "price", e.target.value)} placeholder="一般價格" className="rounded-2xl border border-[#ddd] p-3 text-sm" />
+                      <input
+                        type="number"
+                        value={variant.price}
+                        onChange={(e) =>
+                          updateVariant(index, "price", e.target.value)
+                        }
+                        placeholder="一般價格"
+                        className="rounded-2xl border border-[#ddd] p-3 text-sm"
+                      />
 
-                      <input type="number" value={variant.vipPrice || 0} onChange={(e) => updateVariant(index, "vipPrice", e.target.value)} placeholder="VIP價格" className="rounded-2xl border border-[#ddd] p-3 text-sm" />
+                      <input
+                        type="number"
+                        value={variant.vipPrice || 0}
+                        onChange={(e) =>
+                          updateVariant(index, "vipPrice", e.target.value)
+                        }
+                        placeholder="VIP價格"
+                        className="rounded-2xl border border-[#ddd] p-3 text-sm"
+                      />
 
-                      <input type="number" value={variant.stock || 0} onChange={(e) => updateVariant(index, "stock", e.target.value)} placeholder="庫存" className="rounded-2xl border border-[#ddd] p-3 text-sm" />
+                      <input
+                        type="number"
+                        value={variant.stock || 0}
+                        onChange={(e) =>
+                          updateVariant(index, "stock", e.target.value)
+                        }
+                        placeholder="庫存"
+                        className="rounded-2xl border border-[#ddd] p-3 text-sm"
+                      />
                     </div>
 
-                    <button type="button" onClick={() => removeVariant(index)} className="mt-3 rounded-full bg-red-500 px-4 py-2 text-sm text-white">
+                    <button
+                      type="button"
+                      onClick={() => removeVariant(index)}
+                      className="mt-3 rounded-full bg-red-500 px-4 py-2 text-sm text-white"
+                    >
                       刪除此款式
                     </button>
                   </div>
@@ -549,31 +680,53 @@ L`}
             )}
           </div>
 
-          <textarea className="w-full rounded-2xl border border-[#ddd] bg-white p-4 text-[#333]" placeholder="商品描述" value={description} onChange={(e) => setDescription(e.target.value)} />
+          <textarea
+            className="w-full rounded-2xl border border-[#ddd] bg-white p-4 text-[#333]"
+            placeholder="商品描述"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+          />
 
           <label className="flex items-center justify-between rounded-2xl border p-4">
             <span>{isActive ? "上架中" : "已下架"}</span>
-            <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
+            <input
+              type="checkbox"
+              checked={isActive}
+              onChange={(e) => setIsActive(e.target.checked)}
+            />
           </label>
 
           <label className="flex items-center justify-between rounded-2xl border p-4">
             <span>{isSoldOut ? "已售完" : "可下單"}</span>
-            <input type="checkbox" checked={isSoldOut} onChange={(e) => setIsSoldOut(e.target.checked)} />
+            <input
+              type="checkbox"
+              checked={isSoldOut}
+              onChange={(e) => setIsSoldOut(e.target.checked)}
+            />
           </label>
 
           <label className="flex items-center justify-between rounded-2xl border p-4">
             <span>{isFeatured ? "⭐ 推薦商品" : "一般商品"}</span>
-            <input type="checkbox" checked={isFeatured} onChange={(e) => setIsFeatured(e.target.checked)} />
+            <input
+              type="checkbox"
+              checked={isFeatured}
+              onChange={(e) => setIsFeatured(e.target.checked)}
+            />
           </label>
 
           {editingId && editingImages.length > 0 && (
             <div className="rounded-2xl bg-[#f8f5f2] p-4">
-              <p className="mb-3 text-sm font-bold text-gray-700">目前商品圖片</p>
+              <p className="mb-3 text-sm font-bold text-gray-700">
+                目前商品圖片
+              </p>
 
               <div className="grid grid-cols-2 gap-3">
                 {editingImages.map((img, index) => (
                   <div key={img} className="overflow-hidden rounded-2xl bg-white">
-                    <img src={img} className="aspect-square w-full object-cover" />
+                    <img
+                      src={img}
+                      className="aspect-square w-full object-cover"
+                    />
 
                     <div className="space-y-2 p-2">
                       {index === 0 ? (
@@ -581,12 +734,20 @@ L`}
                           目前封面
                         </p>
                       ) : (
-                        <button type="button" onClick={() => setCoverImage(index)} className="w-full rounded-full border py-2 text-xs text-[#6b5c50]">
+                        <button
+                          type="button"
+                          onClick={() => setCoverImage(index)}
+                          className="w-full rounded-full border py-2 text-xs text-[#6b5c50]"
+                        >
                           設為封面
                         </button>
                       )}
 
-                      <button type="button" onClick={() => removeEditingImage(index)} className="w-full rounded-full bg-red-500 py-2 text-xs text-white">
+                      <button
+                        type="button"
+                        onClick={() => removeEditingImage(index)}
+                        className="w-full rounded-full bg-red-500 py-2 text-xs text-white"
+                      >
                         刪除圖片
                       </button>
                     </div>
@@ -596,7 +757,13 @@ L`}
             </div>
           )}
 
-          <input type="file" multiple accept="image/*" className="w-full rounded-2xl border p-4" onChange={(e) => setImages(Array.from(e.target.files || []))} />
+          <input
+            type="file"
+            multiple
+            accept="image/*"
+            className="w-full rounded-2xl border p-4"
+            onChange={(e) => setImages(Array.from(e.target.files || []))}
+          />
 
           {images.length > 0 && (
             <div className="rounded-2xl bg-[#f8f5f2] p-4">
@@ -606,18 +773,29 @@ L`}
 
               <div className="grid grid-cols-3 gap-3">
                 {images.map((file, index) => (
-                  <img key={index} src={URL.createObjectURL(file)} className="aspect-square w-full rounded-xl object-cover" />
+                  <img
+                    key={index}
+                    src={URL.createObjectURL(file)}
+                    className="aspect-square w-full rounded-xl object-cover"
+                  />
                 ))}
               </div>
             </div>
           )}
 
-          <button onClick={editingId ? updateProduct : addProduct} disabled={loading} className="w-full rounded-full bg-black py-4 text-white disabled:opacity-50">
+          <button
+            onClick={editingId ? updateProduct : addProduct}
+            disabled={loading}
+            className="w-full rounded-full bg-black py-4 text-white disabled:opacity-50"
+          >
             {loading ? "處理中..." : editingId ? "儲存修改" : "新增商品"}
           </button>
 
           {editingId && (
-            <button onClick={resetForm} className="w-full rounded-full border py-4 text-gray-600">
+            <button
+              onClick={resetForm}
+              className="w-full rounded-full border py-4 text-gray-600"
+            >
               取消編輯
             </button>
           )}
@@ -627,7 +805,12 @@ L`}
       <div className="mt-8 rounded-3xl bg-white p-6 shadow-sm">
         <h2 className="mb-4 text-xl font-bold">商品列表</h2>
 
-        <input className="mb-5 w-full rounded-2xl border border-[#ddd] bg-white p-4 text-[#333]" placeholder="搜尋商品..." value={searchText} onChange={(e) => setSearchText(e.target.value)} />
+        <input
+          className="mb-5 w-full rounded-2xl border border-[#ddd] bg-white p-4 text-[#333]"
+          placeholder="搜尋商品..."
+          value={searchText}
+          onChange={(e) => setSearchText(e.target.value)}
+        />
 
         <div className="space-y-4">
           {filteredProducts.map((product) => {
@@ -637,14 +820,22 @@ L`}
                 ? product.images[0]
                 : "");
 
-            const itemVariants = Array.isArray(product.variants) ? product.variants : [];
+            const itemVariants = Array.isArray(product.variants)
+              ? product.variants
+              : [];
 
             return (
-              <div key={product.id} className="rounded-2xl border bg-[#fffdfb] p-4">
+              <div
+                key={product.id}
+                className="rounded-2xl border bg-[#fffdfb] p-4"
+              >
                 <div className="flex gap-4">
                   <div className="h-24 w-24 shrink-0 overflow-hidden rounded-2xl bg-[#eee5dc]">
                     {imageSrc ? (
-                      <img src={imageSrc} className="h-full w-full object-cover" />
+                      <img
+                        src={imageSrc}
+                        className="h-full w-full object-cover"
+                      />
                     ) : (
                       <div className="flex h-full items-center justify-center text-xs text-gray-400">
                         No Image
@@ -654,14 +845,17 @@ L`}
 
                   <div className="flex-1">
                     <p className="font-bold">{product.name}</p>
-                    <p className="mt-1 text-sm text-gray-500">{product.category}</p>
+                    <p className="mt-1 text-sm text-gray-500">
+                      {product.category}
+                    </p>
                     <p className="mt-1 font-bold">
                       NT$ {Number(product.price || 0).toLocaleString()}
                     </p>
 
                     {product.vip_price && (
                       <p className="mt-1 text-xs font-semibold text-[#b07255]">
-                        VIP NT$ {Number(product.vip_price || 0).toLocaleString()}
+                        VIP NT${" "}
+                        {Number(product.vip_price || 0).toLocaleString()}
                       </p>
                     )}
 
@@ -672,13 +866,20 @@ L`}
                         </p>
 
                         <div className="space-y-1">
-                          {itemVariants.slice(0, 8).map((variant: any, index: number) => (
-                            <p key={`${variant.name}-${index}`} className="text-xs text-[#6b5c50]">
-                              {variant.name}｜NT${variant.price}
-                              {variant.vipPrice ? `｜VIP NT$ ${variant.vipPrice}` : ""}
-                              ｜庫存 {variant.stock}
-                            </p>
-                          ))}
+                          {itemVariants
+                            .slice(0, 8)
+                            .map((variant: any, index: number) => (
+                              <p
+                                key={`${variant.name}-${index}`}
+                                className="text-xs text-[#6b5c50]"
+                              >
+                                {variant.name}｜NT${variant.price}
+                                {variant.vipPrice
+                                  ? `｜VIP NT$ ${variant.vipPrice}`
+                                  : ""}
+                                ｜庫存 {variant.stock}
+                              </p>
+                            ))}
 
                           {itemVariants.length > 8 && (
                             <p className="text-xs text-gray-400">
@@ -692,23 +893,44 @@ L`}
                 </div>
 
                 <div className="mt-4 grid grid-cols-2 gap-2">
-                  <button onClick={() => toggleActive(product.id, product.is_active !== false)} className="rounded-full border py-2 text-sm">
+                  <button
+                    onClick={() =>
+                      toggleActive(product.id, product.is_active !== false)
+                    }
+                    className="rounded-full border py-2 text-sm"
+                  >
                     {product.is_active !== false ? "下架" : "上架"}
                   </button>
 
-                  <button onClick={() => toggleSoldOut(product.id, product.is_sold_out === true)} className="rounded-full border py-2 text-sm">
+                  <button
+                    onClick={() =>
+                      toggleSoldOut(product.id, product.is_sold_out === true)
+                    }
+                    className="rounded-full border py-2 text-sm"
+                  >
                     {product.is_sold_out ? "改可下單" : "改售完"}
                   </button>
 
-                  <button onClick={() => toggleFeatured(product.id, product.is_featured === true)} className="rounded-full border border-yellow-400 py-2 text-sm text-yellow-700">
+                  <button
+                    onClick={() =>
+                      toggleFeatured(product.id, product.is_featured === true)
+                    }
+                    className="rounded-full border border-yellow-400 py-2 text-sm text-yellow-700"
+                  >
                     {product.is_featured ? "取消推薦" : "設為推薦"}
                   </button>
 
-                  <button onClick={() => startEdit(product)} className="rounded-full bg-[#3f332b] py-2 text-sm text-white">
+                  <button
+                    onClick={() => startEdit(product)}
+                    className="rounded-full bg-[#3f332b] py-2 text-sm text-white"
+                  >
                     編輯
                   </button>
 
-                  <button onClick={() => deleteProduct(product.id)} className="col-span-2 rounded-full bg-red-500 py-2 text-sm text-white">
+                  <button
+                    onClick={() => deleteProduct(product.id)}
+                    className="col-span-2 rounded-full bg-red-500 py-2 text-sm text-white"
+                  >
                     刪除
                   </button>
                 </div>
