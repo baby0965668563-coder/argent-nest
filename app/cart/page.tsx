@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 
 type CartItem = {
   id: string;
+  cartKey?: string;
+
   name: string;
 
   price: number;
@@ -16,6 +18,8 @@ type CartItem = {
   quantity: number;
 
   options?: Record<string, string>;
+
+  optionText?: string;
 
   note?: string;
 
@@ -55,6 +59,8 @@ export default function CartPage() {
       "cart",
       JSON.stringify(newCart)
     );
+
+    window.dispatchEvent(new Event("storage"));
   }
 
   function removeItem(index: number) {
@@ -84,6 +90,12 @@ export default function CartPage() {
   }
 
   function clearCart() {
+    const ok = confirm(
+      "確定清空購物車嗎？"
+    );
+
+    if (!ok) return;
+
     updateCart([]);
   }
 
@@ -111,105 +123,163 @@ export default function CartPage() {
     originalTotal - total;
 
   return (
-    <main className="min-h-screen bg-[#faf7f2] px-4 py-6">
-      <div className="mx-auto max-w-3xl">
-        <h1 className="mb-6 text-2xl font-semibold text-[#4b4038]">
-          購物車
-        </h1>
+    <main className="min-h-screen bg-[#faf7f2] px-4 py-6 pb-40">
+      <div className="mx-auto max-w-5xl">
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <p className="mb-2 text-xs uppercase tracking-[0.3em] text-[#a08060]">
+              CART
+            </p>
+
+            <h1 className="text-3xl font-bold text-[#4b4038]">
+              購物車 ☁️
+            </h1>
+          </div>
+
+          {cart.length > 0 && (
+            <button
+              type="button"
+              onClick={clearCart}
+              className="rounded-full border border-[#d8c5b0] bg-white px-4 py-2 text-sm text-[#6b5c50]"
+            >
+              清空
+            </button>
+          )}
+        </div>
 
         {cart.length === 0 ? (
-          <div className="rounded-3xl bg-white p-8 text-center text-gray-500 shadow-sm">
-            購物車目前是空的 ☁️
+          <div className="rounded-[32px] bg-white p-10 text-center shadow-sm">
+            <div className="text-5xl">
+              ☁️
+            </div>
+
+            <p className="mt-5 text-lg font-medium text-[#4b4038]">
+              購物車目前是空的
+            </p>
+
+            <p className="mt-2 text-sm text-[#8c7b70]">
+              去挑一些療癒小東西吧～
+            </p>
+
+            <button
+              type="button"
+              onClick={() =>
+                router.push("/")
+              }
+              className="mt-6 rounded-full bg-[#2e2e2e] px-8 py-3 text-sm text-white"
+            >
+              返回首頁
+            </button>
           </div>
         ) : (
-          <>
+          <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
+            {/* 左側商品 */}
             <div className="space-y-4">
               {cart.map(
                 (item, index) => (
                   <div
-                    key={`${item.id}-${index}`}
-                    className="rounded-3xl bg-white p-4 shadow-sm"
+                    key={
+                      item.cartKey ||
+                      `${item.id}-${index}`
+                    }
+                    className="overflow-hidden rounded-[32px] bg-white shadow-sm"
                   >
-                    <div className="flex gap-4">
+                    <div className="flex gap-4 p-4">
+                      {/* 圖片 */}
                       {item.image ? (
                         <img
                           src={item.image}
                           alt={item.name}
-                          className="h-24 w-24 rounded-2xl object-cover"
+                          className="h-28 w-28 rounded-3xl object-cover"
                         />
                       ) : (
-                        <div className="flex h-24 w-24 items-center justify-center rounded-2xl bg-gray-100 text-sm text-gray-400">
+                        <div className="flex h-28 w-28 items-center justify-center rounded-3xl bg-[#f3eee8] text-sm text-gray-400">
                           無圖
                         </div>
                       )}
 
+                      {/* 資訊 */}
                       <div className="flex-1">
-                        <p className="text-xs text-gray-400">
+                        <p className="text-xs tracking-[0.2em] text-[#b58b6b]">
                           {item.category ||
-                            "Argent Nest Select"}
+                            "Argent Nest"}
                         </p>
 
-                        <h2 className="mt-1 font-semibold leading-relaxed text-[#4b4038]">
+                        <h2 className="mt-1 text-[15px] font-semibold leading-7 text-[#4b4038]">
                           {item.name}
                         </h2>
 
+                        {/* 款式 */}
                         {item.selectedVariant
                           ?.name && (
-                          <p className="mt-1 text-sm text-[#9b6b4f]">
+                          <div className="mt-2 inline-flex rounded-full bg-[#f6efe7] px-3 py-1 text-xs text-[#9b6b4f]">
                             款式：
                             {
                               item
                                 .selectedVariant
                                 .name
                             }
-                          </p>
+                          </div>
                         )}
 
+                        {/* 規格 */}
                         {item.options &&
                           Object.entries(
                             item.options
-                          ).map(
-                            ([
-                              key,
-                              value,
-                            ]) => (
-                              <p
-                                key={
-                                  key
-                                }
-                                className="mt-1 text-sm text-gray-500"
-                              >
-                                {key}
-                                ：
-                                {
-                                  value
-                                }
-                              </p>
+                          )
+                            .filter(
+                              ([key]) =>
+                                key !==
+                                "款式"
                             )
-                          )}
+                            .map(
+                              ([
+                                key,
+                                value,
+                              ]) => (
+                                <p
+                                  key={
+                                    key
+                                  }
+                                  className="mt-2 text-sm text-[#8c7b70]"
+                                >
+                                  {key}
+                                  ：
+                                  {
+                                    value
+                                  }
+                                </p>
+                              )
+                            )}
 
+                        {/* 商品備註 */}
                         {item.productNote && (
-                          <p className="mt-2 rounded-2xl bg-[#fff7ef] px-3 py-2 text-sm text-[#9b6b4f]">
+                          <div className="mt-3 rounded-2xl bg-[#fff7ef] px-3 py-2 text-sm leading-6 text-[#9b6b4f]">
                             商品備註：
                             {
                               item.productNote
                             }
-                          </p>
+                          </div>
                         )}
 
+                        {/* 顧客備註 */}
                         {item.note && (
-                          <p className="mt-2 rounded-2xl bg-[#f6f1ea] px-3 py-2 text-sm text-[#6b5c50]">
+                          <div className="mt-3 rounded-2xl bg-[#f6f1ea] px-3 py-2 text-sm leading-6 text-[#6b5c50]">
                             顧客備註：
-                            {item.note}
-                          </p>
+                            {
+                              item.note
+                            }
+                          </div>
                         )}
 
-                        <div className="mt-3">
-                          <p className="font-semibold text-[#4b4038]">
+                        {/* 價格 */}
+                        <div className="mt-4">
+                          <p className="text-lg font-bold text-[#4b4038]">
                             NT$
                             {" "}
                             {Number(
-                              item.price || 0
+                              item.price ||
+                                0
                             ).toLocaleString()}
                           </p>
 
@@ -226,9 +296,9 @@ export default function CartPage() {
                                   ).toLocaleString()}
                                 </p>
 
-                                <p className="mt-1 inline-flex rounded-full bg-[#fff2e5] px-3 py-1 text-xs font-medium text-[#b07255]">
+                                <div className="mt-2 inline-flex rounded-full bg-[#fff2e5] px-3 py-1 text-xs font-medium text-[#b07255]">
                                   VIP 價已套用 ☁️
-                                </p>
+                                </div>
                               </>
                             )}
 
@@ -236,7 +306,7 @@ export default function CartPage() {
                             item.vipPrice &&
                             item.vipPrice >
                               0 && (
-                              <p className="mt-1 text-xs text-[#b07255]">
+                              <p className="mt-2 text-xs text-[#b07255]">
                                 VIP NT$
                                 {" "}
                                 {Number(
@@ -248,7 +318,8 @@ export default function CartPage() {
                       </div>
                     </div>
 
-                    <div className="mt-4 flex items-center justify-between">
+                    {/* 下方控制 */}
+                    <div className="flex items-center justify-between border-t border-[#f5eee7] px-4 py-4">
                       <div className="flex items-center gap-3">
                         <button
                           type="button"
@@ -258,12 +329,12 @@ export default function CartPage() {
                               -1
                             )
                           }
-                          className="h-8 w-8 rounded-full border border-[#d8c5b0] text-[#6b5c50]"
+                          className="flex h-9 w-9 items-center justify-center rounded-full border border-[#d8c5b0] text-[#6b5c50]"
                         >
-                          -
+                          −
                         </button>
 
-                        <span className="text-sm text-[#4b4038]">
+                        <span className="min-w-[20px] text-center text-sm font-medium text-[#4b4038]">
                           {
                             item.quantity
                           }
@@ -277,9 +348,9 @@ export default function CartPage() {
                               1
                             )
                           }
-                          className="h-8 w-8 rounded-full border border-[#d8c5b0] text-[#6b5c50]"
+                          className="flex h-9 w-9 items-center justify-center rounded-full border border-[#d8c5b0] text-[#6b5c50]"
                         >
-                          +
+                          ＋
                         </button>
                       </div>
 
@@ -300,9 +371,14 @@ export default function CartPage() {
               )}
             </div>
 
-            <div className="mt-6 rounded-3xl bg-white p-5 shadow-sm">
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-[#4b4038]">
+            {/* 右側結帳 */}
+            <div className="h-fit rounded-[32px] bg-white p-6 shadow-sm lg:sticky lg:top-24">
+              <p className="mb-5 text-xl font-semibold text-[#4b4038]">
+                訂單摘要
+              </p>
+
+              <div className="space-y-3">
+                <div className="flex items-center justify-between text-sm text-[#6b5c50]">
                   <span>商品金額</span>
 
                   <span>
@@ -341,14 +417,20 @@ export default function CartPage() {
                 )}
               </div>
 
-              <div className="mt-5 flex items-center justify-between border-t border-[#f0e7dd] pt-5 text-lg font-semibold text-[#4b4038]">
-                <span>小計</span>
+              <div className="mt-5 border-t border-[#f0e7dd] pt-5">
+                <div className="flex items-center justify-between text-lg font-semibold text-[#4b4038]">
+                  <span>小計</span>
 
-                <span>
-                  NT$
-                  {" "}
-                  {total.toLocaleString()}
-                </span>
+                  <span>
+                    NT$
+                    {" "}
+                    {total.toLocaleString()}
+                  </span>
+                </div>
+
+                <p className="mt-2 text-xs leading-6 text-[#8c7b70]">
+                  運費將於下一步結帳時計算 ☁️
+                </p>
               </div>
 
               <button
@@ -358,20 +440,22 @@ export default function CartPage() {
                     "/checkout"
                   )
                 }
-                className="mt-5 w-full rounded-full bg-[#2e2e2e] py-4 text-sm font-medium text-white"
+                className="mt-6 w-full rounded-full bg-[#2e2e2e] py-4 text-sm font-medium text-white transition hover:opacity-90"
               >
                 前往結帳
               </button>
 
               <button
                 type="button"
-                onClick={clearCart}
+                onClick={() =>
+                  router.push("/")
+                }
                 className="mt-3 w-full rounded-full border border-[#d8c5b0] bg-white py-3 text-sm text-[#6b5c50]"
               >
-                清空購物車
+                繼續逛逛
               </button>
             </div>
-          </>
+          </div>
         )}
       </div>
     </main>
