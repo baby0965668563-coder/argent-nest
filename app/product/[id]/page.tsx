@@ -138,8 +138,21 @@ export default function ProductPage() {
     (v: any) => v.name === selectedOptions["款式"]
   );
 
+  const productStock = Number(product.stock || 0);
   const variantStock = Number(selectedVariant?.stock || 0);
+
+  const hasVariants = variants.length > 0;
+
+  const currentStock = hasVariants
+    ? selectedVariant
+      ? variantStock
+      : null
+    : productStock;
+
+  const productSoldOut = product.is_sold_out === true;
   const variantSoldOut = selectedVariant && variantStock <= 0;
+
+  const isSoldOut = productSoldOut || Boolean(variantSoldOut);
 
   const originalPrice = selectedVariant
     ? Number(selectedVariant.price || 0)
@@ -153,7 +166,47 @@ export default function ProductPage() {
 
   const hasMissingOptions =
     allOptionGroups.some((group) => !selectedOptions[group.name]) ||
-    Boolean(variantSoldOut);
+    Boolean(isSoldOut);
+
+  function renderStockBadge() {
+    if (productSoldOut || variantSoldOut) {
+      return (
+        <div className="mt-3 inline-flex rounded-full bg-gray-200 px-4 py-2 text-xs font-medium text-gray-600">
+          SOLD OUT 已售完
+        </div>
+      );
+    }
+
+    if (hasVariants && !selectedVariant) {
+      return (
+        <div className="mt-3 inline-flex rounded-full bg-[#f6efe7] px-4 py-2 text-xs font-medium text-[#8c7b70]">
+          請先選擇款式 ☁️
+        </div>
+      );
+    }
+
+    if (currentStock && currentStock > 0) {
+      return (
+        <div className="mt-3 flex flex-wrap gap-2">
+          <span className="inline-flex rounded-full bg-green-100 px-4 py-2 text-xs font-medium text-green-700">
+            現貨 {currentStock} 件
+          </span>
+
+          {currentStock <= 3 && (
+            <span className="inline-flex rounded-full bg-red-100 px-4 py-2 text-xs font-medium text-red-600">
+              庫存不多了 ☁️
+            </span>
+          )}
+        </div>
+      );
+    }
+
+    return (
+      <div className="mt-3 inline-flex rounded-full bg-[#fff2e5] px-4 py-2 text-xs font-medium text-[#b07255]">
+        預購商品 ☁️
+      </div>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-[#faf7f2] px-4 py-6">
@@ -231,15 +284,11 @@ export default function ProductPage() {
               </p>
             )}
 
+            {renderStockBadge()}
+
             {selectedVariant && (
               <p className="mt-2 text-sm text-[#8c7b70]">
-                剩餘庫存：{variantStock}
-              </p>
-            )}
-
-            {variantSoldOut && (
-              <p className="mt-2 text-sm font-semibold text-[#c25b5b]">
-                此款式已售完
+                此款剩餘庫存：{variantStock}
               </p>
             )}
           </div>
@@ -256,6 +305,15 @@ export default function ProductPage() {
                     {group.values.map((value: string) => {
                       const selected = selectedOptions[group.name] === value;
 
+                      const variantOption = variants.find(
+                        (v: any) => group.name === "款式" && v.name === value
+                      );
+
+                      const optionSoldOut =
+                        group.name === "款式" &&
+                        variantOption &&
+                        Number(variantOption.stock || 0) <= 0;
+
                       return (
                         <button
                           key={value}
@@ -266,13 +324,17 @@ export default function ProductPage() {
                               [group.name]: value,
                             })
                           }
+                          disabled={Boolean(optionSoldOut)}
                           className={`px-4 py-2 rounded-full border text-sm transition ${
-                            selected
+                            optionSoldOut
+                              ? "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400"
+                              : selected
                               ? "bg-[#2e2e2e] text-white border-[#2e2e2e]"
                               : "bg-white text-[#6b5c50] border-[#d8c5b0]"
                           }`}
                         >
                           {value}
+                          {optionSoldOut ? "｜售完" : ""}
                         </button>
                       );
                     })}
@@ -309,7 +371,7 @@ export default function ProductPage() {
 
           <div className="mt-8">
             <AddToCartButton
-              soldOut={Boolean(variantSoldOut)}
+              soldOut={Boolean(isSoldOut)}
               product={{
                 ...product,
                 finalPrice: displayPrice,
@@ -323,7 +385,7 @@ export default function ProductPage() {
               disabled={hasMissingOptions}
             />
 
-            {hasMissingOptions && !variantSoldOut && (
+            {hasMissingOptions && !isSoldOut && (
               <p className="mt-2 text-center text-xs text-[#9b6b4f]">
                 請先選擇商品規格
               </p>
