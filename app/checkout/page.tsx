@@ -25,30 +25,41 @@ type CartItem = {
 };
 
 export default function CheckoutPage() {
-  const [cart, setCart] = useState<CartItem[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [cart, setCart] =
+    useState<CartItem[]>([]);
 
-  const [member, setMember] = useState<any>(null);
+  const [loading, setLoading] =
+    useState(false);
 
-  const [form, setForm] = useState({
-    name: "",
-    phone: "",
-    lineId: "",
-    shippingMethod: "超商取貨",
-    storeName: "",
-    storeAddress: "",
-    customerNote: "",
-  });
+  const [member, setMember] =
+    useState<any>(null);
+
+  const [form, setForm] =
+    useState({
+      name: "",
+      phone: "",
+      lineId: "",
+      shippingMethod:
+        "超商取貨",
+      storeName: "",
+      storeAddress: "",
+      customerNote: "",
+    });
 
   useEffect(() => {
-    const savedCart = JSON.parse(
-      localStorage.getItem("cart") || "[]"
-    );
+    const savedCart =
+      JSON.parse(
+        localStorage.getItem(
+          "cart"
+        ) || "[]"
+      );
 
     setCart(savedCart);
 
     const savedUser =
-      localStorage.getItem("argent_user");
+      localStorage.getItem(
+        "argent_user"
+      );
 
     if (savedUser) {
       try {
@@ -75,13 +86,16 @@ export default function CheckoutPage() {
     }
   }, []);
 
-  const subtotal = cart.reduce(
-    (sum, item) =>
-      sum +
-      Number(item.price || 0) *
-        Number(item.quantity || 1),
-    0
-  );
+  const subtotal =
+    cart.reduce(
+      (sum, item) =>
+        sum +
+        Number(item.price || 0) *
+          Number(
+            item.quantity || 1
+          ),
+      0
+    );
 
   const originalSubtotal =
     cart.reduce(
@@ -124,8 +138,13 @@ export default function CheckoutPage() {
   }
 
   async function handleSubmit() {
-    if (!form.name || !form.phone) {
-      alert("請填寫姓名與電話");
+    if (
+      !form.name ||
+      !form.phone
+    ) {
+      alert(
+        "請填寫姓名與電話"
+      );
       return;
     }
 
@@ -139,17 +158,20 @@ export default function CheckoutPage() {
         "超商取貨" &&
       !form.storeName
     ) {
-      alert("請填寫超商門市名稱");
+      alert(
+        "請填寫超商門市名稱"
+      );
       return;
     }
 
     try {
       setLoading(true);
 
-      // 檢查 variants 庫存
+      // variants 庫存檢查
       for (const item of cart) {
         if (
-          !item.selectedVariant?.name
+          !item.selectedVariant
+            ?.name
         )
           continue;
 
@@ -158,7 +180,7 @@ export default function CheckoutPage() {
         } = await supabase
           .from("products")
           .select(
-            "id, name, variants"
+            "id, variants"
           )
           .eq("id", item.id)
           .single();
@@ -177,7 +199,8 @@ export default function CheckoutPage() {
           variants.find(
             (variant: any) =>
               variant.name ===
-              item.selectedVariant
+              item
+                .selectedVariant
                 ?.name
           );
 
@@ -209,64 +232,67 @@ export default function CheckoutPage() {
       const orderToken =
         crypto.randomUUID();
 
-      const { error } =
-        await supabase
-          .from("orders")
-          .insert([
-            {
-              id: orderId,
+      const {
+        error,
+      } = await supabase
+        .from("orders")
+        .insert([
+          {
+            id: orderId,
 
-              order_token:
-                orderToken,
+            order_token:
+              orderToken,
 
-              customer_name:
-                form.name,
+            customer_name:
+              form.name,
 
-              phone: form.phone,
+            phone: form.phone,
 
-              // 這裡改成真正會員 LINE ID
-              line_id:
-                member?.line_user_id ||
-                form.lineId,
+            line_id:
+              member?.line_user_id ||
+              form.lineId,
 
-              shipping_method: `${
-                form.shippingMethod
-              }${
-                form.shippingMethod ===
-                "超商取貨"
-                  ? `｜${form.storeName}${
-                      form.storeAddress
-                        ? `｜${form.storeAddress}`
-                        : ""
-                    }`
-                  : ""
-              }`,
+            shipping_method: `${
+              form.shippingMethod
+            }${
+              form.shippingMethod ===
+              "超商取貨"
+                ? `｜${form.storeName}${
+                    form.storeAddress
+                      ? `｜${form.storeAddress}`
+                      : ""
+                  }`
+                : ""
+            }`,
 
-              customer_note:
-                form.customerNote,
+            customer_note:
+              form.customerNote,
 
-              items: cart,
+            items: cart,
 
-              total,
+            total,
 
-              status: "pending",
-            },
-          ]);
+            status: "pending",
+          },
+        ]);
 
       if (error) {
         console.error(error);
 
         alert(
-          "訂單送出失敗，請檢查 Supabase 欄位"
+          "訂單送出失敗"
         );
+
+        setLoading(false);
 
         return;
       }
 
-      // 扣 variants 庫存
+      // variants 扣庫存
       for (const item of cart) {
         if (
-          !item.selectedVariant?.name
+          !item.selectedVariant
+            ?.name
         )
           continue;
 
@@ -348,6 +374,7 @@ export default function CheckoutPage() {
         </h1>
 
         <div className="grid grid-cols-1 gap-6 md:grid-cols-[1fr_380px]">
+          {/* 左邊 */}
           <section className="rounded-3xl bg-white p-5 shadow-sm">
             <h2 className="mb-4 font-semibold text-[#4b4038]">
               聯絡資料
@@ -375,14 +402,14 @@ export default function CheckoutPage() {
                   )
                 }
                 placeholder="手機號碼 *"
-               className="w-full rounded-2xl border border-[#e1d3c2] bg-white px-4 py-3 text-sm text-[#4b4038] outline-none placeholder:text-gray-400"
+                className="w-full rounded-2xl border border-[#e1d3c2] bg-white px-4 py-3 text-sm text-[#4b4038] outline-none placeholder:text-gray-400"
               />
 
               <input
                 value={form.lineId}
                 disabled
                 placeholder="LINE會員已登入"
-               className="w-full rounded-2xl border border-[#e1d3c2] bg-[#f8f3ec] px-4 py-3 text-sm text-[#4b4038] outline-none placeholder:text-gray-400"
+                className="w-full rounded-2xl border border-[#e1d3c2] bg-[#f8f3ec] px-4 py-3 text-sm text-[#4b4038] outline-none placeholder:text-gray-400"
               />
 
               <select
@@ -395,7 +422,7 @@ export default function CheckoutPage() {
                     e.target.value
                   )
                 }
-               className="w-full rounded-2xl border border-[#e1d3c2] bg-white px-4 py-3 text-sm text-[#4b4038] outline-none"
+                className="w-full rounded-2xl border border-[#e1d3c2] bg-white px-4 py-3 text-sm text-[#4b4038] outline-none"
               >
                 <option value="超商取貨">
                   超商取貨 $60
@@ -424,7 +451,7 @@ export default function CheckoutPage() {
                       )
                     }
                     placeholder="超商門市名稱 *"
-                    className="w-full rounded-2xl border border-[#e1d3c2] bg-white px-4 py-3 text-sm text-[#4b4038] outline-none"
+                    className="w-full rounded-2xl border border-[#e1d3c2] bg-white px-4 py-3 text-sm text-[#4b4038] outline-none placeholder:text-gray-400"
                   />
 
                   <input
@@ -438,7 +465,7 @@ export default function CheckoutPage() {
                       )
                     }
                     placeholder="門市地址（可選）"
-                    className="w-full rounded-2xl border border-[#e1d3c2] bg-white px-4 py-3 text-sm text-[#4b4038] outline-none"
+                    className="w-full rounded-2xl border border-[#e1d3c2] bg-white px-4 py-3 text-sm text-[#4b4038] outline-none placeholder:text-gray-400"
                   />
                 </>
               )}
@@ -454,11 +481,12 @@ export default function CheckoutPage() {
                   )
                 }
                 placeholder="訂單備註"
-               className="min-h-[100px] w-full resize-none rounded-2xl border border-[#e1d3c2] bg-white px-4 py-3 text-sm text-[#4b4038] outline-none placeholder:text-gray-400"
+                className="min-h-[100px] w-full resize-none rounded-2xl border border-[#e1d3c2] bg-white px-4 py-3 text-sm text-[#4b4038] outline-none placeholder:text-gray-400"
               />
             </div>
           </section>
 
+          {/* 右邊 */}
           <section className="rounded-3xl bg-white p-5 shadow-sm">
             <h2 className="mb-4 font-semibold text-[#4b4038]">
               訂單明細
@@ -474,6 +502,18 @@ export default function CheckoutPage() {
                     <p className="font-medium text-[#4b4038]">
                       {item.name}
                     </p>
+
+                    {item.selectedVariant
+                      ?.name && (
+                      <p className="mt-1 text-sm text-[#8c7b70]">
+                        款式：
+                        {
+                          item
+                            .selectedVariant
+                            .name
+                        }
+                      </p>
+                    )}
 
                     <p className="mt-2 text-sm text-[#4b4038]">
                       NT$
@@ -491,8 +531,10 @@ export default function CheckoutPage() {
               )}
 
               <div className="space-y-2 border-t pt-4 text-sm">
-                <div className="mb-4 font-semibold text-[#4b4038]">
-                  <span>商品小計</span>
+                <div className="flex justify-between text-[#4b4038]">
+                  <span>
+                    商品小計
+                  </span>
 
                   <span>
                     NT$
@@ -503,7 +545,7 @@ export default function CheckoutPage() {
 
                 {vipSaved > 0 && (
                   <>
-                    <div className="mb-4 font-semibold text-[#4b4038]">
+                    <div className="flex justify-between text-gray-400">
                       <span>
                         原價總額
                       </span>
@@ -515,7 +557,7 @@ export default function CheckoutPage() {
                       </span>
                     </div>
 
-                    <div className="flex justify-between font-medium text-[#4b4038]">
+                    <div className="flex justify-between font-medium text-[#b07255]">
                       <span>
                         VIP 優惠
                       </span>
@@ -529,7 +571,7 @@ export default function CheckoutPage() {
                   </>
                 )}
 
-                <div  className="mb-4 font-semibold text-[#4b4038]">
+                <div className="flex justify-between text-[#4b4038]">
                   <span>運費</span>
 
                   <span>
@@ -539,7 +581,7 @@ export default function CheckoutPage() {
                   </span>
                 </div>
 
-                <div  className="mb-4 font-semibold text-[#4b4038]">
+                <div className="flex justify-between border-t pt-3 text-lg font-semibold text-[#4b4038]">
                   <span>總金額</span>
 
                   <span>
@@ -556,7 +598,7 @@ export default function CheckoutPage() {
                   handleSubmit
                 }
                 disabled={loading}
-                className="w-full rounded-2xl border border-[#e1d3c2] bg-white px-4 py-3 text-sm text-[#4b4038] outline-none"
+                className="mt-4 w-full rounded-full border border-[#d8c5b0] bg-white py-4 text-sm font-medium text-[#6b5c50] transition hover:bg-[#f8f3ee] disabled:opacity-50"
               >
                 {loading
                   ? "送出中..."
