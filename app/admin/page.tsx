@@ -406,7 +406,7 @@ export default function AdminPage() {
 
   return (
     <main className="min-h-screen bg-[#f8f5f2] px-5 py-8 text-[#3d3d3d]">
-      <div className="mb-8 flex items-center justify-between">
+      <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-3xl font-bold">管理後台</h1>
 
@@ -415,15 +415,31 @@ export default function AdminPage() {
           </p>
         </div>
 
-        <button
-          onClick={() => {
-            localStorage.removeItem("argent_admin_login");
-            location.reload();
-          }}
-          className="rounded-full border px-4 py-2 text-sm"
-        >
-          登出
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <a
+            href="/admin/orders"
+            className="rounded-full border border-[#d8c5b0] bg-white px-4 py-2 text-sm text-[#6b5c50]"
+          >
+            訂單後台
+          </a>
+
+          <a
+            href="/admin/users"
+            className="rounded-full border border-[#d8c5b0] bg-white px-4 py-2 text-sm text-[#6b5c50]"
+          >
+            會員管理
+          </a>
+
+          <button
+            onClick={() => {
+              localStorage.removeItem("argent_admin_login");
+              location.reload();
+            }}
+            className="rounded-full border px-4 py-2 text-sm"
+          >
+            登出
+          </button>
+        </div>
       </div>
 
       <div className="rounded-3xl bg-white p-6 shadow-sm">
