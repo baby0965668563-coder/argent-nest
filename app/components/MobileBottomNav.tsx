@@ -4,35 +4,50 @@ import { useEffect, useState } from "react";
 
 export default function MobileBottomNav() {
   const [cartCount, setCartCount] = useState(0);
+  const [isLogin, setIsLogin] = useState(false);
+
+  function updateCartCount() {
+    const cart = JSON.parse(localStorage.getItem("cart") || "[]");
+
+    const total = cart.reduce(
+      (sum: number, item: any) => sum + Number(item.quantity || 1),
+      0
+    );
+
+    setCartCount(total);
+  }
+
+  function updateLoginStatus() {
+    const user = localStorage.getItem("argent_user");
+    setIsLogin(!!user);
+  }
 
   useEffect(() => {
-    function updateCartCount() {
-      const cart = JSON.parse(localStorage.getItem("cart") || "[]");
-
-      const total = cart.reduce(
-        (sum: number, item: any) =>
-          sum + Number(item.quantity || 1),
-        0
-      );
-
-      setCartCount(total);
-    }
-
     updateCartCount();
+    updateLoginStatus();
 
     window.addEventListener("storage", updateCartCount);
+    window.addEventListener("storage", updateLoginStatus);
+    window.addEventListener("focus", updateCartCount);
+    window.addEventListener("focus", updateLoginStatus);
 
-    const interval = setInterval(updateCartCount, 1000);
+    const interval = setInterval(() => {
+      updateCartCount();
+      updateLoginStatus();
+    }, 1000);
 
     return () => {
       window.removeEventListener("storage", updateCartCount);
+      window.removeEventListener("storage", updateLoginStatus);
+      window.removeEventListener("focus", updateCartCount);
+      window.removeEventListener("focus", updateLoginStatus);
       clearInterval(interval);
     };
   }, []);
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-[#eaded4] bg-white/95 backdrop-blur md:hidden">
-      <div className="grid grid-cols-4">
+      <div className="grid grid-cols-5">
         <a
           href="/"
           className="flex flex-col items-center justify-center py-3 text-[#6b5c50]"
@@ -50,13 +65,23 @@ export default function MobileBottomNav() {
         </a>
 
         <a
+          href={isLogin ? "/member" : "/login"}
+          className="flex flex-col items-center justify-center py-3 text-[#6b5c50]"
+        >
+          <span className="text-lg">🤍</span>
+          <span className="mt-1 text-[10px]">
+            {isLogin ? "會員" : "登入"}
+          </span>
+        </a>
+
+        <a
           href="/cart"
           className="relative flex flex-col items-center justify-center py-3 text-[#6b5c50]"
         >
           <span className="text-lg">🛒</span>
 
           {cartCount > 0 && (
-            <div className="absolute right-[30%] top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#2e2e2e] px-1 text-[10px] text-white">
+            <div className="absolute right-[22%] top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#2e2e2e] px-1 text-[10px] text-white">
               {cartCount}
             </div>
           )}
