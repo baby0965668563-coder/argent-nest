@@ -18,19 +18,16 @@ export default function MemberPage() {
 
     try {
       const parsed = JSON.parse(savedUser);
-
       setUser(parsed);
     } catch {
       localStorage.removeItem("argent_user");
       router.push("/login");
     }
-  }, []);
+  }, [router]);
 
   function logout() {
     localStorage.removeItem("argent_user");
-
     alert("已登出 ☁️");
-
     router.push("/");
   }
 
@@ -42,15 +39,12 @@ export default function MemberPage() {
     );
   }
 
-  const isVip =
-    user?.is_vip === true ||
-    user?.level === "vip";
+  const isVip = user?.is_vip === true || user?.level === "vip";
 
   return (
     <main className="min-h-screen bg-[#faf7f2] px-4 py-8">
       <div className="mx-auto max-w-md">
         <div className="overflow-hidden rounded-[32px] bg-white shadow-sm">
-          {/* Header */}
           <div className="bg-[#f6efe7] px-6 py-8 text-center">
             {user.avatar_url ? (
               <img
@@ -73,12 +67,9 @@ export default function MemberPage() {
             </p>
           </div>
 
-          {/* Content */}
           <div className="space-y-4 p-6">
             <div className="rounded-3xl bg-[#faf7f2] p-5">
-              <p className="text-sm text-[#8c7b70]">
-                會員等級
-              </p>
+              <p className="text-sm text-[#8c7b70]">會員等級</p>
 
               <div className="mt-2 flex items-center justify-between">
                 <p className="text-lg font-semibold text-[#4b4038]">
@@ -94,9 +85,7 @@ export default function MemberPage() {
             </div>
 
             <div className="rounded-3xl bg-[#faf7f2] p-5">
-              <p className="text-sm text-[#8c7b70]">
-                LINE User ID
-              </p>
+              <p className="text-sm text-[#8c7b70]">LINE User ID</p>
 
               <p className="mt-2 break-all text-sm text-[#4b4038]">
                 {user.line_user_id || "-"}
@@ -105,9 +94,7 @@ export default function MemberPage() {
 
             {user.email && (
               <div className="rounded-3xl bg-[#faf7f2] p-5">
-                <p className="text-sm text-[#8c7b70]">
-                  Email
-                </p>
+                <p className="text-sm text-[#8c7b70]">Email</p>
 
                 <p className="mt-2 text-sm text-[#4b4038]">
                   {user.email}
@@ -129,6 +116,14 @@ export default function MemberPage() {
               className="w-full rounded-full bg-[#f6f1ea] py-4 text-sm font-medium text-[#6b5c50]"
             >
               我的訂單
+            </button>
+
+            <button
+              type="button"
+              onClick={() => router.push("/wishlist")}
+              className="w-full rounded-full bg-[#fff2e5] py-4 text-sm font-medium text-[#b07255]"
+            >
+              我的收藏
             </button>
 
             <button
