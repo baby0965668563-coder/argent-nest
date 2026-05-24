@@ -120,8 +120,27 @@ export default async function Home({ searchParams }: Props) {
     return queryString ? `/?${queryString}#hot` : "/#hot";
   }
 
+  function getVariantStock(product: any) {
+    const variants = Array.isArray(product?.variants) ? product.variants : [];
+
+    if (variants.length === 0) return null;
+
+    return variants.reduce((sum: number, variant: any) => {
+      return sum + Number(variant.stock || 0);
+    }, 0);
+  }
+
+  function getProductStock(product: any) {
+    const variantStock = getVariantStock(product);
+
+    if (variantStock !== null) return variantStock;
+
+    return Number(product.stock || 0);
+  }
+
   function getBadge(product: any) {
     const soldOut = product.is_sold_out === true;
+    const stock = getProductStock(product);
     const createdAt = product.created_at ? new Date(product.created_at) : null;
     const now = new Date();
 
@@ -131,24 +150,33 @@ export default async function Home({ searchParams }: Props) {
 
     const isNew = diffDays <= 7;
 
-    if (soldOut) return "SOLD OUT";
+    if (soldOut || stock <= 0) return "SOLD OUT";
     if (product.is_featured) return "HOT";
     if (isNew) return "NEW";
+    if (stock > 0) return "IN STOCK";
     return "PREORDER";
   }
 
   function stockText(product: any) {
     const soldOut = product.is_sold_out === true;
-    const stock = Number(product.stock || 0);
+    const stock = getProductStock(product);
+    const hasVariants =
+      Array.isArray(product?.variants) && product.variants.length > 0;
 
-    if (soldOut) {
+    if (soldOut || stock <= 0) {
+      if (hasVariants) {
+        return <p className="text-xs text-gray-400">全部款式已售完 ☁️</p>;
+      }
+
       return <p className="text-xs text-gray-400">目前已售完 ☁️</p>;
     }
 
     if (stock > 0) {
       return (
         <>
-          <p className="text-xs text-[#2e7d32]">現貨 {stock} 件 ☁️</p>
+          <p className="text-xs text-[#2e7d32]">
+            {hasVariants ? `款式合計現貨 ${stock} 件 ☁️` : `現貨 ${stock} 件 ☁️`}
+          </p>
 
           {stock <= 3 && (
             <p className="text-xs text-red-500">庫存不多了 ☁️</p>
@@ -162,13 +190,28 @@ export default async function Home({ searchParams }: Props) {
 
   function ProductMiniCard({ product }: { product: any }) {
     const imageSrc = getImage(product);
+    const badge = getBadge(product);
 
     return (
       <a
         href={`/product/${product.id}`}
         className="overflow-hidden rounded-[2rem] bg-white text-left shadow-sm transition hover:-translate-y-1"
       >
-        <div className="aspect-square overflow-hidden bg-[#f4eee8]">
+        <div className="relative aspect-square overflow-hidden bg-[#f4eee8]">
+          <div
+            className={`absolute left-3 top-3 z-10 rounded-full px-3 py-1 text-[10px] backdrop-blur ${
+              badge === "SOLD OUT"
+                ? "bg-black/75 text-white"
+                : badge === "HOT"
+                ? "bg-[#2e2e2e] text-white"
+                : badge === "IN STOCK"
+                ? "bg-green-100 text-green-700"
+                : "bg-white/85 text-[#8b6f5c]"
+            }`}
+          >
+            {badge}
+          </div>
+
           {imageSrc ? (
             <img
               src={imageSrc}
@@ -191,6 +234,8 @@ export default async function Home({ searchParams }: Props) {
           <p className="mt-2 font-bold text-[#8b6f5c]">
             NT$ {Number(product.price || 0).toLocaleString()}
           </p>
+
+          <div className="mt-2">{stockText(product)}</div>
         </div>
       </a>
     );
@@ -325,6 +370,7 @@ export default async function Home({ searchParams }: Props) {
             <div className="-mx-1 flex gap-4 overflow-x-auto px-1 pb-2">
               {featuredProducts.slice(0, 10).map((product: any) => {
                 const imageSrc = getImage(product);
+                const badge = getBadge(product);
 
                 return (
                   <a
@@ -333,8 +379,14 @@ export default async function Home({ searchParams }: Props) {
                     className="w-[46%] min-w-[150px] max-w-[190px] shrink-0 overflow-hidden rounded-[1.6rem] bg-white text-[#2e2e2e] shadow-sm md:w-56 md:max-w-none"
                   >
                     <div className="relative aspect-[4/5] bg-[#f4eee8]">
-                      <div className="absolute left-3 top-3 z-10 rounded-full bg-[#2e2e2e] px-3 py-1 text-[10px] text-white">
-                        HOT
+                      <div
+                        className={`absolute left-3 top-3 z-10 rounded-full px-3 py-1 text-[10px] ${
+                          badge === "SOLD OUT"
+                            ? "bg-black/75 text-white"
+                            : "bg-[#2e2e2e] text-white"
+                        }`}
+                      >
+                        {badge === "SOLD OUT" ? "SOLD OUT" : "HOT"}
                       </div>
 
                       {imageSrc ? (
@@ -359,6 +411,8 @@ export default async function Home({ searchParams }: Props) {
                       <p className="mt-2 text-sm font-bold text-[#8b6f5c]">
                         NT$ {Number(product.price || 0).toLocaleString()}
                       </p>
+
+                      <div className="mt-2">{stockText(product)}</div>
                     </div>
                   </a>
                 );
@@ -394,6 +448,7 @@ export default async function Home({ searchParams }: Props) {
             <div className="grid grid-cols-2 gap-4 md:grid-cols-6 md:gap-5">
               {newestProducts.map((product: any) => {
                 const imageSrc = getImage(product);
+                const badge = getBadge(product);
 
                 return (
                   <a
@@ -402,8 +457,16 @@ export default async function Home({ searchParams }: Props) {
                     className="overflow-hidden rounded-[2rem] bg-white shadow-sm transition hover:-translate-y-1"
                   >
                     <div className="relative aspect-[4/5] overflow-hidden bg-[#f4eee8]">
-                      <div className="absolute left-3 top-3 z-10 rounded-full bg-white/90 px-3 py-1 text-[10px] text-[#8b6f5c] backdrop-blur">
-                        NEW
+                      <div
+                        className={`absolute left-3 top-3 z-10 rounded-full px-3 py-1 text-[10px] backdrop-blur ${
+                          badge === "SOLD OUT"
+                            ? "bg-black/75 text-white"
+                            : badge === "IN STOCK"
+                            ? "bg-green-100 text-green-700"
+                            : "bg-white/90 text-[#8b6f5c]"
+                        }`}
+                      >
+                        {badge === "IN STOCK" ? "現貨" : badge}
                       </div>
 
                       {imageSrc ? (
@@ -428,6 +491,8 @@ export default async function Home({ searchParams }: Props) {
                       <p className="mt-2 text-sm font-bold text-[#8b6f5c]">
                         NT$ {Number(product.price || 0).toLocaleString()}
                       </p>
+
+                      <div className="mt-2">{stockText(product)}</div>
                     </div>
                   </a>
                 );
@@ -599,7 +664,8 @@ export default async function Home({ searchParams }: Props) {
 
           <div className="grid grid-cols-2 gap-4 md:grid-cols-4 md:gap-5">
             {displayProducts.map((product: any) => {
-              const soldOut = product.is_sold_out === true;
+              const soldOut =
+                product.is_sold_out === true || getProductStock(product) <= 0;
               const imageSrc = getImage(product);
               const badge = getBadge(product);
               const productImages = getImages(product);
@@ -617,10 +683,12 @@ export default async function Home({ searchParams }: Props) {
                             ? "bg-[#2e2e2e] text-white"
                             : badge === "SOLD OUT"
                             ? "bg-black/75 text-white"
+                            : badge === "IN STOCK"
+                            ? "bg-green-100 text-green-700"
                             : "bg-white/85 text-[#8b6f5c]"
                         }`}
                       >
-                        {badge}
+                        {badge === "IN STOCK" ? "現貨" : badge}
                       </div>
 
                       {imageSrc ? (
