@@ -6,33 +6,12 @@ import { supabase } from "@/lib/supabase";
 import AddToCartButton from "@/app/components/AddToCartButton";
 import LikeButton from "@/app/components/LikeButton";
 
-type OptionGroup = {
+type Variant = {
   name: string;
-  values: string[];
+  price: number;
+  vipPrice?: number | null;
+  stock?: number;
 };
-
-function parseOptions(optionsText: string): OptionGroup[] {
-  if (!optionsText) return [];
-
-  return optionsText
-    .split("\n")
-    .map((line) => {
-      const parts = line.includes("|") ? line.split("|") : line.split("｜");
-
-      if (parts.length < 2) return null;
-
-      return {
-        name: parts[0].trim(),
-        values: parts
-          .slice(1)
-          .join("｜")
-          .split(/[、,，]/)
-          .map((v) => v.trim())
-          .filter(Boolean),
-      };
-    })
-    .filter((item): item is OptionGroup => item !== null);
-}
 
 export default function ProductPage() {
   const params = useParams();
@@ -40,7 +19,7 @@ export default function ProductPage() {
   const [product, setProduct] = useState<any>(null);
   const [user, setUser] = useState<any>(null);
   const [selectedImage, setSelectedImage] = useState("");
-  const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
+  const [selectedVariantName, setSelectedVariantName] = useState("");
   const [customerNote, setCustomerNote] = useState("");
   const [loading, setLoading] = useState(true);
 
@@ -94,7 +73,7 @@ export default function ProductPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-[#faf7f2] flex items-center justify-center">
+      <main className="flex min-h-screen items-center justify-center bg-[#faf7f2]">
         <p className="text-gray-500">商品載入中...</p>
       </main>
     );
@@ -102,7 +81,7 @@ export default function ProductPage() {
 
   if (!product) {
     return (
-      <main className="min-h-screen bg-[#faf7f2] flex items-center justify-center">
+      <main className="flex min-h-screen items-center justify-center bg-[#faf7f2]">
         <p className="text-gray-500">找不到商品</p>
       </main>
     );
@@ -120,39 +99,23 @@ export default function ProductPage() {
       ? product.images
       : [];
 
-  const optionGroups = parseOptions(product.options || "");
+  const variants: Variant[] = Array.isArray(product.variants)
+    ? product.variants
+    : [];
 
-  const variants = Array.isArray(product.variants) ? product.variants : [];
-
-  const variantGroup =
-    variants.length > 0
-      ? {
-          name: "款式",
-          values: variants.map((v: any) => v.name),
-        }
-      : null;
-
-  const allOptionGroups = variantGroup ? [variantGroup, ...optionGroups] : optionGroups;
+  const hasVariants = variants.length > 0;
 
   const selectedVariant = variants.find(
-    (v: any) => v.name === selectedOptions["款式"]
+    (variant) => variant.name === selectedVariantName
   );
 
   const productStock = Number(product.stock || 0);
   const variantStock = Number(selectedVariant?.stock || 0);
 
-  const hasVariants = variants.length > 0;
-
-  const currentStock = hasVariants
-    ? selectedVariant
-      ? variantStock
-      : null
-    : productStock;
-
   const productSoldOut = product.is_sold_out === true;
-  const variantSoldOut = selectedVariant && variantStock <= 0;
+  const variantSoldOut = selectedVariant ? variantStock <= 0 : false;
 
-  const isSoldOut = productSoldOut || Boolean(variantSoldOut);
+  const isSoldOut = productSoldOut || variantSoldOut;
 
   const originalPrice = selectedVariant
     ? Number(selectedVariant.price || 0)
@@ -164,12 +127,16 @@ export default function ProductPage() {
 
   const displayPrice = isVip && vipPrice > 0 ? vipPrice : originalPrice;
 
-  const hasMissingOptions =
-    allOptionGroups.some((group) => !selectedOptions[group.name]) ||
-    Boolean(isSoldOut);
+  const selectedOptions = selectedVariantName
+    ? {
+        款式: selectedVariantName,
+      }
+    : {};
+
+  const disabled = productSoldOut || (hasVariants && !selectedVariant) || isSoldOut;
 
   function renderStockBadge() {
-    if (productSoldOut || variantSoldOut) {
+    if (productSoldOut) {
       return (
         <div className="mt-3 inline-flex rounded-full bg-gray-200 px-4 py-2 text-xs font-medium text-gray-600">
           SOLD OUT 已售完
@@ -185,7 +152,17 @@ export default function ProductPage() {
       );
     }
 
-    if (currentStock && currentStock > 0) {
+    if (variantSoldOut) {
+      return (
+        <div className="mt-3 inline-flex rounded-full bg-gray-200 px-4 py-2 text-xs font-medium text-gray-600">
+          此款式已售完
+        </div>
+      );
+    }
+
+    const currentStock = hasVariants ? variantStock : productStock;
+
+    if (currentStock > 0) {
       return (
         <div className="mt-3 flex flex-wrap gap-2">
           <span className="inline-flex rounded-full bg-green-100 px-4 py-2 text-xs font-medium text-green-700">
@@ -210,46 +187,46 @@ export default function ProductPage() {
 
   return (
     <main className="min-h-screen bg-[#faf7f2] px-4 py-6">
-      <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div className="mx-auto grid max-w-5xl grid-cols-1 gap-8 md:grid-cols-2">
         <section>
-          <div className="bg-white rounded-3xl overflow-hidden shadow-sm">
+          <div className="overflow-hidden rounded-3xl bg-white shadow-sm">
             {selectedImage ? (
               <img
                 src={selectedImage}
                 alt={product.name}
-                className="w-full aspect-square object-cover"
+                className="aspect-square w-full object-cover"
               />
             ) : (
-              <div className="w-full aspect-square flex items-center justify-center text-gray-400">
+              <div className="flex aspect-square w-full items-center justify-center text-gray-400">
                 無商品圖片
               </div>
             )}
           </div>
 
           {images.length > 1 && (
-            <div className="flex gap-3 mt-4 overflow-x-auto">
+            <div className="mt-4 flex gap-3 overflow-x-auto">
               {images.map((img: string) => (
                 <button
                   key={img}
                   type="button"
                   onClick={() => setSelectedImage(img)}
-                  className={`w-20 h-20 rounded-2xl overflow-hidden border ${
+                  className={`h-20 w-20 shrink-0 overflow-hidden rounded-2xl border ${
                     selectedImage === img
                       ? "border-[#4b4038]"
                       : "border-transparent"
                   }`}
                 >
-                  <img src={img} alt="" className="w-full h-full object-cover" />
+                  <img src={img} alt="" className="h-full w-full object-cover" />
                 </button>
               ))}
             </div>
           )}
         </section>
 
-        <section className="bg-white rounded-3xl p-6 shadow-sm">
+        <section className="rounded-3xl bg-white p-6 shadow-sm">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="text-sm text-gray-400 mb-2">
+              <p className="mb-2 text-sm text-gray-400">
                 {product.category || "Argent Nest Select"}
               </p>
 
@@ -258,7 +235,10 @@ export default function ProductPage() {
               </h1>
             </div>
 
-            <LikeButton productId={product.id} />
+            <LikeButton
+              productId={product.id}
+              initialLikes={Number(product.likes || 0)}
+            />
           </div>
 
           <div className="mt-5">
@@ -288,82 +268,104 @@ export default function ProductPage() {
 
             {selectedVariant && (
               <p className="mt-2 text-sm text-[#8c7b70]">
-                此款剩餘庫存：{variantStock}
+                已選：{selectedVariant.name}
               </p>
             )}
           </div>
 
-          {allOptionGroups.length > 0 && (
-            <div className="mt-6 space-y-5">
-              {allOptionGroups.map((group) => (
-                <div key={group.name}>
-                  <p className="font-semibold mb-3 text-[#6b5c50]">
-                    {group.name}
-                  </p>
+          {hasVariants && (
+            <div className="mt-6">
+              <div className="mb-3 flex items-center justify-between">
+                <p className="font-semibold text-[#6b5c50]">款式</p>
 
-                  <div className="flex flex-wrap gap-2">
-                    {group.values.map((value: string) => {
-                      const selected = selectedOptions[group.name] === value;
+                {selectedVariant && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedVariantName("")}
+                    className="text-xs text-gray-400 underline"
+                  >
+                    重新選擇
+                  </button>
+                )}
+              </div>
 
-                      const variantOption = variants.find(
-                        (v: any) => group.name === "款式" && v.name === value
-                      );
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                {variants.map((variant) => {
+                  const stock = Number(variant.stock || 0);
+                  const soldOut = stock <= 0;
+                  const selected = selectedVariantName === variant.name;
 
-                      const optionSoldOut =
-                        group.name === "款式" &&
-                        variantOption &&
-                        Number(variantOption.stock || 0) <= 0;
+                  return (
+                    <button
+                      key={variant.name}
+                      type="button"
+                      disabled={soldOut}
+                      onClick={() => setSelectedVariantName(variant.name)}
+                      className={`rounded-2xl border px-4 py-3 text-left text-sm transition ${
+                        soldOut
+                          ? "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400"
+                          : selected
+                          ? "border-[#2e2e2e] bg-[#2e2e2e] text-white"
+                          : "border-[#d8c5b0] bg-white text-[#6b5c50] hover:bg-[#f8f3ee]"
+                      }`}
+                    >
+                      <div className="font-medium">{variant.name}</div>
 
-                      return (
-                        <button
-                          key={value}
-                          type="button"
-                          onClick={() =>
-                            setSelectedOptions({
-                              ...selectedOptions,
-                              [group.name]: value,
-                            })
-                          }
-                          disabled={Boolean(optionSoldOut)}
-                          className={`px-4 py-2 rounded-full border text-sm transition ${
-                            optionSoldOut
-                              ? "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400"
-                              : selected
-                              ? "bg-[#2e2e2e] text-white border-[#2e2e2e]"
-                              : "bg-white text-[#6b5c50] border-[#d8c5b0]"
-                          }`}
-                        >
-                          {value}
-                          {optionSoldOut ? "｜售完" : ""}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
+                      <div
+                        className={`mt-1 text-xs ${
+                          selected ? "text-white/75" : "text-[#8c7b70]"
+                        }`}
+                      >
+                        NT$ {Number(variant.price || 0).toLocaleString()}
+                        {variant.vipPrice
+                          ? `｜VIP NT$ ${Number(
+                              variant.vipPrice || 0
+                            ).toLocaleString()}`
+                          : ""}
+                      </div>
+
+                      <div
+                        className={`mt-1 text-xs ${
+                          soldOut
+                            ? "text-gray-400"
+                            : selected
+                            ? "text-white/75"
+                            : stock <= 3
+                            ? "text-red-500"
+                            : "text-green-700"
+                        }`}
+                      >
+                        {soldOut
+                          ? "已售完"
+                          : stock > 0
+                          ? stock <= 3
+                            ? `剩 ${stock} 件`
+                            : `現貨 ${stock} 件`
+                          : "預購"}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           )}
 
           <div className="mt-6">
-            <p className="mb-2 text-sm font-medium text-[#6b5c50]">
-              商品備註
-            </p>
+            <p className="mb-2 text-sm font-medium text-[#6b5c50]">商品備註</p>
 
             <textarea
               value={customerNote}
               onChange={(e) => setCustomerNote(e.target.value)}
-              placeholder="有想備註的地方可以寫這裡，例如：送禮用、不要太甜、指定款式提醒"
+              placeholder="有想備註的地方可以寫這裡，例如：送禮用、指定出貨提醒"
               className="min-h-[96px] w-full resize-none rounded-3xl border border-[#e1d3c2] bg-white px-4 py-3 text-sm text-[#4b4038] outline-none placeholder:text-gray-400"
             />
           </div>
 
           {product.description && (
             <div className="mt-8">
-              <h2 className="font-semibold mb-3 text-[#4b4038]">
-                商品描述
-              </h2>
+              <h2 className="mb-3 font-semibold text-[#4b4038]">商品描述</h2>
 
-              <p className="text-gray-600 leading-7 whitespace-pre-line">
+              <p className="whitespace-pre-line leading-7 text-gray-600">
                 {product.description}
               </p>
             </div>
@@ -378,16 +380,16 @@ export default function ProductPage() {
                 originalPrice,
                 finalVipPrice: vipPrice,
                 isVipPrice: isVip && vipPrice > 0 && originalPrice > vipPrice,
-                selectedVariant,
+                selectedVariant: selectedVariant || null,
               }}
               selectedOptions={selectedOptions}
               customerNote={customerNote}
-              disabled={hasMissingOptions}
+              disabled={disabled}
             />
 
-            {hasMissingOptions && !isSoldOut && (
+            {hasVariants && !selectedVariant && !productSoldOut && (
               <p className="mt-2 text-center text-xs text-[#9b6b4f]">
-                請先選擇商品規格
+                請先選擇商品款式
               </p>
             )}
           </div>
