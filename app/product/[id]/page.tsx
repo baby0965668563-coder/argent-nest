@@ -127,11 +127,11 @@ export default function ProductPage() {
 
   const displayPrice = isVip && vipPrice > 0 ? vipPrice : originalPrice;
 
-  const selectedOptions = selectedVariantName
-    ? {
-        款式: selectedVariantName,
-      }
-    : {};
+  const selectedOptions: Record<string, string> = selectedVariantName
+  ? {
+      款式: selectedVariantName,
+    }
+  : {};
 
   const disabled = productSoldOut || (hasVariants && !selectedVariant) || isSoldOut;
 
