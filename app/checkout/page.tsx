@@ -218,10 +218,43 @@ export default function CheckoutPage() {
           .eq("id", item.id);
       }
 
+      const ecpayRes = await fetch("/api/ecpay", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          total,
+          items: cart,
+          orderId,
+        }),
+      });
+
+      const ecpayData = await ecpayRes.json();
+
+      if (!ecpayData.success) {
+        alert("建立綠界付款失敗");
+        setLoading(false);
+        return;
+      }
+
       localStorage.removeItem("cart");
       window.dispatchEvent(new Event("storage"));
 
-      window.location.href = `/orders/${orderId}?token=${orderToken}`;
+      const paymentForm = document.createElement("form");
+      paymentForm.method = "POST";
+      paymentForm.action = ecpayData.action;
+
+      Object.entries(ecpayData.data).forEach(([key, value]) => {
+        const input = document.createElement("input");
+        input.type = "hidden";
+        input.name = key;
+        input.value = String(value);
+        paymentForm.appendChild(input);
+      });
+
+      document.body.appendChild(paymentForm);
+      paymentForm.submit();
     } finally {
       setLoading(false);
     }
@@ -433,7 +466,7 @@ export default function CheckoutPage() {
                 disabled={loading}
                 className="mt-4 w-full rounded-full bg-[#2e2e2e] py-4 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-50"
               >
-                {loading ? "送出中..." : "送出訂單 ☁️"}
+                {loading ? "送出中..." : "送出訂單並前往付款 ☁️"}
               </button>
             </div>
           </section>
