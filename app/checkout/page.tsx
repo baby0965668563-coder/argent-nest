@@ -6,23 +6,18 @@ import { supabase } from "@/lib/supabase";
 type CartItem = {
   id: string;
   cartKey?: string;
-
   name: string;
   price: number;
   originalPrice?: number;
   vipPrice?: number | null;
   isVipPrice?: boolean;
-
   image?: string;
   quantity: number;
-
   options?: Record<string, string>;
   optionText?: string;
-
   note?: string;
   productNote?: string;
   category?: string;
-
   selectedVariant?: {
     name: string;
     price: number;
@@ -41,21 +36,20 @@ export default function CheckoutPage() {
     phone: "",
     lineId: "",
     shippingMethod: "超商取貨",
+    paymentMethod: "貨到付款",
     storeName: "",
     storeAddress: "",
     customerNote: "",
   });
 
   useEffect(() => {
-    const savedCart = JSON.parse(localStorage.getItem("cart") || "[]");
-    setCart(savedCart);
+    setCart(JSON.parse(localStorage.getItem("cart") || "[]"));
 
     const savedUser = localStorage.getItem("argent_user");
 
     if (savedUser) {
       try {
         const parsedUser = JSON.parse(savedUser);
-
         setMember(parsedUser);
 
         setForm((prev) => ({
@@ -70,8 +64,7 @@ export default function CheckoutPage() {
   }, []);
 
   const subtotal = cart.reduce(
-    (sum, item) =>
-      sum + Number(item.price || 0) * Number(item.quantity || 1),
+    (sum, item) => sum + Number(item.price || 0) * Number(item.quantity || 1),
     0
   );
 
@@ -93,6 +86,8 @@ export default function CheckoutPage() {
       : 0;
 
   const total = subtotal + shippingFee;
+
+  const depositAmount = Math.ceil(total / 2);
 
   function updateForm(key: string, value: string) {
     setForm((prev) => ({
@@ -151,6 +146,11 @@ export default function CheckoutPage() {
       const orderId = crypto.randomUUID();
       const orderToken = crypto.randomUUID();
 
+      const paymentNote =
+        form.paymentMethod === "先付一半訂金"
+          ? `付款方式：先付一半訂金｜訂金金額 NT$ ${depositAmount.toLocaleString()}`
+          : `付款方式：${form.paymentMethod}`;
+
       const { error } = await supabase.from("orders").insert([
         {
           id: orderId,
@@ -158,7 +158,6 @@ export default function CheckoutPage() {
           customer_name: form.name,
           phone: form.phone,
           line_id: member?.line_user_id || form.lineId,
-
           shipping_method: `${form.shippingMethod}${
             form.shippingMethod === "超商取貨"
               ? `｜${form.storeName}${
@@ -166,11 +165,12 @@ export default function CheckoutPage() {
                 }`
               : ""
           }`,
-
-          customer_note: form.customerNote,
+          customer_note: `${paymentNote}${
+            form.customerNote ? `\n${form.customerNote}` : ""
+          }`,
           items: cart,
           total,
-          status: "pending",
+          status: form.paymentMethod === "貨到付款" ? "pending" : "pending",
         },
       ]);
 
@@ -218,43 +218,10 @@ export default function CheckoutPage() {
           .eq("id", item.id);
       }
 
-      const ecpayRes = await fetch("/api/ecpay", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          total,
-          items: cart,
-          orderId,
-        }),
-      });
-
-      const ecpayData = await ecpayRes.json();
-
-      if (!ecpayData.success) {
-        alert("建立綠界付款失敗");
-        setLoading(false);
-        return;
-      }
-
       localStorage.removeItem("cart");
       window.dispatchEvent(new Event("storage"));
 
-      const paymentForm = document.createElement("form");
-      paymentForm.method = "POST";
-      paymentForm.action = ecpayData.action;
-
-      Object.entries(ecpayData.data).forEach(([key, value]) => {
-        const input = document.createElement("input");
-        input.type = "hidden";
-        input.name = key;
-        input.value = String(value);
-        paymentForm.appendChild(input);
-      });
-
-      document.body.appendChild(paymentForm);
-      paymentForm.submit();
+      window.location.href = `/orders/${orderId}?token=${orderToken}`;
     } finally {
       setLoading(false);
     }
@@ -311,6 +278,34 @@ export default function CheckoutPage() {
                 <option value="面交">面交 $0</option>
               </select>
 
+              <select
+                value={form.paymentMethod}
+                onChange={(e) => updateForm("paymentMethod", e.target.value)}
+                className="w-full rounded-2xl border border-[#e1d3c2] bg-white px-4 py-3 text-sm text-[#4b4038] outline-none"
+              >
+                <option value="貨到付款">貨到付款</option>
+                <option value="先付一半訂金">先付一半訂金</option>
+                <option value="全額匯款">全額匯款</option>
+              </select>
+
+              {form.paymentMethod === "先付一半訂金" && (
+                <div className="rounded-3xl bg-[#fff7ef] p-4 text-sm leading-7 text-[#9b6b4f]">
+                  此筆訂單需先付一半訂金：
+                  <br />
+                  訂金金額 NT$ {depositAmount.toLocaleString()}
+                  <br />
+                  剩餘尾款可依約定方式付款。
+                </div>
+              )}
+
+              {form.paymentMethod === "全額匯款" && (
+                <div className="rounded-3xl bg-[#fff7ef] p-4 text-sm leading-7 text-[#9b6b4f]">
+                  此筆訂單選擇全額匯款。
+                  <br />
+                  送出訂單後請依訂單頁付款資訊完成匯款。
+                </div>
+              )}
+
               {form.shippingMethod === "超商取貨" && (
                 <>
                   <input
@@ -322,9 +317,7 @@ export default function CheckoutPage() {
 
                   <input
                     value={form.storeAddress}
-                    onChange={(e) =>
-                      updateForm("storeAddress", e.target.value)
-                    }
+                    onChange={(e) => updateForm("storeAddress", e.target.value)}
                     placeholder="門市地址（可選）"
                     className="w-full rounded-2xl border border-[#e1d3c2] bg-white px-4 py-3 text-sm text-[#4b4038] outline-none placeholder:text-gray-400"
                   />
@@ -387,35 +380,11 @@ export default function CheckoutPage() {
                     </p>
                   )}
 
-                  {item.productNote && (
-                    <p className="mt-3 rounded-2xl bg-[#fff7ef] px-3 py-2 text-xs leading-5 text-[#9b6b4f]">
-                      商品備註：{item.productNote}
-                    </p>
-                  )}
-
                   <div className="mt-3 flex items-end justify-between">
-                    <div>
-                      <p className="text-sm font-semibold text-[#4b4038]">
-                        NT$ {Number(item.price || 0).toLocaleString()} ×{" "}
-                        {item.quantity}
-                      </p>
-
-                      {item.isVipPrice &&
-                        item.originalPrice &&
-                        item.originalPrice > item.price && (
-                          <p className="mt-1 text-xs text-[#b07255]">
-                            VIP 價已套用
-                          </p>
-                        )}
-
-                      {!item.isVipPrice &&
-                        item.vipPrice &&
-                        item.vipPrice > 0 && (
-                          <p className="mt-1 text-xs text-[#b07255]">
-                            VIP NT$ {Number(item.vipPrice).toLocaleString()}
-                          </p>
-                        )}
-                    </div>
+                    <p className="text-sm font-semibold text-[#4b4038]">
+                      NT$ {Number(item.price || 0).toLocaleString()} ×{" "}
+                      {item.quantity}
+                    </p>
 
                     <p className="text-sm font-bold text-[#4b4038]">
                       NT${" "}
@@ -434,25 +403,28 @@ export default function CheckoutPage() {
                 </div>
 
                 {vipSaved > 0 && (
-                  <>
-                    <div className="flex justify-between text-gray-400">
-                      <span>原價總額</span>
-                      <span className="line-through">
-                        NT$ {originalSubtotal.toLocaleString()}
-                      </span>
-                    </div>
-
-                    <div className="flex justify-between font-medium text-[#b07255]">
-                      <span>VIP 優惠</span>
-                      <span>- NT$ {vipSaved.toLocaleString()}</span>
-                    </div>
-                  </>
+                  <div className="flex justify-between font-medium text-[#b07255]">
+                    <span>VIP 優惠</span>
+                    <span>- NT$ {vipSaved.toLocaleString()}</span>
+                  </div>
                 )}
 
                 <div className="flex justify-between text-[#4b4038]">
                   <span>運費</span>
                   <span>NT$ {shippingFee.toLocaleString()}</span>
                 </div>
+
+                <div className="flex justify-between text-[#4b4038]">
+                  <span>付款方式</span>
+                  <span>{form.paymentMethod}</span>
+                </div>
+
+                {form.paymentMethod === "先付一半訂金" && (
+                  <div className="flex justify-between font-medium text-[#b07255]">
+                    <span>需付訂金</span>
+                    <span>NT$ {depositAmount.toLocaleString()}</span>
+                  </div>
+                )}
 
                 <div className="flex justify-between border-t border-[#f0e7dd] pt-4 text-lg font-semibold text-[#4b4038]">
                   <span>總金額</span>
@@ -466,7 +438,7 @@ export default function CheckoutPage() {
                 disabled={loading}
                 className="mt-4 w-full rounded-full bg-[#2e2e2e] py-4 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-50"
               >
-                {loading ? "送出中..." : "送出訂單並前往付款 ☁️"}
+                {loading ? "送出中..." : "送出訂單 ☁️"}
               </button>
             </div>
           </section>
