@@ -81,7 +81,8 @@ export default function OrderDetailPage() {
 
   const searchParams = useSearchParams();
 
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] =
+    useState(true);
 
   const [order, setOrder] =
     useState<Order | null>(null);
@@ -184,7 +185,7 @@ export default function OrderDetailPage() {
     <main className="min-h-screen bg-[#faf7f2] px-4 py-6">
       <div className="mx-auto max-w-5xl">
         <div className="rounded-[32px] bg-white p-6 shadow-sm">
-          {/* header */}
+          {/* Header */}
           <div className="mb-6 text-center">
             <div className="text-5xl">
               ☁️
@@ -285,7 +286,7 @@ export default function OrderDetailPage() {
                     訂單備註
                   </p>
 
-                  <div className="rounded-2xl bg-white px-4 py-3 text-sm leading-7 text-[#5c5148]">
+                  <div className="rounded-2xl bg-white px-4 py-3 text-sm leading-7 text-[#5c5148] whitespace-pre-line">
                     {order.customer_note}
                   </div>
                 </div>
@@ -325,7 +326,6 @@ export default function OrderDetailPage() {
                           {item.name}
                         </h3>
 
-                        {/* 款式 */}
                         {item.selectedVariant
                           ?.name && (
                           <p className="mt-1 text-sm text-[#9b6b4f]">
@@ -338,7 +338,6 @@ export default function OrderDetailPage() {
                           </p>
                         )}
 
-                        {/* 規格 */}
                         {item.options &&
                           Object.entries(
                             item.options
@@ -357,7 +356,6 @@ export default function OrderDetailPage() {
                             )
                           )}
 
-                        {/* 商品備註 */}
                         {item.productNote && (
                           <p className="mt-2 rounded-2xl bg-[#fff4e8] px-3 py-2 text-sm text-[#9b6b4f]">
                             商品備註：
@@ -367,7 +365,6 @@ export default function OrderDetailPage() {
                           </p>
                         )}
 
-                        {/* 顧客備註 */}
                         {item.note && (
                           <p className="mt-2 rounded-2xl bg-[#f6f1ea] px-3 py-2 text-sm text-[#6b5c50]">
                             顧客備註：
@@ -375,7 +372,6 @@ export default function OrderDetailPage() {
                           </p>
                         )}
 
-                        {/* 價格 */}
                         <div className="mt-3 flex items-center justify-between text-sm text-[#4b4038]">
                           <div>
                             <p>
@@ -428,6 +424,72 @@ export default function OrderDetailPage() {
             </div>
           </div>
 
+          {/* 付款資訊 */}
+          <div className="mt-6 rounded-3xl bg-[#fff7ef] p-5">
+            <h2 className="mb-4 text-lg font-semibold text-[#4b4038]">
+              付款資訊
+            </h2>
+
+            <div className="space-y-3 text-sm leading-7 text-[#6b5c50]">
+              <div className="rounded-2xl bg-white px-4 py-3">
+                <p className="font-medium text-[#9b6b4f]">
+                  可選付款方式
+                </p>
+
+                <p className="mt-2">
+                  ・貨到付款
+                </p>
+
+                <p>
+                  ・先付一半訂金
+                </p>
+
+                <p>
+                  ・全額匯款
+                </p>
+              </div>
+
+              <div className="rounded-2xl bg-white px-4 py-3">
+                <p className="font-medium text-[#9b6b4f]">
+                  匯款資訊
+                </p>
+
+                <p className="mt-2">
+                  銀行：
+                  822 中國信託
+                </p>
+
+                <p>
+                  帳號：
+                  123456789012
+                </p>
+
+                <p>
+                  戶名：
+                  芷葳 王
+                </p>
+              </div>
+
+              <div className="rounded-2xl bg-white px-4 py-3">
+                <p className="font-medium text-[#9b6b4f]">
+                  匯款完成後
+                </p>
+
+                <p className="mt-2">
+                  請私訊 LINE 提供：
+                </p>
+
+                <p>
+                  ・訂單編號
+                </p>
+
+                <p>
+                  ・匯款後五碼
+                </p>
+              </div>
+            </div>
+          </div>
+
           {/* 總金額 */}
           <div className="mt-6 rounded-3xl bg-[#f8f3ec] p-5">
             <div className="flex items-center justify-between text-lg font-semibold text-[#4b4038]">
@@ -448,7 +510,7 @@ export default function OrderDetailPage() {
               type="button"
               onClick={() =>
                 window.open(
-                  "https://line.me",
+                  "https://line.me/R/ti/p/@929santn",
                   "_blank"
                 )
               }
