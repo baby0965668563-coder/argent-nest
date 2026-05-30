@@ -21,7 +21,6 @@ export default async function Home({ searchParams }: Props) {
   let query = supabase
     .from("products")
     .select("*")
-    .eq("is_active", true)
     .order("is_featured", { ascending: false })
     .order("likes", { ascending: false })
     .order("sort_order", { ascending: true })
@@ -42,14 +41,16 @@ export default async function Home({ searchParams }: Props) {
   const allProductsQuery = await supabase
     .from("products")
     .select("*")
-    .eq("is_active", true)
     .order("is_featured", { ascending: false })
     .order("likes", { ascending: false })
     .order("sort_order", { ascending: true })
     .order("id", { ascending: false });
 
-  const allProducts = allProductsQuery.data || [];
-  const displayProducts = products || [];
+  const isVisibleProduct = (product: any) =>
+    product?.is_active !== false && product?.status !== false;
+
+  const allProducts = (allProductsQuery.data || []).filter(isVisibleProduct);
+  const displayProducts = (products || []).filter(isVisibleProduct);
 
   const featuredProducts = allProducts.filter(
     (product: any) => product.is_featured === true
@@ -139,7 +140,8 @@ export default async function Home({ searchParams }: Props) {
   }
 
   function getBadge(product: any) {
-    const soldOut = product.is_sold_out === true;
+    const soldOut =
+      product.is_sold_out === true || product.can_order === false;
     const stock = getProductStock(product);
     const createdAt = product.created_at ? new Date(product.created_at) : null;
     const now = new Date();
@@ -158,7 +160,8 @@ export default async function Home({ searchParams }: Props) {
   }
 
   function stockText(product: any) {
-    const soldOut = product.is_sold_out === true;
+    const soldOut =
+      product.is_sold_out === true || product.can_order === false;
     const stock = getProductStock(product);
     const hasVariants =
       Array.isArray(product?.variants) && product.variants.length > 0;
@@ -209,7 +212,7 @@ export default async function Home({ searchParams }: Props) {
                 : "bg-white/85 text-[#8b6f5c]"
             }`}
           >
-            {badge}
+            {badge === "IN STOCK" ? "現貨" : badge}
           </div>
 
           {imageSrc ? (
@@ -310,39 +313,25 @@ export default async function Home({ searchParams }: Props) {
 
       <section className="px-5 pb-14 md:px-10">
         <div className="mx-auto grid max-w-6xl grid-cols-2 gap-3 md:grid-cols-4">
-          <a
-            href="/category/healing"
-            className="rounded-3xl bg-white p-5 text-left shadow-sm transition hover:-translate-y-1"
-          >
+          <a href="/#hot" className="rounded-3xl bg-white p-5 text-left shadow-sm">
             <p className="text-2xl">🧸</p>
             <p className="mt-3 font-semibold text-[#4b4038]">卡通療癒選物</p>
-            <p className="mt-1 text-sm text-[#8c7b70]">
-              三麗鷗・迪士尼・娃娃
-            </p>
+            <p className="mt-1 text-sm text-[#8c7b70]">三麗鷗・迪士尼・娃娃</p>
           </a>
 
-          <a
-            href="/category/clothes"
-            className="rounded-3xl bg-white p-5 text-left shadow-sm transition hover:-translate-y-1"
-          >
+          <a href="/#hot" className="rounded-3xl bg-white p-5 text-left shadow-sm">
             <p className="text-2xl">🖤</p>
             <p className="mt-3 font-semibold text-[#4b4038]">微辣韓系穿搭</p>
             <p className="mt-1 text-sm text-[#8c7b70]">慵懶感・奶油色系</p>
           </a>
 
-          <a
-            href="/category/accessories"
-            className="rounded-3xl bg-white p-5 text-left shadow-sm transition hover:-translate-y-1"
-          >
+          <a href="/#hot" className="rounded-3xl bg-white p-5 text-left shadow-sm">
             <p className="text-2xl">🎀</p>
             <p className="mt-3 font-semibold text-[#4b4038]">飾品包包</p>
             <p className="mt-1 text-sm text-[#8c7b70]">女孩日常小物</p>
           </a>
 
-          <a
-            href="/category/flowers"
-            className="rounded-3xl bg-white p-5 text-left shadow-sm transition hover:-translate-y-1"
-          >
+          <a href="/#hot" className="rounded-3xl bg-white p-5 text-left shadow-sm">
             <p className="text-2xl">🌷</p>
             <p className="mt-3 font-semibold text-[#4b4038]">花束甜點</p>
             <p className="mt-1 text-sm text-[#8c7b70]">節日限定系列</p>
@@ -352,181 +341,62 @@ export default async function Home({ searchParams }: Props) {
 
       {featuredProducts.length > 0 && (
         <section id="featured" className="px-5 pb-14 md:px-10">
-          <div className="mx-auto max-w-6xl overflow-hidden rounded-[2rem] bg-[#2e2e2e] px-5 py-7 text-white shadow-[0_10px_35px_rgba(50,35,25,0.16)] md:rounded-[2.5rem] md:p-10">
-            <div className="mb-6">
-              <p className="mb-2 text-[11px] uppercase tracking-[0.35em] text-[#d8c5b0]">
-                Hot Picks
-              </p>
+          <div className="mx-auto max-w-6xl overflow-hidden rounded-[2.5rem] bg-[#2e2e2e] px-5 py-8 text-white shadow-[0_10px_35px_rgba(50,35,25,0.16)] md:p-10">
+            <p className="mb-2 text-[11px] uppercase tracking-[0.35em] text-[#d8c5b0]">
+              Hot Picks
+            </p>
 
-              <h3 className="text-2xl font-black tracking-tight md:text-3xl">
-                闆娘私心推薦 ☁️
-              </h3>
+            <h3 className="text-2xl font-black tracking-tight md:text-3xl">
+              闆娘私心推薦 ☁️
+            </h3>
 
-              <p className="mt-3 text-sm leading-7 text-white/65">
-                這些是最近最值得先看的小可愛，怕錯過可以先收藏。
-              </p>
-            </div>
+            <p className="mt-3 text-sm leading-7 text-white/65">
+              最近最值得先看的小可愛，怕錯過可以先收藏。
+            </p>
 
-            <div className="-mx-1 flex gap-4 overflow-x-auto px-1 pb-2">
-              {featuredProducts.slice(0, 10).map((product: any) => {
-                const imageSrc = getImage(product);
-                const badge = getBadge(product);
-
-                return (
-                  <a
-                    key={product.id}
-                    href={`/product/${product.id}`}
-                    className="w-[46%] min-w-[150px] max-w-[190px] shrink-0 overflow-hidden rounded-[1.6rem] bg-white text-[#2e2e2e] shadow-sm md:w-56 md:max-w-none"
-                  >
-                    <div className="relative aspect-[4/5] bg-[#f4eee8]">
-                      <div
-                        className={`absolute left-3 top-3 z-10 rounded-full px-3 py-1 text-[10px] ${
-                          badge === "SOLD OUT"
-                            ? "bg-black/75 text-white"
-                            : "bg-[#2e2e2e] text-white"
-                        }`}
-                      >
-                        {badge === "SOLD OUT" ? "SOLD OUT" : "HOT"}
-                      </div>
-
-                      {imageSrc ? (
-                        <img
-                          src={imageSrc}
-                          alt={product.name}
-                          loading="lazy"
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <div className="flex h-full items-center justify-center text-sm text-[#b49a88]">
-                          No Image
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="p-3">
-                      <p className="line-clamp-2 text-sm font-bold leading-6">
-                        {product.name}
-                      </p>
-
-                      <p className="mt-2 text-sm font-bold text-[#8b6f5c]">
-                        NT$ {Number(product.price || 0).toLocaleString()}
-                      </p>
-
-                      <div className="mt-2">{stockText(product)}</div>
-                    </div>
-                  </a>
-                );
-              })}
+            <div className="mt-6 flex gap-4 overflow-x-auto pb-2">
+              {featuredProducts.slice(0, 10).map((product: any) => (
+                <ProductMiniCard key={product.id} product={product} />
+              ))}
             </div>
           </div>
         </section>
       )}
 
       {newestProducts.length > 0 && (
-        <section className="px-5 pb-14 md:px-10">
-          <div className="mx-auto max-w-6xl">
-            <div className="mb-8 flex items-end justify-between">
-              <div>
-                <p className="mb-2 text-[11px] uppercase tracking-[0.35em] text-[#a08060]">
-                  NEW ARRIVALS
-                </p>
-
-                <h3 className="text-3xl font-bold tracking-tight">
-                  最近上架 ☁️
-                </h3>
-
-                <p className="mt-3 text-sm leading-7 text-[#8b7b6e]">
-                  最近偷偷新增的小可愛們。
-                </p>
-              </div>
-
-              <a href="#hot" className="hidden text-sm text-[#8b6f5c] md:block">
-                查看更多 →
-              </a>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4 md:grid-cols-6 md:gap-5">
-              {newestProducts.map((product: any) => {
-                const imageSrc = getImage(product);
-                const badge = getBadge(product);
-
-                return (
-                  <a
-                    key={product.id}
-                    href={`/product/${product.id}`}
-                    className="overflow-hidden rounded-[2rem] bg-white shadow-sm transition hover:-translate-y-1"
-                  >
-                    <div className="relative aspect-[4/5] overflow-hidden bg-[#f4eee8]">
-                      <div
-                        className={`absolute left-3 top-3 z-10 rounded-full px-3 py-1 text-[10px] backdrop-blur ${
-                          badge === "SOLD OUT"
-                            ? "bg-black/75 text-white"
-                            : badge === "IN STOCK"
-                            ? "bg-green-100 text-green-700"
-                            : "bg-white/90 text-[#8b6f5c]"
-                        }`}
-                      >
-                        {badge === "IN STOCK" ? "現貨" : badge}
-                      </div>
-
-                      {imageSrc ? (
-                        <img
-                          src={imageSrc}
-                          alt={product.name}
-                          loading="lazy"
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <div className="flex h-full items-center justify-center text-sm text-[#b49a88]">
-                          No Image
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="p-3">
-                      <p className="line-clamp-2 text-sm font-semibold leading-6">
-                        {product.name}
-                      </p>
-
-                      <p className="mt-2 text-sm font-bold text-[#8b6f5c]">
-                        NT$ {Number(product.price || 0).toLocaleString()}
-                      </p>
-
-                      <div className="mt-2">{stockText(product)}</div>
-                    </div>
-                  </a>
-                );
-              })}
-            </div>
-          </div>
-        </section>
+        <CategoryProductSection
+          title="最近上架"
+          emoji="☁️"
+          href="/#hot"
+          products={newestProducts.slice(0, 4)}
+        />
       )}
 
       <CategoryProductSection
         title="卡通療癒選物"
         emoji="🧸"
-        href="/category/healing"
+        href="/#hot"
         products={healingProducts}
       />
 
       <CategoryProductSection
         title="微辣韓系穿搭"
         emoji="🖤"
-        href="/category/clothes"
+        href="/#hot"
         products={clothesProducts}
       />
 
       <CategoryProductSection
         title="飾品包包"
         emoji="🎀"
-        href="/category/accessories"
+        href="/#hot"
         products={accessoriesProducts}
       />
 
       <CategoryProductSection
         title="花束甜點"
         emoji="🌷"
-        href="/category/flowers"
+        href="/#hot"
         products={flowerProducts}
       />
 
@@ -540,13 +410,9 @@ export default async function Home({ searchParams }: Props) {
             <h3 className="text-3xl font-bold tracking-tight">
               逛逛屬於妳的小世界 ☁️
             </h3>
-
-            <p className="mt-3 text-sm leading-7 text-[#8b7b6e]">
-              點分類後，下面商品會自動篩選。
-            </p>
           </div>
 
-          <div className="flex gap-3 overflow-x-auto pb-2 md:grid md:grid-cols-5 md:gap-5 md:overflow-visible">
+          <div className="flex gap-3 overflow-x-auto pb-2 md:grid md:grid-cols-5">
             {categories.map((cat) => {
               const active =
                 (!category && cat.label === "全部") || category === cat.label;
@@ -555,25 +421,13 @@ export default async function Home({ searchParams }: Props) {
                 <a
                   key={cat.label}
                   href={categoryHref(cat.label)}
-                  className={`min-w-[150px] rounded-[1.6rem] p-5 transition hover:-translate-y-1 md:min-w-0 md:rounded-[2rem] md:p-6 ${
-                    active
-                      ? "bg-[#2e2e2e] text-white"
-                      : "bg-white text-[#2e2e2e]"
+                  className={`min-w-[150px] rounded-[1.6rem] p-5 ${
+                    active ? "bg-[#2e2e2e] text-white" : "bg-white text-[#2e2e2e]"
                   }`}
                 >
-                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#f8f5f0] text-2xl shadow-sm md:h-16 md:w-16 md:text-3xl">
-                    {cat.emoji}
-                  </div>
-
-                  <h4 className="mb-2 text-base font-bold md:text-lg">
-                    {cat.label}
-                  </h4>
-
-                  <p
-                    className={`text-xs leading-6 md:text-sm md:leading-7 ${
-                      active ? "text-white/75" : "text-[#8b7b6e]"
-                    }`}
-                  >
+                  <div className="mb-4 text-3xl">{cat.emoji}</div>
+                  <h4 className="mb-2 font-bold">{cat.label}</h4>
+                  <p className={`text-xs leading-6 ${active ? "text-white/75" : "text-[#8b7b6e]"}`}>
                     {cat.desc}
                   </p>
                 </a>
@@ -597,10 +451,6 @@ export default async function Home({ searchParams }: Props) {
                 ? `${category} ☁️`
                 : "最近大家都在偷偷收藏 ☁️"}
             </h3>
-
-            <p className="mt-3 text-sm leading-7 text-[#8b7b6e]">
-              闆娘挑出最近最有療癒感、最想帶回家的小可愛。
-            </p>
           </div>
 
           <form
@@ -624,48 +474,14 @@ export default async function Home({ searchParams }: Props) {
             >
               搜尋
             </button>
-
-            {keyword && (
-              <a
-                href={category ? `/?category=${category}#hot` : "/#hot"}
-                className="rounded-full border border-[#d8c5b0] px-8 py-3 text-center text-sm text-[#6b5c50]"
-              >
-                清除
-              </a>
-            )}
           </form>
-
-          <div className="mb-10">
-            <p className="mb-3 text-xs tracking-[0.25em] text-[#a08060]">
-              HOT SEARCH ☁️
-            </p>
-
-            <div className="flex flex-wrap gap-3">
-              {[
-                "三麗鷗",
-                "吉伊卡哇",
-                "迪士尼",
-                "韓系穿搭",
-                "奶油風",
-                "花束",
-                "飾品",
-                "包包",
-              ].map((tag) => (
-                <a
-                  key={tag}
-                  href={`/?q=${encodeURIComponent(tag)}#hot`}
-                  className="rounded-full border border-[#e8ddd4] bg-white px-4 py-2 text-sm text-[#6b5c50] transition hover:bg-[#f5eee7]"
-                >
-                  #{tag}
-                </a>
-              ))}
-            </div>
-          </div>
 
           <div className="grid grid-cols-2 gap-4 md:grid-cols-4 md:gap-5">
             {displayProducts.map((product: any) => {
               const soldOut =
-                product.is_sold_out === true || getProductStock(product) <= 0;
+                product.is_sold_out === true ||
+                product.can_order === false ||
+                getProductStock(product) <= 0;
               const imageSrc = getImage(product);
               const badge = getBadge(product);
               const productImages = getImages(product);
@@ -673,12 +489,12 @@ export default async function Home({ searchParams }: Props) {
               return (
                 <div
                   key={product.id}
-                  className="overflow-hidden rounded-[2rem] bg-white/90 shadow-[0_6px_30px_rgba(70,50,35,0.08)] ring-1 ring-[#eaded4] transition duration-300 hover:-translate-y-1.5 hover:shadow-[0_16px_50px_rgba(70,50,35,0.16)] md:rounded-[2.2rem]"
+                  className="overflow-hidden rounded-[2rem] bg-white/90 shadow-[0_6px_30px_rgba(70,50,35,0.08)] ring-1 ring-[#eaded4]"
                 >
                   <a href={`/product/${product.id}`}>
                     <div className="relative aspect-[4/5] overflow-hidden bg-[#f4eee8]">
                       <div
-                        className={`absolute left-3 top-3 z-10 rounded-full px-3 py-1 text-[10px] backdrop-blur ${
+                        className={`absolute left-3 top-3 z-10 rounded-full px-3 py-1 text-[10px] ${
                           badge === "HOT"
                             ? "bg-[#2e2e2e] text-white"
                             : badge === "SOLD OUT"
@@ -742,183 +558,6 @@ export default async function Home({ searchParams }: Props) {
         </div>
       </section>
 
-      <section className="px-5 pb-16 md:px-10">
-        <div className="mx-auto max-w-6xl">
-          <div className="mb-8 text-center">
-            <p className="mb-2 text-[11px] uppercase tracking-[0.35em] text-[#a08060]">
-              SHOPPING NOTICE
-            </p>
-
-            <h3 className="text-3xl font-bold tracking-tight">
-              安心購買小提醒 ☁️
-            </h3>
-
-            <p className="mt-3 text-sm leading-7 text-[#8b7b6e]">
-              下單前先看一下，購買會更安心。
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-            <div className="rounded-[2rem] bg-white p-5 shadow-sm">
-              <p className="mb-3 text-3xl">📦</p>
-              <h4 className="mb-2 font-bold">預購時間</h4>
-              <p className="text-sm leading-7 text-[#8b7b6e]">
-                預購約 14–21 天，不含假日與連續假期。
-              </p>
-            </div>
-
-            <div className="rounded-[2rem] bg-white p-5 shadow-sm">
-              <p className="mb-3 text-3xl">🎥</p>
-              <h4 className="mb-2 font-bold">開箱錄影</h4>
-              <p className="text-sm leading-7 text-[#8b7b6e]">
-                收到商品請全程錄影，一鏡到底不剪輯。
-              </p>
-            </div>
-
-            <div className="rounded-[2rem] bg-white p-5 shadow-sm">
-              <p className="mb-3 text-3xl">💬</p>
-              <h4 className="mb-2 font-bold">急單確認</h4>
-              <p className="text-sm leading-7 text-[#8b7b6e]">
-                急件請先私訊確認，避免等待時間不符合需求。
-              </p>
-            </div>
-
-            <div className="rounded-[2rem] bg-white p-5 shadow-sm">
-              <p className="mb-3 text-3xl">🤍</p>
-              <h4 className="mb-2 font-bold">闆娘選物</h4>
-              <p className="text-sm leading-7 text-[#8b7b6e]">
-                每款都會盡量挑選有質感、療癒、適合日常的小物。
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="px-5 pb-24 md:px-10">
-        <div className="mx-auto max-w-5xl overflow-hidden rounded-[2.5rem] bg-[#efe7de]">
-          <div className="grid gap-10 px-8 py-14 md:grid-cols-2 md:px-14 md:py-20">
-            <div className="flex flex-col justify-center">
-              <p className="mb-3 text-xs uppercase tracking-[0.35em] text-[#a08060]">
-                Owner&apos;s Diary
-              </p>
-
-              <h3 className="mb-6 text-4xl font-bold tracking-tight">
-                豬豬的碎念 ☁️
-              </h3>
-
-              <div className="space-y-5 text-[15px] leading-9 text-[#6b5c50]">
-                <p>最近一直覺得，生活已經夠累了。</p>
-
-                <p>
-                  所以想把一些看到會笑、摸到會安心、
-                  放在房間裡會覺得「好像有被療癒到」的東西，
-                  慢慢放進 Argent Nest 裡。
-                </p>
-
-                <p>
-                  希望妳每次逛進來，
-                  都能找到一點讓自己開心的小東西 ☁️
-                </p>
-              </div>
-            </div>
-
-            <div className="relative flex items-center justify-center">
-              <div className="overflow-hidden rounded-[2rem] shadow-[0_12px_40px_rgba(0,0,0,0.12)]">
-                <img
-                  src={getImage(allProducts[1]) || getImage(allProducts[0]) || fallbackImage}
-                  alt="Argent Nest Mood"
-                  loading="lazy"
-                  className="h-[500px] w-full object-cover md:w-[380px]"
-                />
-              </div>
-
-              <div className="absolute bottom-5 right-0 rounded-2xl bg-white/90 px-5 py-3 shadow-lg backdrop-blur">
-                <p className="text-xs tracking-[0.2em] text-[#a08060]">
-                  LITTLE HEALING WORLD ☁️
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="px-5 pb-24 md:px-10">
-        <div className="mx-auto max-w-6xl">
-          <div className="mb-10 text-center">
-            <p className="mb-2 text-xs uppercase tracking-[0.35em] text-[#a08060]">
-              Today&apos;s Little Mood
-            </p>
-
-            <h3 className="text-3xl font-bold tracking-tight">
-              Argent Nest 的日常碎片 ☁️
-            </h3>
-
-            <p className="mt-3 text-sm leading-7 text-[#8b7b6e]">
-              一些讓人想停下來看看的小可愛、穿搭靈感和療癒角落。
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-4 md:gap-5">
-            {[0, 1, 2, 3].map((i) => (
-              <div
-                key={i}
-                className={`overflow-hidden rounded-[2rem] bg-white shadow-sm ${
-                  i % 2 === 1 ? "md:mt-10" : ""
-                }`}
-              >
-                <img
-                  src={getImage(allProducts[i]) || fallbackImage}
-                  loading="lazy"
-                  className="h-56 w-full object-cover"
-                  alt="Argent Nest daily mood"
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="px-5 pb-24 md:px-10">
-        <div className="mx-auto max-w-6xl">
-          <div className="mb-10 text-center">
-            <p className="mb-2 text-[11px] uppercase tracking-[0.35em] text-[#a08060]">
-              LOOKBOOK
-            </p>
-
-            <h3 className="text-3xl font-bold tracking-tight">
-              Argent Nest 的穿搭與療癒角落 ☁️
-            </h3>
-
-            <p className="mt-3 text-sm leading-7 text-[#8b7b6e]">
-              一些奶油色、韓系感、女生房間裡會出現的小日常。
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-4 md:gap-5">
-            {[0, 1, 2, 3].map((i) => {
-              const product = allProducts[i];
-              const image = getImage(product) || fallbackImage;
-
-              return (
-                <div
-                  key={i}
-                  className={`overflow-hidden rounded-[2rem] bg-white shadow-sm ${
-                    i === 1 || i === 3 ? "mt-8" : ""
-                  }`}
-                >
-                  <img
-                    src={image}
-                    alt="Argent Nest Lookbook"
-                    loading="lazy"
-                    className="h-64 w-full object-cover md:h-80"
-                  />
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
       <footer className="border-t border-[#e8ddd4] bg-[#f6f1eb] px-5 py-16 md:px-10">
         <div className="mx-auto grid max-w-6xl gap-12 md:grid-cols-4">
           <div>
@@ -935,26 +574,13 @@ export default async function Home({ searchParams }: Props) {
 
           <div>
             <h5 className="mb-5 text-sm font-bold tracking-[0.2em] text-[#a08060]">
-              SHOP
-            </h5>
-
-            <div className="space-y-3 text-sm text-[#6b5c50]">
-              <p>卡通療癒選物</p>
-              <p>微辣韓系穿搭</p>
-              <p>飾品包包</p>
-              <p>花束甜點</p>
-            </div>
-          </div>
-
-          <div>
-            <h5 className="mb-5 text-sm font-bold tracking-[0.2em] text-[#a08060]">
               NOTICE
             </h5>
 
             <div className="space-y-3 text-sm leading-7 text-[#6b5c50]">
-              <p>全館多為預購商品</p>
-              <p>出貨約 14–21 天</p>
+              <p>預購約 14–21 天</p>
               <p>無法等待請勿下單</p>
+              <p>收貨請全程開箱錄影</p>
             </div>
           </div>
 
@@ -971,15 +597,6 @@ export default async function Home({ searchParams }: Props) {
                 className="block"
               >
                 Instagram
-              </a>
-
-              <a
-                href="https://www.threads.com/@argent.nest?igshid=NTc4MTIwNjQ2YQ=="
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block"
-              >
-                Threads
               </a>
 
               <a
