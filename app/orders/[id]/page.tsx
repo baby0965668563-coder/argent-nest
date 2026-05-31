@@ -161,7 +161,9 @@ export default function OrderDetailPage() {
     );
   }
 
-  const vipLevel = order.vip_level || "normal";
+  const vipLevel = String(
+  order.vip_level || "NORMAL"
+).toUpperCase();;
   const vipSaved = getVipSaved(order.items || []);
   const paymentMethod = getPaymentMethod(order.customer_note);
   const depositAmount = getDepositAmount(order.customer_note);
@@ -205,9 +207,9 @@ export default function OrderDetailPage() {
                 <span className="text-gray-500">會員等級</span>
                 <span
                   className={`rounded-full px-3 py-1 text-xs font-medium ${
-                    vipLevel === "normal"
-                      ? "bg-white text-[#8c7b70]"
-                      : "bg-[#fff2e5] text-[#b07255]"
+                    vipLevel === "NORMAL"
+  ? "bg-white text-[#8c7b70]"
+  : "bg-[#fff2e5] text-[#b07255]"
                   }`}
                 >
                   {vipLevel.toUpperCase()}
