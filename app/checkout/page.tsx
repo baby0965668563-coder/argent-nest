@@ -55,7 +55,11 @@ export default function CheckoutPage() {
         setForm((prev) => ({
           ...prev,
           name: parsedUser?.name || "",
-          lineId: parsedUser?.line_user_id || "",
+          phone: parsedUser?.phone || "",
+          lineId:
+            parsedUser?.line_user_id ||
+            parsedUser?.line_id ||
+            "",
         }));
       } catch {
         localStorage.removeItem("argent_user");
@@ -63,8 +67,12 @@ export default function CheckoutPage() {
     }
   }, []);
 
+  const memberVipLevel =
+    member?.vip_level || member?.level || "normal";
+
   const subtotal = cart.reduce(
-    (sum, item) => sum + Number(item.price || 0) * Number(item.quantity || 1),
+    (sum, item) =>
+      sum + Number(item.price || 0) * Number(item.quantity || 1),
     0
   );
 
@@ -86,7 +94,6 @@ export default function CheckoutPage() {
       : 0;
 
   const total = subtotal + shippingFee;
-
   const depositAmount = Math.ceil(total / 2);
 
   function updateForm(key: string, value: string) {
@@ -155,9 +162,16 @@ export default function CheckoutPage() {
         {
           id: orderId,
           order_token: orderToken,
+
           customer_name: form.name,
           phone: form.phone,
-          line_id: member?.line_user_id || form.lineId,
+          line_id:
+            member?.line_user_id ||
+            member?.line_id ||
+            form.lineId,
+
+          vip_level: memberVipLevel,
+
           shipping_method: `${form.shippingMethod}${
             form.shippingMethod === "超商取貨"
               ? `｜${form.storeName}${
@@ -165,12 +179,14 @@ export default function CheckoutPage() {
                 }`
               : ""
           }`,
+
           customer_note: `${paymentNote}${
             form.customerNote ? `\n${form.customerNote}` : ""
           }`,
+
           items: cart,
           total,
-          status: form.paymentMethod === "貨到付款" ? "pending" : "pending",
+          status: "pending",
         },
       ]);
 
@@ -212,15 +228,12 @@ export default function CheckoutPage() {
 
         await supabase
           .from("products")
-          .update({
-            variants: updatedVariants,
-          })
+          .update({ variants: updatedVariants })
           .eq("id", item.id);
       }
 
       localStorage.removeItem("cart");
       window.dispatchEvent(new Event("storage"));
-
       window.location.href = `/orders/${orderId}?token=${orderToken}`;
     } finally {
       setLoading(false);
@@ -238,6 +251,12 @@ export default function CheckoutPage() {
           <h1 className="text-3xl font-bold text-[#4b4038]">
             填寫收件資料 ☁️
           </h1>
+
+          {memberVipLevel !== "normal" && (
+            <p className="mt-3 inline-flex rounded-full bg-[#fff2e5] px-4 py-2 text-sm font-medium text-[#b07255]">
+              會員等級：{memberVipLevel.toUpperCase()}，已套用會員價
+            </p>
+          )}
         </div>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_420px]">
@@ -263,9 +282,9 @@ export default function CheckoutPage() {
 
               <input
                 value={form.lineId}
-                disabled
-                placeholder="LINE會員已登入"
-                className="w-full rounded-2xl border border-[#e1d3c2] bg-[#f8f3ec] px-4 py-3 text-sm text-[#4b4038] outline-none placeholder:text-gray-400"
+                onChange={(e) => updateForm("lineId", e.target.value)}
+                placeholder="LINE ID / IG 帳號"
+                className="w-full rounded-2xl border border-[#e1d3c2] bg-white px-4 py-3 text-sm text-[#4b4038] outline-none placeholder:text-gray-400"
               />
 
               <select
@@ -317,7 +336,9 @@ export default function CheckoutPage() {
 
                   <input
                     value={form.storeAddress}
-                    onChange={(e) => updateForm("storeAddress", e.target.value)}
+                    onChange={(e) =>
+                      updateForm("storeAddress", e.target.value)
+                    }
                     placeholder="門市地址（可選）"
                     className="w-full rounded-2xl border border-[#e1d3c2] bg-white px-4 py-3 text-sm text-[#4b4038] outline-none placeholder:text-gray-400"
                   />
@@ -371,6 +392,12 @@ export default function CheckoutPage() {
                           款式：{item.selectedVariant.name}
                         </p>
                       )}
+
+                      {item.isVipPrice && (
+                        <p className="mt-2 inline-flex rounded-full bg-[#fff2e5] px-3 py-1 text-xs font-medium text-[#b07255]">
+                          VIP 價已套用
+                        </p>
+                      )}
                     </div>
                   </div>
 
@@ -381,10 +408,19 @@ export default function CheckoutPage() {
                   )}
 
                   <div className="mt-3 flex items-end justify-between">
-                    <p className="text-sm font-semibold text-[#4b4038]">
-                      NT$ {Number(item.price || 0).toLocaleString()} ×{" "}
-                      {item.quantity}
-                    </p>
+                    <div>
+                      <p className="text-sm font-semibold text-[#4b4038]">
+                        NT$ {Number(item.price || 0).toLocaleString()} ×{" "}
+                        {item.quantity}
+                      </p>
+
+                      {item.originalPrice && item.originalPrice > item.price && (
+                        <p className="mt-1 text-xs text-gray-400 line-through">
+                          原價 NT${" "}
+                          {Number(item.originalPrice || 0).toLocaleString()}
+                        </p>
+                      )}
+                    </div>
 
                     <p className="text-sm font-bold text-[#4b4038]">
                       NT${" "}
@@ -397,6 +433,11 @@ export default function CheckoutPage() {
               ))}
 
               <div className="space-y-3 border-t border-[#f0e7dd] pt-5 text-sm">
+                <div className="flex justify-between text-[#4b4038]">
+                  <span>會員等級</span>
+                  <span>{memberVipLevel.toUpperCase()}</span>
+                </div>
+
                 <div className="flex justify-between text-[#4b4038]">
                   <span>商品小計</span>
                   <span>NT$ {subtotal.toLocaleString()}</span>
