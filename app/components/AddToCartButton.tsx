@@ -35,11 +35,16 @@ export default function AddToCartButton({
   soldOut = false,
 }: Props) {
   const router = useRouter();
-
   const [added, setAdded] = useState(false);
 
+  const isUnavailable =
+    disabled ||
+    product?.is_sold_out === true ||
+    product?.is_active === false ||
+    soldOut;
+
   function handleAddToCart() {
-    if (disabled || product?.is_sold_out || soldOut) return;
+    if (isUnavailable) return;
 
     const existingCart = JSON.parse(localStorage.getItem("cart") || "[]");
 
@@ -52,8 +57,9 @@ export default function AddToCartButton({
         : "");
 
     const finalPrice = Number(product?.finalPrice || product?.price || 0);
-
+    const originalPrice = Number(product?.originalPrice || product?.price || 0);
     const finalVipPrice = Number(product?.finalVipPrice || 0) || null;
+    const vipLevel = product?.vipLevel || "NORMAL";
 
     const cartKey = makeCartKey(product, selectedOptions);
 
@@ -72,11 +78,10 @@ export default function AddToCartButton({
         name: product.name,
 
         price: finalPrice,
-        originalPrice: Number(product.originalPrice || product.price || 0),
+        originalPrice,
         vipPrice: finalVipPrice,
-        isVipPrice:
-          Boolean(product.isVipPrice) ||
-          Boolean(finalVipPrice && finalVipPrice < finalPrice),
+        vipLevel,
+        isVipPrice: Boolean(product.isVipPrice),
 
         image,
 
@@ -91,23 +96,13 @@ export default function AddToCartButton({
         selectedVariant: product.selectedVariant || null,
         variantName: product.selectedVariant?.name || "",
 
-        productNote:
-          product.product_note ||
-          product.note ||
-          product.remark ||
-          product.notes ||
-          "",
-
         category: product.category || "",
-
         createdAt: Date.now(),
       });
     }
 
     localStorage.setItem("cart", JSON.stringify(existingCart));
-
     window.dispatchEvent(new Event("storage"));
-
     setAdded(true);
   }
 
@@ -116,16 +111,18 @@ export default function AddToCartButton({
       <button
         type="button"
         onClick={handleAddToCart}
-        disabled={disabled || product?.is_sold_out || soldOut}
+        disabled={isUnavailable}
         className={`w-full rounded-full py-4 text-sm font-medium transition ${
-          disabled || product?.is_sold_out || soldOut
+          isUnavailable
             ? "cursor-not-allowed bg-gray-300 text-white"
             : added
             ? "bg-[#2e2e2e] text-white"
             : "border border-[#d8c5b0] bg-white text-[#6b5c50] hover:bg-[#f8f3ee]"
         }`}
       >
-        {product?.is_sold_out || soldOut
+        {product?.is_active === false
+          ? "此商品已下架"
+          : product?.is_sold_out || soldOut
           ? "此款式已售完"
           : added
           ? "已加入購物車 ☁️"
