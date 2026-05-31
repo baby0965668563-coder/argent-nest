@@ -17,9 +17,7 @@ function parseOptions(optionsText: string): OptionGroup[] {
   return optionsText
     .split("\n")
     .map((line) => {
-      const parts = line.includes("|")
-        ? line.split("|")
-        : line.split("｜");
+      const parts = line.includes("|") ? line.split("|") : line.split("｜");
 
       if (parts.length < 2) return null;
 
@@ -41,30 +39,54 @@ export default function ProductPage() {
 
   const [product, setProduct] = useState<any>(null);
   const [user, setUser] = useState<any>(null);
-
   const [selectedImage, setSelectedImage] = useState("");
-
-  const [selectedOptions, setSelectedOptions] = useState<
-    Record<string, string>
-  >({});
-
+  const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>(
+    {}
+  );
   const [customerNote, setCustomerNote] = useState("");
-
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchProduct();
+    fetchUser();
+  }, []);
 
+  async function fetchUser() {
     const savedUser = localStorage.getItem("argent_user");
 
-    if (savedUser) {
-      try {
-        setUser(JSON.parse(savedUser));
-      } catch {
-        localStorage.removeItem("argent_user");
+    if (!savedUser) return;
+
+    try {
+      const parsed = JSON.parse(savedUser);
+      const lineUserId = parsed.line_user_id || parsed.line_id;
+
+      if (!lineUserId) {
+        setUser(parsed);
+        return;
       }
+
+      const { data } = await supabase
+        .from("users")
+        .select("*")
+        .eq("line_id", lineUserId)
+        .single();
+
+      if (data) {
+        const mergedUser = {
+          ...parsed,
+          ...data,
+          line_user_id: data.line_id || lineUserId,
+        };
+
+        localStorage.setItem("argent_user", JSON.stringify(mergedUser));
+        setUser(mergedUser);
+      } else {
+        setUser(parsed);
+      }
+    } catch {
+      localStorage.removeItem("argent_user");
     }
-  }, []);
+  }
 
   async function fetchProduct() {
     setLoading(true);
@@ -116,9 +138,11 @@ export default function ProductPage() {
     );
   }
 
-  const isVip =
-    user?.is_vip === true ||
-    user?.level === "vip";
+  const vipLevel = user?.vip_level || "NORMAL";
+  const isVip = vipLevel === "VIP";
+
+  const productInactive = product.is_active === false;
+  const productSoldOut = product.is_sold_out === true;
 
   const images =
     typeof product.images === "string"
@@ -132,9 +156,7 @@ export default function ProductPage() {
 
   const optionGroups = parseOptions(product.options || "");
 
-  const variants = Array.isArray(product.variants)
-    ? product.variants
-    : [];
+  const variants = Array.isArray(product.variants) ? product.variants : [];
 
   const variantGroup =
     variants.length > 0
@@ -149,17 +171,11 @@ export default function ProductPage() {
     : optionGroups;
 
   const selectedVariant = variants.find(
-    (v: any) =>
-      v.name === selectedOptions["款式"]
+    (v: any) => v.name === selectedOptions["款式"]
   );
 
-  const variantStock = Number(
-    selectedVariant?.stock || 0
-  );
-
-  const variantSoldOut =
-    selectedVariant &&
-    variantStock <= 0;
+  const variantStock = Number(selectedVariant?.stock || 0);
+  const variantSoldOut = selectedVariant && variantStock <= 0;
 
   const originalPrice = selectedVariant
     ? Number(selectedVariant.price || 0)
@@ -169,20 +185,17 @@ export default function ProductPage() {
     ? Number(selectedVariant.vipPrice || 0)
     : Number(product.vip_price || 0);
 
-  const displayPrice =
-    isVip && vipPrice > 0
-      ? vipPrice
-      : originalPrice;
+  const displayPrice = isVip && vipPrice > 0 ? vipPrice : originalPrice;
 
   const disabled =
-    allOptionGroups.some(
-      (group) => !selectedOptions[group.name]
-    ) || Boolean(variantSoldOut);
+    productInactive ||
+    productSoldOut ||
+    allOptionGroups.some((group) => !selectedOptions[group.name]) ||
+    Boolean(variantSoldOut);
 
   return (
     <main className="min-h-screen bg-[#faf7f2] px-4 py-6">
       <div className="mx-auto grid max-w-6xl grid-cols-1 gap-8 md:grid-cols-2">
-        {/* 左側圖片 */}
         <section>
           <div className="overflow-hidden rounded-[32px] bg-white shadow-sm">
             {selectedImage ? (
@@ -204,33 +217,25 @@ export default function ProductPage() {
                 <button
                   key={img}
                   type="button"
-                  onClick={() =>
-                    setSelectedImage(img)
-                  }
+                  onClick={() => setSelectedImage(img)}
                   className={`h-20 w-20 overflow-hidden rounded-2xl border ${
                     selectedImage === img
                       ? "border-[#4b4038]"
                       : "border-transparent"
                   }`}
                 >
-                  <img
-                    src={img}
-                    alt=""
-                    className="h-full w-full object-cover"
-                  />
+                  <img src={img} alt="" className="h-full w-full object-cover" />
                 </button>
               ))}
             </div>
           )}
         </section>
 
-        {/* 右側資訊 */}
         <section className="rounded-[32px] bg-white p-6 shadow-sm">
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="mb-2 text-sm text-gray-400">
-                {product.category ||
-                  "Argent Nest"}
+                {product.category || "Argent Nest"}
               </p>
 
               <h1 className="text-2xl font-semibold leading-relaxed text-[#4b4038]">
@@ -238,44 +243,55 @@ export default function ProductPage() {
               </h1>
             </div>
 
-            <LikeButton
-              productId={product.id}
-            />
+            <LikeButton productId={product.id} />
           </div>
 
-          {/* 價格 */}
+          <div className="mt-4 flex flex-wrap gap-2">
+            {productInactive && (
+              <span className="rounded-full bg-red-100 px-3 py-1 text-xs font-medium text-red-600">
+                已下架
+              </span>
+            )}
+
+            {productSoldOut && (
+              <span className="rounded-full bg-gray-200 px-3 py-1 text-xs font-medium text-gray-600">
+                已售完
+              </span>
+            )}
+
+            {isVip && (
+              <span className="rounded-full bg-[#fff2e5] px-3 py-1 text-xs font-medium text-[#b07255]">
+                VIP 價格已啟用 ☁️
+              </span>
+            )}
+          </div>
+
           <div className="mt-5">
             <p className="text-2xl font-bold text-[#4b4038]">
-              NT$
-              {displayPrice.toLocaleString()}
+              NT${displayPrice.toLocaleString()}
             </p>
 
-            {isVip &&
-              vipPrice > 0 &&
-              originalPrice > vipPrice && (
-                <>
-                  <p className="mt-2 text-sm font-medium text-[#b07255]">
-                    VIP 會員價已套用 ☁️
-                  </p>
+            {isVip && vipPrice > 0 && originalPrice > vipPrice && (
+              <>
+                <p className="mt-2 text-sm font-medium text-[#b07255]">
+                  VIP 會員價已套用 ☁️
+                </p>
 
-                  <p className="mt-1 text-sm text-gray-400 line-through">
-                    原價 NT$
-                    {originalPrice.toLocaleString()}
-                  </p>
-                </>
-              )}
+                <p className="mt-1 text-sm text-gray-400 line-through">
+                  原價 NT${originalPrice.toLocaleString()}
+                </p>
+              </>
+            )}
 
             {!isVip && vipPrice > 0 && (
               <p className="mt-2 text-sm font-medium text-[#b07255]">
-                VIP NT$
-                {vipPrice.toLocaleString()}
+                VIP NT${vipPrice.toLocaleString()}
               </p>
             )}
 
             {selectedVariant && (
               <p className="mt-2 text-sm text-[#8c7b70]">
-                剩餘庫存：
-                {variantStock}
+                剩餘庫存：{variantStock}
               </p>
             )}
 
@@ -286,7 +302,6 @@ export default function ProductPage() {
             )}
           </div>
 
-          {/* 規格 */}
           {allOptionGroups.length > 0 && (
             <div className="mt-6 space-y-5">
               {allOptionGroups.map((group) => (
@@ -296,65 +311,49 @@ export default function ProductPage() {
                   </p>
 
                   <div className="flex flex-wrap gap-2">
-                    {group.values.map(
-                      (value: string) => {
-                        const selected =
-                          selectedOptions[
-                            group.name
-                          ] === value;
+                    {group.values.map((value: string) => {
+                      const selected = selectedOptions[group.name] === value;
 
-                        return (
-                          <button
-                            key={value}
-                            type="button"
-                            onClick={() =>
-                              setSelectedOptions({
-                                ...selectedOptions,
-                                [group.name]:
-                                  value,
-                              })
-                            }
-                            className={`rounded-full border px-4 py-2 text-sm transition ${
-                              selected
-                                ? "border-[#2e2e2e] bg-[#2e2e2e] text-white"
-                                : "border-[#d8c5b0] bg-white text-[#6b5c50]"
-                            }`}
-                          >
-                            {value}
-                          </button>
-                        );
-                      }
-                    )}
+                      return (
+                        <button
+                          key={value}
+                          type="button"
+                          onClick={() =>
+                            setSelectedOptions({
+                              ...selectedOptions,
+                              [group.name]: value,
+                            })
+                          }
+                          className={`rounded-full border px-4 py-2 text-sm transition ${
+                            selected
+                              ? "border-[#2e2e2e] bg-[#2e2e2e] text-white"
+                              : "border-[#d8c5b0] bg-white text-[#6b5c50]"
+                          }`}
+                        >
+                          {value}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               ))}
             </div>
           )}
 
-          {/* 備註 */}
           <div className="mt-6">
-            <p className="mb-2 text-sm font-medium text-[#6b5c50]">
-              商品備註
-            </p>
+            <p className="mb-2 text-sm font-medium text-[#6b5c50]">商品備註</p>
 
             <textarea
               value={customerNote}
-              onChange={(e) =>
-                setCustomerNote(
-                  e.target.value
-                )
-              }
+              onChange={(e) => setCustomerNote(e.target.value)}
               placeholder="可備註：送禮、指定需求等"
               className="min-h-[100px] w-full resize-none rounded-3xl border border-[#e1d3c2] px-4 py-3 text-sm outline-none"
             />
           </div>
 
-          {/* 商品描述 */}
           {product.description && (
             <div className="mt-8">
-              <h2 className="mb-3 font-semibold text-[#4b4038]">
-                商品描述
-              </h2>
+              <h2 className="mb-3 font-semibold text-[#4b4038]">商品描述</h2>
 
               <p className="whitespace-pre-line leading-7 text-gray-600">
                 {product.description}
@@ -362,46 +361,41 @@ export default function ProductPage() {
             </div>
           )}
 
-          {/* 加入購物車 */}
           <div className="mt-8">
             <AddToCartButton
-              soldOut={Boolean(
-                variantSoldOut
-              )}
+              soldOut={Boolean(productSoldOut || variantSoldOut)}
               product={{
                 ...product,
-                finalPrice:
-                  displayPrice,
+                price: displayPrice,
+                finalPrice: displayPrice,
                 originalPrice,
-                finalVipPrice:
-                  vipPrice,
-                isVipPrice:
-                  isVip &&
-                  vipPrice > 0 &&
-                  originalPrice >
-                    vipPrice,
-                selectedVariant:
-                  selectedVariant ||
-                  null,
+                finalVipPrice: vipPrice,
+                vipLevel,
+                isVipPrice: isVip && vipPrice > 0 && originalPrice > vipPrice,
+                selectedVariant: selectedVariant || null,
               }}
-              selectedOptions={
-                selectedOptions as Record<
-                  string,
-                  string
-                >
-              }
-              customerNote={
-                customerNote
-              }
+              selectedOptions={selectedOptions}
+              customerNote={customerNote}
               disabled={disabled}
             />
 
-            {disabled &&
-              !variantSoldOut && (
-                <p className="mt-2 text-center text-xs text-[#9b6b4f]">
-                  請先選擇商品規格
-                </p>
-              )}
+            {productInactive && (
+              <p className="mt-2 text-center text-xs text-red-500">
+                此商品目前已下架，暫時無法加入購物車
+              </p>
+            )}
+
+            {productSoldOut && (
+              <p className="mt-2 text-center text-xs text-gray-500">
+                此商品目前已售完
+              </p>
+            )}
+
+            {disabled && !productInactive && !productSoldOut && !variantSoldOut && (
+              <p className="mt-2 text-center text-xs text-[#9b6b4f]">
+                請先選擇商品規格
+              </p>
+            )}
           </div>
         </section>
       </div>
