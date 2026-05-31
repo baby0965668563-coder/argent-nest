@@ -2,27 +2,57 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase";
 
 export default function MemberPage() {
   const router = useRouter();
-
   const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
-    const savedUser = localStorage.getItem("argent_user");
+    async function loadUser() {
+      const savedUser = localStorage.getItem("argent_user");
 
-    if (!savedUser) {
-      router.push("/login");
-      return;
+      if (!savedUser) {
+        router.push("/login");
+        return;
+      }
+
+      try {
+        const parsed = JSON.parse(savedUser);
+
+        const lineUserId = parsed.line_user_id || parsed.line_id;
+
+        if (!lineUserId) {
+          setUser(parsed);
+          return;
+        }
+
+        const { data, error } = await supabase
+          .from("users")
+          .select("*")
+          .eq("line_id", lineUserId)
+          .single();
+
+        if (error || !data) {
+          setUser(parsed);
+          return;
+        }
+
+        const mergedUser = {
+          ...parsed,
+          ...data,
+          line_user_id: data.line_id || lineUserId,
+        };
+
+        localStorage.setItem("argent_user", JSON.stringify(mergedUser));
+        setUser(mergedUser);
+      } catch {
+        localStorage.removeItem("argent_user");
+        router.push("/login");
+      }
     }
 
-    try {
-      const parsed = JSON.parse(savedUser);
-      setUser(parsed);
-    } catch {
-      localStorage.removeItem("argent_user");
-      router.push("/login");
-    }
+    loadUser();
   }, [router]);
 
   function logout() {
@@ -39,7 +69,8 @@ export default function MemberPage() {
     );
   }
 
-  const isVip = user?.is_vip === true || user?.level === "vip";
+  const vipLevel = user?.vip_level || "NORMAL";
+  const isVip = vipLevel === "VIP";
 
   return (
     <main className="min-h-screen bg-[#faf7f2] px-4 py-8">
@@ -88,7 +119,7 @@ export default function MemberPage() {
               <p className="text-sm text-[#8c7b70]">LINE User ID</p>
 
               <p className="mt-2 break-all text-sm text-[#4b4038]">
-                {user.line_user_id || "-"}
+                {user.line_user_id || user.line_id || "-"}
               </p>
             </div>
 
@@ -96,9 +127,7 @@ export default function MemberPage() {
               <div className="rounded-3xl bg-[#faf7f2] p-5">
                 <p className="text-sm text-[#8c7b70]">Email</p>
 
-                <p className="mt-2 text-sm text-[#4b4038]">
-                  {user.email}
-                </p>
+                <p className="mt-2 text-sm text-[#4b4038]">{user.email}</p>
               </div>
             )}
 
