@@ -23,9 +23,7 @@ export default function AdminPage() {
   const [description, setDescription] = useState("");
   const [productNote, setProductNote] = useState("");
 
-  const [variantMode, setVariantMode] = useState<"dynamic" | "quick">(
-    "dynamic"
-  );
+  const [variantMode, setVariantMode] = useState<"dynamic" | "quick">("dynamic");
   const [quickVariantsText, setQuickVariantsText] = useState("");
   const [dynamicVariants, setDynamicVariants] = useState<string[]>([""]);
   const [variants, setVariants] = useState<Variant[]>([]);
@@ -177,7 +175,7 @@ export default function AdminPage() {
     setSortOrder(String(product.sort_order || 0));
     setStock(String(product.stock || 0));
     setDescription(product.description || "");
-    setProductNote(product.product_note || product.note || "");
+    setProductNote("");
 
     const oldVariants = Array.isArray(product.variants) ? product.variants : [];
     setVariants(oldVariants);
@@ -187,10 +185,8 @@ export default function AdminPage() {
     setQuickVariantsText(variantNames.join("\n"));
     setVariantMode("dynamic");
 
-    setIsActive(product.is_active !== false && product.status !== false);
-    setIsSoldOut(
-      product.is_sold_out === true || product.can_order === false
-    );
+    setIsActive(product.is_active !== false);
+    setIsSoldOut(product.is_sold_out === true);
     setIsFeatured(product.is_featured === true);
 
     const oldImages =
@@ -318,23 +314,14 @@ export default function AdminPage() {
         sort_order: Number(sortOrder) || 0,
         stock: Number(stock) || 0,
         description,
-        product_note: productNote,
-        note: productNote,
 
         spec1_name: "款式",
         spec1_values: getSpecValuesFromVariants(),
-        spec2_name: "",
-        spec2_values: [],
 
-        options: "",
         variants,
 
         is_active: isActive,
-        status: isActive,
-
         is_sold_out: isSoldOut,
-        can_order: !isSoldOut,
-
         is_featured: isFeatured,
 
         image: imageUrls[0],
@@ -384,23 +371,14 @@ export default function AdminPage() {
         sort_order: Number(sortOrder) || 0,
         stock: Number(stock) || 0,
         description,
-        product_note: productNote,
-        note: productNote,
 
         spec1_name: "款式",
         spec1_values: getSpecValuesFromVariants(),
-        spec2_name: "",
-        spec2_values: [],
 
-        options: "",
         variants,
 
         is_active: isActive,
-        status: isActive,
-
         is_sold_out: isSoldOut,
-        can_order: !isSoldOut,
-
         is_featured: isFeatured,
 
         image: finalImages[0] || "",
@@ -418,36 +396,40 @@ export default function AdminPage() {
   }
 
   async function toggleActive(id: string | number, currentStatus: boolean) {
-    await supabase
+    const { error } = await supabase
       .from("products")
       .update({
         is_active: !currentStatus,
-        status: !currentStatus,
       })
       .eq("id", id);
+
+    if (error) return alert("上下架失敗：" + error.message);
 
     fetchProducts();
   }
 
   async function toggleSoldOut(id: string | number, currentStatus: boolean) {
-    await supabase
+    const { error } = await supabase
       .from("products")
       .update({
         is_sold_out: !currentStatus,
-        can_order: currentStatus,
       })
       .eq("id", id);
+
+    if (error) return alert("售完狀態修改失敗：" + error.message);
 
     fetchProducts();
   }
 
   async function toggleFeatured(id: string | number, currentStatus: boolean) {
-    await supabase
+    const { error } = await supabase
       .from("products")
       .update({
         is_featured: !currentStatus,
       })
       .eq("id", id);
+
+    if (error) return alert("推薦狀態修改失敗：" + error.message);
 
     fetchProducts();
   }
@@ -490,9 +472,7 @@ export default function AdminPage() {
             商品管理後台 ☁️
           </h1>
 
-          <p className="mt-2 text-sm text-gray-500">
-            Argent Nest 商品管理
-          </p>
+          <p className="mt-2 text-sm text-gray-500">Argent Nest 商品管理</p>
         </div>
 
         <div className="flex flex-wrap gap-2">
@@ -737,7 +717,7 @@ export default function AdminPage() {
 
           <textarea
             className="w-full rounded-2xl border border-[#ddd] bg-white p-4 text-[#333]"
-            placeholder="商品備註，例如：預購約 14–21 天、不含假日"
+            placeholder="後台暫存備註，不會寫入資料庫"
             value={productNote}
             onChange={(e) => setProductNote(e.target.value)}
           />
@@ -883,11 +863,8 @@ export default function AdminPage() {
               ? product.variants
               : [];
 
-            const active =
-              product.is_active !== false && product.status !== false;
-
-            const soldOut =
-              product.is_sold_out === true || product.can_order === false;
+            const active = product.is_active !== false;
+            const soldOut = product.is_sold_out === true;
 
             return (
               <div
@@ -922,7 +899,8 @@ export default function AdminPage() {
 
                     {product.vip_price && (
                       <p className="mt-1 text-xs font-semibold text-[#b07255]">
-                        VIP NT$ {Number(product.vip_price || 0).toLocaleString()}
+                        VIP NT${" "}
+                        {Number(product.vip_price || 0).toLocaleString()}
                       </p>
                     )}
 
