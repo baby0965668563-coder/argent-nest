@@ -100,9 +100,6 @@ export default async function Home({ searchParams }: Props) {
     return firstImage ? [firstImage] : [];
   };
 
-  const fallbackImage =
-    "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=1200&auto=format&fit=crop";
-
   const categories = [
     { label: "全部", emoji: "☁️", desc: "全部商品" },
     { label: "卡通療癒選物", emoji: "🧸", desc: "把小小快樂帶回家。" },
@@ -142,7 +139,9 @@ export default async function Home({ searchParams }: Props) {
   function getBadge(product: any) {
     const soldOut =
       product.is_sold_out === true || product.can_order === false;
+
     const stock = getProductStock(product);
+
     const createdAt = product.created_at ? new Date(product.created_at) : null;
     const now = new Date();
 
@@ -152,25 +151,22 @@ export default async function Home({ searchParams }: Props) {
 
     const isNew = diffDays <= 7;
 
-    if (soldOut || stock <= 0) return "SOLD OUT";
+    if (soldOut) return "SOLD OUT";
+    if (stock > 0) return "IN STOCK";
     if (product.is_featured) return "HOT";
     if (isNew) return "NEW";
-    if (stock > 0) return "IN STOCK";
     return "PREORDER";
   }
 
   function stockText(product: any) {
     const soldOut =
       product.is_sold_out === true || product.can_order === false;
+
     const stock = getProductStock(product);
     const hasVariants =
       Array.isArray(product?.variants) && product.variants.length > 0;
 
-    if (soldOut || stock <= 0) {
-      if (hasVariants) {
-        return <p className="text-xs text-gray-400">全部款式已售完 ☁️</p>;
-      }
-
+    if (soldOut) {
       return <p className="text-xs text-gray-400">目前已售完 ☁️</p>;
     }
 
@@ -178,7 +174,9 @@ export default async function Home({ searchParams }: Props) {
       return (
         <>
           <p className="text-xs text-[#2e7d32]">
-            {hasVariants ? `款式合計現貨 ${stock} 件 ☁️` : `現貨 ${stock} 件 ☁️`}
+            {hasVariants
+              ? `款式合計現貨 ${stock} 件 ☁️`
+              : `現貨 ${stock} 件 ☁️`}
           </p>
 
           {stock <= 3 && (
@@ -209,10 +207,16 @@ export default async function Home({ searchParams }: Props) {
                 ? "bg-[#2e2e2e] text-white"
                 : badge === "IN STOCK"
                 ? "bg-green-100 text-green-700"
+                : badge === "PREORDER"
+                ? "bg-[#fff2e5] text-[#b07255]"
                 : "bg-white/85 text-[#8b6f5c]"
             }`}
           >
-            {badge === "IN STOCK" ? "現貨" : badge}
+            {badge === "IN STOCK"
+              ? "現貨"
+              : badge === "PREORDER"
+              ? "預購"
+              : badge}
           </div>
 
           {imageSrc ? (
@@ -313,25 +317,43 @@ export default async function Home({ searchParams }: Props) {
 
       <section className="px-5 pb-14 md:px-10">
         <div className="mx-auto grid max-w-6xl grid-cols-2 gap-3 md:grid-cols-4">
-          <a href="/#hot" className="rounded-3xl bg-white p-5 text-left shadow-sm">
+          <a
+            href="/#hot"
+            className="rounded-3xl bg-white p-5 text-left shadow-sm"
+          >
             <p className="text-2xl">🧸</p>
-            <p className="mt-3 font-semibold text-[#4b4038]">卡通療癒選物</p>
-            <p className="mt-1 text-sm text-[#8c7b70]">三麗鷗・迪士尼・娃娃</p>
+            <p className="mt-3 font-semibold text-[#4b4038]">
+              卡通療癒選物
+            </p>
+            <p className="mt-1 text-sm text-[#8c7b70]">
+              三麗鷗・迪士尼・娃娃
+            </p>
           </a>
 
-          <a href="/#hot" className="rounded-3xl bg-white p-5 text-left shadow-sm">
+          <a
+            href="/#hot"
+            className="rounded-3xl bg-white p-5 text-left shadow-sm"
+          >
             <p className="text-2xl">🖤</p>
-            <p className="mt-3 font-semibold text-[#4b4038]">微辣韓系穿搭</p>
+            <p className="mt-3 font-semibold text-[#4b4038]">
+              微辣韓系穿搭
+            </p>
             <p className="mt-1 text-sm text-[#8c7b70]">慵懶感・奶油色系</p>
           </a>
 
-          <a href="/#hot" className="rounded-3xl bg-white p-5 text-left shadow-sm">
+          <a
+            href="/#hot"
+            className="rounded-3xl bg-white p-5 text-left shadow-sm"
+          >
             <p className="text-2xl">🎀</p>
             <p className="mt-3 font-semibold text-[#4b4038]">飾品包包</p>
             <p className="mt-1 text-sm text-[#8c7b70]">女孩日常小物</p>
           </a>
 
-          <a href="/#hot" className="rounded-3xl bg-white p-5 text-left shadow-sm">
+          <a
+            href="/#hot"
+            className="rounded-3xl bg-white p-5 text-left shadow-sm"
+          >
             <p className="text-2xl">🌷</p>
             <p className="mt-3 font-semibold text-[#4b4038]">花束甜點</p>
             <p className="mt-1 text-sm text-[#8c7b70]">節日限定系列</p>
@@ -422,12 +444,18 @@ export default async function Home({ searchParams }: Props) {
                   key={cat.label}
                   href={categoryHref(cat.label)}
                   className={`min-w-[150px] rounded-[1.6rem] p-5 ${
-                    active ? "bg-[#2e2e2e] text-white" : "bg-white text-[#2e2e2e]"
+                    active
+                      ? "bg-[#2e2e2e] text-white"
+                      : "bg-white text-[#2e2e2e]"
                   }`}
                 >
                   <div className="mb-4 text-3xl">{cat.emoji}</div>
                   <h4 className="mb-2 font-bold">{cat.label}</h4>
-                  <p className={`text-xs leading-6 ${active ? "text-white/75" : "text-[#8b7b6e]"}`}>
+                  <p
+                    className={`text-xs leading-6 ${
+                      active ? "text-white/75" : "text-[#8b7b6e]"
+                    }`}
+                  >
                     {cat.desc}
                   </p>
                 </a>
@@ -479,9 +507,8 @@ export default async function Home({ searchParams }: Props) {
           <div className="grid grid-cols-2 gap-4 md:grid-cols-4 md:gap-5">
             {displayProducts.map((product: any) => {
               const soldOut =
-                product.is_sold_out === true ||
-                product.can_order === false ||
-                getProductStock(product) <= 0;
+                product.is_sold_out === true || product.can_order === false;
+
               const imageSrc = getImage(product);
               const badge = getBadge(product);
               const productImages = getImages(product);
@@ -501,10 +528,16 @@ export default async function Home({ searchParams }: Props) {
                             ? "bg-black/75 text-white"
                             : badge === "IN STOCK"
                             ? "bg-green-100 text-green-700"
+                            : badge === "PREORDER"
+                            ? "bg-[#fff2e5] text-[#b07255]"
                             : "bg-white/85 text-[#8b6f5c]"
                         }`}
                       >
-                        {badge === "IN STOCK" ? "現貨" : badge}
+                        {badge === "IN STOCK"
+                          ? "現貨"
+                          : badge === "PREORDER"
+                          ? "預購"
+                          : badge}
                       </div>
 
                       {imageSrc ? (
