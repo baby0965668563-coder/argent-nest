@@ -35,6 +35,7 @@ type Order = {
   total: number;
   status: string;
   order_token?: string;
+  vip_level?: string;
 };
 
 const statusText: Record<string, string> = {
@@ -135,22 +136,28 @@ export default function AdminOrdersPage() {
 
   function getPaymentText(note?: string) {
     if (!note) return "未標示";
-
     if (note.includes("先付一半訂金")) return "先付一半訂金";
     if (note.includes("全額匯款")) return "全額匯款";
     if (note.includes("貨到付款")) return "貨到付款";
-
     return "未標示";
   }
 
   function getDepositText(order: Order) {
     const paymentText = getPaymentText(order.customer_note);
-
     if (paymentText !== "先付一半訂金") return "";
 
     const amount = Math.ceil(Number(order.total || 0) / 2);
-
     return `訂金 NT$ ${amount.toLocaleString()}`;
+  }
+
+  function getVipSaved(items: OrderItem[]) {
+    return items.reduce((sum, item) => {
+      const original = Number(item.originalPrice || item.price || 0);
+      const current = Number(item.price || 0);
+      const qty = Number(item.quantity || 1);
+
+      return sum + Math.max(0, original - current) * qty;
+    }, 0);
   }
 
   const filteredOrders = orders.filter((order) => {
@@ -162,7 +169,8 @@ export default function AdminOrdersPage() {
       order.phone?.toLowerCase().includes(keyword) ||
       order.line_id?.toLowerCase().includes(keyword) ||
       order.shipping_method?.toLowerCase().includes(keyword) ||
-      order.customer_note?.toLowerCase().includes(keyword);
+      order.customer_note?.toLowerCase().includes(keyword) ||
+      order.vip_level?.toLowerCase().includes(keyword);
 
     const matchStatus =
       statusFilter === "all" ? true : order.status === statusFilter;
@@ -225,7 +233,7 @@ export default function AdminOrdersPage() {
         <div className="mb-6 grid grid-cols-1 gap-3 md:grid-cols-[1fr_220px]">
           <input
             className="w-full rounded-2xl border border-[#ddd] bg-white p-4 text-[#333]"
-            placeholder="搜尋訂單編號 / 姓名 / 電話 / LINE ID / 備註"
+            placeholder="搜尋訂單編號 / 姓名 / 電話 / LINE ID / VIP / 備註"
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
           />
@@ -271,6 +279,8 @@ export default function AdminOrdersPage() {
             const items = Array.isArray(order.items) ? order.items : [];
             const paymentText = getPaymentText(order.customer_note);
             const depositText = getDepositText(order);
+            const vipLevel = String(order.vip_level || "NORMAL").toUpperCase();
+            const vipSaved = getVipSaved(items);
 
             return (
               <div
@@ -291,6 +301,16 @@ export default function AdminOrdersPage() {
 
                       <span className="rounded-full bg-[#f6f1ea] px-4 py-2 text-xs text-[#6b5c50]">
                         {paymentText}
+                      </span>
+
+                      <span
+                        className={`rounded-full px-4 py-2 text-xs font-medium ${
+                          vipLevel === "NORMAL"
+                            ? "bg-[#f6f1ea] text-[#6b5c50]"
+                            : "bg-[#fff2e5] text-[#b07255]"
+                        }`}
+                      >
+                        {vipLevel}
                       </span>
 
                       {depositText && (
@@ -342,7 +362,9 @@ export default function AdminOrdersPage() {
                     <div className="mt-3 grid grid-cols-2 gap-2">
                       <button
                         type="button"
-                        onClick={() => updateStatus(order.id, "deposit_pending")}
+                        onClick={() =>
+                          updateStatus(order.id, "deposit_pending")
+                        }
                         className="rounded-full bg-[#fff2e5] px-3 py-2 text-xs text-[#b07255]"
                       >
                         待收訂金
@@ -350,7 +372,9 @@ export default function AdminOrdersPage() {
 
                       <button
                         type="button"
-                        onClick={() => updateStatus(order.id, "deposit_paid")}
+                        onClick={() =>
+                          updateStatus(order.id, "deposit_paid")
+                        }
                         className="rounded-full bg-[#e9f7ef] px-3 py-2 text-xs text-[#2e7d32]"
                       >
                         已收訂金
@@ -373,7 +397,13 @@ export default function AdminOrdersPage() {
                       </button>
                     </div>
 
-                    <p className="mt-4 text-right text-2xl font-bold text-[#4b4038]">
+                    {vipSaved > 0 && (
+                      <p className="mt-4 text-right text-sm font-medium text-[#b07255]">
+                        VIP 優惠 - NT$ {vipSaved.toLocaleString()}
+                      </p>
+                    )}
+
+                    <p className="mt-1 text-right text-2xl font-bold text-[#4b4038]">
                       NT$ {Number(order.total || 0).toLocaleString()}
                     </p>
                   </div>
@@ -429,9 +459,21 @@ export default function AdminOrdersPage() {
                           </div>
 
                           {item.isVipPrice && (
-                            <p className="mt-1 text-xs text-[#b07255]">
-                              VIP 價已套用
-                            </p>
+                            <>
+                              <p className="mt-1 text-xs text-[#b07255]">
+                                VIP 價已套用
+                              </p>
+
+                              {item.originalPrice &&
+                                item.originalPrice > item.price && (
+                                  <p className="mt-1 text-xs text-gray-400 line-through">
+                                    原價 NT${" "}
+                                    {Number(
+                                      item.originalPrice || 0
+                                    ).toLocaleString()}
+                                  </p>
+                                )}
+                            </>
                           )}
 
                           {item.note && (
