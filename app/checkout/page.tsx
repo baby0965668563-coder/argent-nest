@@ -10,6 +10,7 @@ type CartItem = {
   price: number;
   originalPrice?: number;
   vipPrice?: number | null;
+  vipLevel?: string;
   isVipPrice?: boolean;
   image?: string;
   quantity: number;
@@ -56,10 +57,7 @@ export default function CheckoutPage() {
           ...prev,
           name: parsedUser?.name || "",
           phone: parsedUser?.phone || "",
-          lineId:
-            parsedUser?.line_user_id ||
-            parsedUser?.line_id ||
-            "",
+          lineId: parsedUser?.line_user_id || parsedUser?.line_id || "",
         }));
       } catch {
         localStorage.removeItem("argent_user");
@@ -67,8 +65,9 @@ export default function CheckoutPage() {
     }
   }, []);
 
-  const memberVipLevel =
-    member?.vip_level || member?.level || "normal";
+  const memberVipLevel = String(
+    member?.vip_level || member?.level || "NORMAL"
+  ).toUpperCase();
 
   const subtotal = cart.reduce(
     (sum, item) =>
@@ -158,6 +157,16 @@ export default function CheckoutPage() {
           ? `付款方式：先付一半訂金｜訂金金額 NT$ ${depositAmount.toLocaleString()}`
           : `付款方式：${form.paymentMethod}`;
 
+      const orderItems = cart.map((item) => ({
+        ...item,
+        price: Number(item.price || 0),
+        originalPrice: Number(item.originalPrice || item.price || 0),
+        vipPrice: item.vipPrice ? Number(item.vipPrice) : null,
+        vipLevel: item.vipLevel || memberVipLevel,
+        quantity: Number(item.quantity || 1),
+        lineTotal: Number(item.price || 0) * Number(item.quantity || 1),
+      }));
+
       const { error } = await supabase.from("orders").insert([
         {
           id: orderId,
@@ -165,10 +174,7 @@ export default function CheckoutPage() {
 
           customer_name: form.name,
           phone: form.phone,
-          line_id:
-            member?.line_user_id ||
-            member?.line_id ||
-            form.lineId,
+          line_id: member?.line_user_id || member?.line_id || form.lineId,
 
           vip_level: memberVipLevel,
 
@@ -184,7 +190,7 @@ export default function CheckoutPage() {
             form.customerNote ? `\n${form.customerNote}` : ""
           }`,
 
-          items: cart,
+          items: orderItems,
           total,
           status: "pending",
         },
@@ -192,7 +198,7 @@ export default function CheckoutPage() {
 
       if (error) {
         console.error(error);
-        alert("訂單送出失敗");
+        alert("訂單送出失敗：" + error.message);
         setLoading(false);
         return;
       }
@@ -252,9 +258,9 @@ export default function CheckoutPage() {
             填寫收件資料 ☁️
           </h1>
 
-          {memberVipLevel !== "normal" && (
+          {memberVipLevel !== "NORMAL" && (
             <p className="mt-3 inline-flex rounded-full bg-[#fff2e5] px-4 py-2 text-sm font-medium text-[#b07255]">
-              會員等級：{memberVipLevel.toUpperCase()}，已套用會員價
+              會員等級：{memberVipLevel}，已套用會員價
             </p>
           )}
         </div>
@@ -435,7 +441,7 @@ export default function CheckoutPage() {
               <div className="space-y-3 border-t border-[#f0e7dd] pt-5 text-sm">
                 <div className="flex justify-between text-[#4b4038]">
                   <span>會員等級</span>
-                  <span>{memberVipLevel.toUpperCase()}</span>
+                  <span>{memberVipLevel}</span>
                 </div>
 
                 <div className="flex justify-between text-[#4b4038]">
