@@ -9,51 +9,72 @@ export default function MemberPage() {
   const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
-    async function loadUser() {
-      const savedUser = localStorage.getItem("argent_user");
+    loadUser();
+  }, []);
 
-      if (!savedUser) {
-        router.push("/login");
-        return;
-      }
+  async function loadUser() {
+    const savedUser = localStorage.getItem("argent_user");
 
-      try {
-        const parsed = JSON.parse(savedUser);
-
-        const lineUserId = parsed.line_user_id || parsed.line_id;
-
-        if (!lineUserId) {
-          setUser(parsed);
-          return;
-        }
-
-        const { data, error } = await supabase
-          .from("users")
-          .select("*")
-          .eq("line_id", lineUserId)
-          .single();
-
-        if (error || !data) {
-          setUser(parsed);
-          return;
-        }
-
-        const mergedUser = {
-          ...parsed,
-          ...data,
-          line_user_id: data.line_id || lineUserId,
-        };
-
-        localStorage.setItem("argent_user", JSON.stringify(mergedUser));
-        setUser(mergedUser);
-      } catch {
-        localStorage.removeItem("argent_user");
-        router.push("/login");
-      }
+    if (!savedUser) {
+      router.push("/login");
+      return;
     }
 
-    loadUser();
-  }, [router]);
+    try {
+      const parsed = JSON.parse(savedUser);
+
+      const realLineUserId =
+        parsed.line_user_id ||
+        parsed.lineId ||
+        parsed.userId ||
+        parsed.sub ||
+        "";
+
+      const fallbackLineId = parsed.line_id || "";
+
+      const searchIds = [realLineUserId, fallbackLineId]
+        .filter(Boolean)
+        .filter((value, index, arr) => arr.indexOf(value) === index);
+
+      let dbUser: any = null;
+
+      for (const id of searchIds) {
+        const { data } = await supabase
+          .from("users")
+          .select("*")
+          .eq("line_id", id)
+          .maybeSingle();
+
+        if (data) {
+          dbUser = data;
+          break;
+        }
+      }
+
+      if (!dbUser && realLineUserId) {
+        const { data } = await supabase
+          .from("users")
+          .select("*")
+          .eq("line_id", realLineUserId)
+          .maybeSingle();
+
+        dbUser = data;
+      }
+
+      const mergedUser = {
+        ...parsed,
+        ...(dbUser || {}),
+        line_user_id: dbUser?.line_id || realLineUserId || fallbackLineId,
+        vip_level: String(dbUser?.vip_level || parsed.vip_level || "NORMAL").toUpperCase(),
+      };
+
+      localStorage.setItem("argent_user", JSON.stringify(mergedUser));
+      setUser(mergedUser);
+    } catch {
+      localStorage.removeItem("argent_user");
+      router.push("/login");
+    }
+  }
 
   function logout() {
     localStorage.removeItem("argent_user");
@@ -69,7 +90,7 @@ export default function MemberPage() {
     );
   }
 
-  const vipLevel = user?.vip_level || "NORMAL";
+  const vipLevel = String(user?.vip_level || "NORMAL").toUpperCase();
   const isVip = vipLevel === "VIP";
 
   return (
@@ -80,7 +101,7 @@ export default function MemberPage() {
             {user.avatar_url ? (
               <img
                 src={user.avatar_url}
-                alt={user.name}
+                alt={user.name || "member"}
                 className="mx-auto h-24 w-24 rounded-full border-4 border-white object-cover shadow-sm"
               />
             ) : (
@@ -130,6 +151,14 @@ export default function MemberPage() {
                 <p className="mt-2 text-sm text-[#4b4038]">{user.email}</p>
               </div>
             )}
+
+            <button
+              type="button"
+              onClick={loadUser}
+              className="w-full rounded-full bg-[#fff2e5] py-4 text-sm font-medium text-[#b07255]"
+            >
+              重新同步會員等級
+            </button>
 
             <button
               type="button"
