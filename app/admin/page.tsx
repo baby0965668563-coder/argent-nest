@@ -16,6 +16,7 @@ export default function AdminPage() {
 
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
+  const [saleType, setSaleType] = useState("instock");
   const [vipPrice, setVipPrice] = useState("");
   const [category, setCategory] = useState("");
   const [sortOrder, setSortOrder] = useState("0");
