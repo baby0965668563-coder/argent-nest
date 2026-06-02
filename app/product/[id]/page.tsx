@@ -144,6 +144,10 @@ export default function ProductPage() {
   const productInactive = product.is_active === false;
   const productSoldOut = product.is_sold_out === true;
 
+  const saleType = product.sale_type || "instock";
+  const isPreorder = saleType === "preorder";
+  const isFactory = saleType === "factory";
+
   const images =
     typeof product.images === "string"
       ? product.images
@@ -175,7 +179,12 @@ export default function ProductPage() {
   );
 
   const variantStock = Number(selectedVariant?.stock || 0);
-  const variantSoldOut = selectedVariant && variantStock <= 0;
+
+  const variantSoldOut =
+    selectedVariant &&
+    variantStock <= 0 &&
+    !isPreorder &&
+    !isFactory;
 
   const originalPrice = selectedVariant
     ? Number(selectedVariant.price || 0)
@@ -247,6 +256,24 @@ export default function ProductPage() {
           </div>
 
           <div className="mt-4 flex flex-wrap gap-2">
+            {saleType === "instock" && (
+              <span className="rounded-full bg-[#e9f7ef] px-3 py-1 text-xs font-medium text-[#2e7d32]">
+                現貨商品
+              </span>
+            )}
+
+            {saleType === "preorder" && (
+              <span className="rounded-full bg-[#fff2e5] px-3 py-1 text-xs font-medium text-[#b07255]">
+                預購商品
+              </span>
+            )}
+
+            {saleType === "factory" && (
+              <span className="rounded-full bg-[#eef3ff] px-3 py-1 text-xs font-medium text-[#4f6596]">
+                廠現商品
+              </span>
+            )}
+
             {productInactive && (
               <span className="rounded-full bg-red-100 px-3 py-1 text-xs font-medium text-red-600">
                 已下架
@@ -289,9 +316,21 @@ export default function ProductPage() {
               </p>
             )}
 
-            {selectedVariant && (
+            {saleType === "instock" && selectedVariant && (
               <p className="mt-2 text-sm text-[#8c7b70]">
                 剩餘庫存：{variantStock}
+              </p>
+            )}
+
+            {saleType === "preorder" && (
+              <p className="mt-2 text-sm font-medium text-[#b07255]">
+                預購商品｜約 14–21 天，不含假日
+              </p>
+            )}
+
+            {saleType === "factory" && (
+              <p className="mt-2 text-sm font-medium text-[#4f6596]">
+                廠現商品｜約 4–6 天
               </p>
             )}
 
