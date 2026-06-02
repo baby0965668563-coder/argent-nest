@@ -87,9 +87,22 @@ export default function AdminPage() {
     return (
       product.name?.toLowerCase().includes(keyword) ||
       product.category?.toLowerCase().includes(keyword) ||
-      product.description?.toLowerCase().includes(keyword)
+      product.description?.toLowerCase().includes(keyword) ||
+      product.sale_type?.toLowerCase().includes(keyword)
     );
   });
+
+  function getSaleTypeLabel(type?: string) {
+    if (type === "preorder") return "預購";
+    if (type === "factory") return "廠現";
+    return "現貨";
+  }
+
+  function getSaleTypeStyle(type?: string) {
+    if (type === "preorder") return "bg-[#fff2e5] text-[#b07255]";
+    if (type === "factory") return "bg-[#eef3ff] text-[#4f6596]";
+    return "bg-[#e9f7ef] text-[#2e7d32]";
+  }
 
   function addDynamicVariantField() {
     setDynamicVariants([...dynamicVariants, ""]);
@@ -149,6 +162,7 @@ export default function AdminPage() {
   function resetForm() {
     setName("");
     setPrice("");
+    setSaleType("instock");
     setVipPrice("");
     setCategory("");
     setSortOrder("0");
@@ -171,6 +185,7 @@ export default function AdminPage() {
     setEditingId(product.id);
     setName(product.name || "");
     setPrice(String(product.price || ""));
+    setSaleType(product.sale_type || "instock");
     setVipPrice(String(product.vip_price || ""));
     setCategory(product.category || "");
     setSortOrder(String(product.sort_order || 0));
@@ -310,6 +325,7 @@ export default function AdminPage() {
       {
         name,
         price: Number(price || 0),
+        sale_type: saleType,
         vip_price: vipPrice ? Number(vipPrice) : null,
         category,
         sort_order: Number(sortOrder) || 0,
@@ -367,6 +383,7 @@ export default function AdminPage() {
       .update({
         name,
         price: Number(price || 0),
+        sale_type: saleType,
         vip_price: vipPrice ? Number(vipPrice) : null,
         category,
         sort_order: Number(sortOrder) || 0,
@@ -530,6 +547,16 @@ export default function AdminPage() {
             value={vipPrice}
             onChange={(e) => setVipPrice(e.target.value)}
           />
+
+          <select
+            className="w-full rounded-2xl border border-[#ddd] bg-white p-4 text-[#333]"
+            value={saleType}
+            onChange={(e) => setSaleType(e.target.value)}
+          >
+            <option value="instock">現貨</option>
+            <option value="preorder">預購</option>
+            <option value="factory">廠現</option>
+          </select>
 
           <select
             className="w-full rounded-2xl border border-[#ddd] bg-white p-4 text-[#333]"
@@ -894,7 +921,15 @@ export default function AdminPage() {
                       {product.category}
                     </p>
 
-                    <p className="mt-1 font-bold">
+                    <span
+                      className={`mt-2 inline-flex rounded-full px-3 py-1 text-xs font-medium ${getSaleTypeStyle(
+                        product.sale_type
+                      )}`}
+                    >
+                      {getSaleTypeLabel(product.sale_type)}
+                    </span>
+
+                    <p className="mt-2 font-bold">
                       NT$ {Number(product.price || 0).toLocaleString()}
                     </p>
 
