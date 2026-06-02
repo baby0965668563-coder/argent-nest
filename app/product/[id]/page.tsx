@@ -146,7 +146,6 @@ export default function ProductPage() {
 
   const saleType = product.sale_type || "instock";
   const isPreorder = saleType === "preorder";
-  const isFactory = saleType === "factory";
 
   const images =
     typeof product.images === "string"
@@ -183,8 +182,7 @@ export default function ProductPage() {
   const variantSoldOut =
     selectedVariant &&
     variantStock <= 0 &&
-    !isPreorder &&
-    !isFactory;
+    !isPreorder;
 
   const originalPrice = selectedVariant
     ? Number(selectedVariant.price || 0)
@@ -316,7 +314,7 @@ export default function ProductPage() {
               </p>
             )}
 
-            {saleType === "instock" && selectedVariant && (
+            {(saleType === "instock" || saleType === "factory") && selectedVariant && (
               <p className="mt-2 text-sm text-[#8c7b70]">
                 剩餘庫存：{variantStock}
               </p>
