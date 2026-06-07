@@ -63,11 +63,8 @@ export default function AdminUsersPage() {
   }
 
   async function updateVipLevel(user: UserItem, vipLevel: string) {
-    const keyColumn = user.id ? "id" : "line_id";
-    const keyValue = user.id || user.line_id;
-
-    if (!keyValue) {
-      alert("找不到會員 ID 或 LINE ID，無法更新");
+    if (!user.line_id) {
+      alert("找不到會員 LINE ID，無法更新");
       return;
     }
 
@@ -76,7 +73,7 @@ export default function AdminUsersPage() {
       .update({
         vip_level: vipLevel,
       })
-      .eq(keyColumn, keyValue);
+      .eq("line_id", user.line_id);
 
     if (error) {
       alert("更新會員等級失敗：" + error.message);
@@ -189,11 +186,11 @@ export default function AdminUsersPage() {
 
         <div className="space-y-4">
           {filteredUsers.map((user, index) => {
-            const vipLevel = user.vip_level || "NORMAL";
+            const vipLevel = String(user.vip_level || "NORMAL").toUpperCase();
 
             return (
               <div
-                key={user.id || user.line_id || index}
+                key={user.line_id || user.id || index}
                 className="rounded-2xl border bg-[#fffdfb] p-4"
               >
                 <div className="mb-4">
@@ -209,7 +206,15 @@ export default function AdminUsersPage() {
                     LINE ID：{user.line_id || "無 LINE ID"}
                   </p>
 
-                  <p className="mt-2 inline-block rounded-full bg-[#f3ebe3] px-4 py-2 text-sm font-bold text-[#6b5c50]">
+                  <p
+                    className={`mt-2 inline-block rounded-full px-4 py-2 text-sm font-bold ${
+                      vipLevel === "VIP"
+                        ? "bg-[#fff2e5] text-[#b07255]"
+                        : vipLevel === "VVIP"
+                        ? "bg-[#ede7f6] text-[#6a4c93]"
+                        : "bg-[#f3ebe3] text-[#6b5c50]"
+                    }`}
+                  >
                     目前等級：{vipLevel}
                   </p>
 
@@ -220,7 +225,7 @@ export default function AdminUsersPage() {
                   )}
                 </div>
 
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-3 gap-2">
                   <button
                     type="button"
                     onClick={() => updateVipLevel(user, "NORMAL")}
@@ -230,7 +235,7 @@ export default function AdminUsersPage() {
                         : "bg-white text-[#6b5c50]"
                     }`}
                   >
-                    改回 NORMAL
+                    NORMAL
                   </button>
 
                   <button
@@ -242,7 +247,19 @@ export default function AdminUsersPage() {
                         : "bg-white text-[#b07255]"
                     }`}
                   >
-                    設為 VIP
+                    VIP
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => updateVipLevel(user, "VVIP")}
+                    className={`rounded-full border py-3 text-sm ${
+                      vipLevel === "VVIP"
+                        ? "bg-[#6a4c93] text-white"
+                        : "bg-white text-[#6a4c93]"
+                    }`}
+                  >
+                    VVIP
                   </button>
                 </div>
               </div>
