@@ -89,17 +89,27 @@ export default function CheckoutPage() {
     form.shippingMethod === "超商取貨"
       ? 60
       : form.shippingMethod === "宅配"
-      ? 130
+      ? 250
       : 0;
 
   const total = subtotal + shippingFee;
   const depositAmount = Math.ceil(total / 2);
 
   function updateForm(key: string, value: string) {
-    setForm((prev) => ({
-      ...prev,
-      [key]: value,
-    }));
+    setForm((prev) => {
+      const next = {
+        ...prev,
+        [key]: value,
+      };
+
+      if (key === "shippingMethod" && value === "宅配") {
+        if (next.paymentMethod === "貨到付款") {
+          next.paymentMethod = "全額匯款";
+        }
+      }
+
+      return next;
+    });
   }
 
   async function handleSubmit() {
@@ -118,6 +128,11 @@ export default function CheckoutPage() {
       return;
     }
 
+    if (form.shippingMethod === "宅配" && form.paymentMethod === "貨到付款") {
+      alert("宅配目前只能選擇全額匯款或先付一半訂金");
+      return;
+    }
+
     try {
       setLoading(true);
 
@@ -126,11 +141,15 @@ export default function CheckoutPage() {
 
         const { data: productData } = await supabase
           .from("products")
-          .select("id, variants")
+          .select("id, variants, sale_type")
           .eq("id", item.id)
           .single();
 
         if (!productData) continue;
+
+        const saleType = productData.sale_type || "instock";
+
+        if (saleType === "preorder") continue;
 
         const variants = Array.isArray(productData.variants)
           ? productData.variants
@@ -151,6 +170,11 @@ export default function CheckoutPage() {
 
       const orderId = crypto.randomUUID();
       const orderToken = crypto.randomUUID();
+
+      const shippingNote =
+        form.shippingMethod === "宅配"
+          ? "宅配運費先收 NT$250，實際依商品體積、冷凍/常溫與物流方式計算，多退少補"
+          : "";
 
       const paymentNote =
         form.paymentMethod === "先付一半訂金"
@@ -183,12 +207,14 @@ export default function CheckoutPage() {
               ? `｜${form.storeName}${
                   form.storeAddress ? `｜${form.storeAddress}` : ""
                 }`
+              : form.shippingMethod === "宅配"
+              ? "｜運費先收250，多退少補"
               : ""
           }`,
 
           customer_note: `${paymentNote}${
-            form.customerNote ? `\n${form.customerNote}` : ""
-          }`,
+            shippingNote ? `\n${shippingNote}` : ""
+          }${form.customerNote ? `\n${form.customerNote}` : ""}`,
 
           items: orderItems,
           total,
@@ -208,11 +234,15 @@ export default function CheckoutPage() {
 
         const { data: productData } = await supabase
           .from("products")
-          .select("id, variants")
+          .select("id, variants, sale_type")
           .eq("id", item.id)
           .single();
 
         if (!productData) continue;
+
+        const saleType = productData.sale_type || "instock";
+
+        if (saleType === "preorder") continue;
 
         const variants = Array.isArray(productData.variants)
           ? productData.variants
@@ -299,16 +329,30 @@ export default function CheckoutPage() {
                 className="w-full rounded-2xl border border-[#e1d3c2] bg-white px-4 py-3 text-sm text-[#4b4038] outline-none"
               >
                 <option value="超商取貨">超商取貨 $60</option>
-                <option value="宅配">宅配 $130</option>
+                <option value="宅配">宅配 $250，多退少補</option>
                 <option value="面交">面交 $0</option>
               </select>
+
+              {form.shippingMethod === "宅配" && (
+                <div className="rounded-3xl bg-[#fff7ef] p-4 text-sm leading-7 text-[#9b6b4f]">
+                  宅配運費先收 NT$250。
+                  <br />
+                  甜點可能需冷凍出貨，花束也會依體積計算。
+                  <br />
+                  實際運費依物流方式與商品狀況多退少補。
+                  <br />
+                  宅配目前僅接受先匯款或先付訂金。
+                </div>
+              )}
 
               <select
                 value={form.paymentMethod}
                 onChange={(e) => updateForm("paymentMethod", e.target.value)}
                 className="w-full rounded-2xl border border-[#e1d3c2] bg-white px-4 py-3 text-sm text-[#4b4038] outline-none"
               >
-                <option value="貨到付款">貨到付款</option>
+                {form.shippingMethod !== "宅配" && (
+                  <option value="貨到付款">貨到付款</option>
+                )}
                 <option value="先付一半訂金">先付一半訂金</option>
                 <option value="全額匯款">全額匯款</option>
               </select>
