@@ -193,12 +193,12 @@ export default function AdminOrdersPage() {
     const url = order.myship_url || "";
 
     return [
-      "哈囉寶寶～商品已可以取貨囉 ☁️",
+      "哈囉寶寶～商品已寄出囉 ☁️",
       "",
       `訂單編號：${orderNo}`,
       `訂單金額：NT$ ${Number(order.total || 0).toLocaleString()}`,
       "",
-      "請點以下賣貨便連結完成取貨：",
+      "請點以下賣貨便連結查看進度並到門市取貨：",
       url,
       "",
       "完成後再跟我說一聲，謝謝妳 🤍",
