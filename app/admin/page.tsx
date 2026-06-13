@@ -17,6 +17,7 @@ export default function AdminPage() {
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
   const [saleType, setSaleType] = useState("instock");
+  const [paymentType, setPaymentType] = useState("all");
   const [vipPrice, setVipPrice] = useState("");
   const [category, setCategory] = useState("");
   const [sortOrder, setSortOrder] = useState("0");
@@ -88,7 +89,8 @@ export default function AdminPage() {
       product.name?.toLowerCase().includes(keyword) ||
       product.category?.toLowerCase().includes(keyword) ||
       product.description?.toLowerCase().includes(keyword) ||
-      product.sale_type?.toLowerCase().includes(keyword)
+      product.sale_type?.toLowerCase().includes(keyword) ||
+      product.payment_type?.toLowerCase().includes(keyword)
     );
   });
 
@@ -102,6 +104,20 @@ export default function AdminPage() {
     if (type === "preorder") return "bg-[#fff2e5] text-[#b07255]";
     if (type === "factory") return "bg-[#eef3ff] text-[#4f6596]";
     return "bg-[#e9f7ef] text-[#2e7d32]";
+  }
+
+  function getPaymentTypeLabel(type?: string) {
+    if (type === "bank_only") return "匯款限定";
+    if (type === "deposit_only") return "50%訂金限定";
+    if (type === "cod_only") return "貨到付款限定";
+    return "全部付款方式";
+  }
+
+  function getPaymentTypeStyle(type?: string) {
+    if (type === "bank_only") return "bg-[#eef3ff] text-[#4f6596]";
+    if (type === "deposit_only") return "bg-[#fff2e5] text-[#b07255]";
+    if (type === "cod_only") return "bg-[#e9f7ef] text-[#2e7d32]";
+    return "bg-[#f6f1ea] text-[#6b5c50]";
   }
 
   function addDynamicVariantField() {
@@ -163,6 +179,7 @@ export default function AdminPage() {
     setName("");
     setPrice("");
     setSaleType("instock");
+    setPaymentType("all");
     setVipPrice("");
     setCategory("");
     setSortOrder("0");
@@ -186,6 +203,7 @@ export default function AdminPage() {
     setName(product.name || "");
     setPrice(String(product.price || ""));
     setSaleType(product.sale_type || "instock");
+    setPaymentType(product.payment_type || "all");
     setVipPrice(String(product.vip_price || ""));
     setCategory(product.category || "");
     setSortOrder(String(product.sort_order || 0));
@@ -326,6 +344,7 @@ export default function AdminPage() {
         name,
         price: Number(price || 0),
         sale_type: saleType,
+        payment_type: paymentType,
         vip_price: vipPrice ? Number(vipPrice) : null,
         category,
         sort_order: Number(sortOrder) || 0,
@@ -384,6 +403,7 @@ export default function AdminPage() {
         name,
         price: Number(price || 0),
         sale_type: saleType,
+        payment_type: paymentType,
         vip_price: vipPrice ? Number(vipPrice) : null,
         category,
         sort_order: Number(sortOrder) || 0,
@@ -556,6 +576,17 @@ export default function AdminPage() {
             <option value="instock">現貨</option>
             <option value="preorder">預購</option>
             <option value="factory">廠現</option>
+          </select>
+
+          <select
+            className="w-full rounded-2xl border border-[#ddd] bg-white p-4 text-[#333]"
+            value={paymentType}
+            onChange={(e) => setPaymentType(e.target.value)}
+          >
+            <option value="all">全部付款方式</option>
+            <option value="bank_only">僅限匯款</option>
+            <option value="deposit_only">僅限50%訂金</option>
+            <option value="cod_only">僅限貨到付款</option>
           </select>
 
           <select
@@ -921,13 +952,23 @@ export default function AdminPage() {
                       {product.category}
                     </p>
 
-                    <span
-                      className={`mt-2 inline-flex rounded-full px-3 py-1 text-xs font-medium ${getSaleTypeStyle(
-                        product.sale_type
-                      )}`}
-                    >
-                      {getSaleTypeLabel(product.sale_type)}
-                    </span>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      <span
+                        className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${getSaleTypeStyle(
+                          product.sale_type
+                        )}`}
+                      >
+                        {getSaleTypeLabel(product.sale_type)}
+                      </span>
+
+                      <span
+                        className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${getPaymentTypeStyle(
+                          product.payment_type
+                        )}`}
+                      >
+                        {getPaymentTypeLabel(product.payment_type)}
+                      </span>
+                    </div>
 
                     <p className="mt-2 font-bold">
                       NT$ {Number(product.price || 0).toLocaleString()}
