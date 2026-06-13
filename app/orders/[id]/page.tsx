@@ -26,6 +26,9 @@ type CartItem = {
 
 type Order = {
   id: string;
+  order_no?: string | null;
+  payment_status?: string | null;
+  myship_url?: string | null;
   created_at: string;
   customer_name: string;
   phone: string;
@@ -40,16 +43,19 @@ type Order = {
 };
 
 const statusText: Record<string, string> = {
-  pending: "待確認",
-  deposit_pending: "待收訂金",
-  deposit_paid: "已收訂金",
+  pending: "待付款",
   paid: "已付款",
-  cod: "貨到付款",
-  ordered: "已訂貨",
+  ordered: "已送單",
+  vendor_shipped: "廠商出貨",
   arrived: "已到貨",
-  shipped: "已出貨",
+  shipped: "已寄出",
   done: "已完成",
   cancelled: "已取消",
+
+  // 舊狀態保留
+  deposit_pending: "待收訂金",
+  deposit_paid: "已收訂金",
+  cod: "貨到付款",
 };
 
 export default function OrderDetailPage() {
@@ -127,6 +133,17 @@ export default function OrderDetailPage() {
     return match?.[1] || "";
   }
 
+  function getPaymentStatusText(value?: string | null) {
+    if (!value) return paymentMethod || "待付款";
+
+    if (value === "unpaid") return "待付款";
+    if (value === "deposit_paid") return "已付訂金";
+    if (value === "paid") return "已付全額";
+    if (value === "cod") return "貨到付款";
+
+    return value;
+  }
+
   if (loading) {
     return (
       <main className="min-h-screen bg-[#faf7f2] px-4 py-10">
@@ -161,12 +178,12 @@ export default function OrderDetailPage() {
     );
   }
 
-  const vipLevel = String(
-  order.vip_level || "NORMAL"
-).toUpperCase();;
+  const vipLevel = String(order.vip_level || "NORMAL").toUpperCase();
   const vipSaved = getVipSaved(order.items || []);
   const paymentMethod = getPaymentMethod(order.customer_note);
+  const paymentStatus = getPaymentStatusText(order.payment_status);
   const depositAmount = getDepositAmount(order.customer_note);
+  const displayOrderNo = order.order_no || order.id;
 
   return (
     <main className="min-h-screen bg-[#faf7f2] px-4 py-6">
@@ -188,8 +205,19 @@ export default function OrderDetailPage() {
             <div className="space-y-3 text-sm text-[#5c5148]">
               <div className="flex justify-between gap-4">
                 <span className="text-gray-500">訂單編號</span>
-                <span className="break-all text-right">{order.id}</span>
+                <span className="break-all text-right font-semibold">
+                  {displayOrderNo}
+                </span>
               </div>
+
+              {order.order_no && (
+                <div className="flex justify-between gap-4">
+                  <span className="text-gray-500">系統ID</span>
+                  <span className="break-all text-right text-xs text-gray-400">
+                    {order.id}
+                  </span>
+                </div>
+              )}
 
               <div className="flex justify-between gap-4">
                 <span className="text-gray-500">訂單時間</span>
@@ -200,6 +228,13 @@ export default function OrderDetailPage() {
                 <span className="text-gray-500">訂單狀態</span>
                 <span className="rounded-full bg-white px-3 py-1 text-xs text-[#9b6b4f]">
                   {statusText[order.status] || order.status}
+                </span>
+              </div>
+
+              <div className="flex justify-between gap-4">
+                <span className="text-gray-500">付款狀態</span>
+                <span className="rounded-full bg-white px-3 py-1 text-xs text-[#b07255]">
+                  {paymentStatus}
                 </span>
               </div>
 
@@ -260,6 +295,20 @@ export default function OrderDetailPage() {
                 <span className="text-gray-500">取貨方式</span>
                 <span>{order.shipping_method || "未填寫"}</span>
               </div>
+
+              {order.myship_url && (
+                <div className="pt-2">
+                  <p className="mb-2 text-gray-500">賣貨便取貨連結</p>
+                  <a
+                    href={order.myship_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="block break-all rounded-2xl bg-white px-4 py-3 text-sm font-medium leading-7 text-[#4f6596] underline"
+                  >
+                    {order.myship_url}
+                  </a>
+                </div>
+              )}
 
               {order.customer_note && (
                 <div className="pt-2">
@@ -375,6 +424,7 @@ export default function OrderDetailPage() {
               <div className="rounded-2xl bg-white px-4 py-3">
                 <p className="font-medium text-[#9b6b4f]">本次付款方式</p>
                 <p className="mt-2">{paymentMethod}</p>
+                <p className="mt-1">付款狀態：{paymentStatus}</p>
 
                 {depositAmount && (
                   <p className="mt-1 font-semibold text-[#b07255]">
@@ -414,6 +464,27 @@ export default function OrderDetailPage() {
               </div>
             </div>
           </div>
+
+          {order.myship_url && (
+            <div className="mt-6 rounded-3xl bg-[#eef3ff] p-5">
+              <h2 className="mb-3 text-lg font-semibold text-[#4b4038]">
+                取貨連結
+              </h2>
+
+              <p className="mb-4 text-sm leading-7 text-[#4f6596]">
+                商品已建立賣貨便連結，請點擊下方連結完成取貨流程。
+              </p>
+
+              <a
+                href={order.myship_url}
+                target="_blank"
+                rel="noreferrer"
+                className="block w-full rounded-full bg-[#4f6596] py-4 text-center text-sm font-medium text-white"
+              >
+                開啟賣貨便取貨連結
+              </a>
+            </div>
+          )}
 
           <div className="mt-6 space-y-3">
             <button
