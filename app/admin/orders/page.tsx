@@ -8,8 +8,6 @@ type OrderItem = {
   name: string;
   price: number;
   originalPrice?: number;
-  vipPrice?: number | null;
-  isVipPrice?: boolean;
   quantity: number;
   image?: string;
   note?: string;
@@ -18,7 +16,6 @@ type OrderItem = {
   selectedVariant?: {
     name: string;
     price: number;
-    vipPrice?: number;
     stock?: number;
   } | null;
 };
@@ -38,13 +35,13 @@ type Order = {
   total: number;
   status: string;
   order_token?: string;
-  vip_level?: string;
   myship_url?: string | null;
 };
 
 const statusText: Record<string, string> = {
   pending: "待付款",
-  paid: "已付款",
+  deposit_paid: "已付訂金",
+  paid: "已付全額",
   ordered: "已送單",
   vendor_shipped: "廠商出貨",
   arrived: "已到貨",
@@ -53,13 +50,13 @@ const statusText: Record<string, string> = {
   cancelled: "已取消",
 
   // 舊狀態保留，避免舊訂單顯示壞掉
-  deposit_pending: "待收訂金",
-  deposit_paid: "已收訂金",
+  deposit_pending: "待付款",
   cod: "貨到付款",
 };
 
 const statusStyle: Record<string, string> = {
   pending: "bg-[#fff2e5] text-[#b07255]",
+  deposit_paid: "bg-[#fff2e5] text-[#b07255]",
   paid: "bg-[#e9f7ef] text-[#2e7d32]",
   ordered: "bg-[#f6efe7] text-[#9b6b4f]",
   vendor_shipped: "bg-[#eef3ff] text-[#4f6596]",
@@ -69,7 +66,6 @@ const statusStyle: Record<string, string> = {
   cancelled: "bg-gray-200 text-gray-500",
 
   deposit_pending: "bg-[#fff2e5] text-[#b07255]",
-  deposit_paid: "bg-[#e9f7ef] text-[#2e7d32]",
   cod: "bg-[#eef3ff] text-[#4f6596]",
 };
 
@@ -248,15 +244,6 @@ export default function AdminOrdersPage() {
     return `訂金 NT$ ${amount.toLocaleString()}`;
   }
 
-  function getVipSaved(items: OrderItem[]) {
-    return items.reduce((sum, item) => {
-      const original = Number(item.originalPrice || item.price || 0);
-      const current = Number(item.price || 0);
-      const qty = Number(item.quantity || 1);
-
-      return sum + Math.max(0, original - current) * qty;
-    }, 0);
-  }
 
   const filteredOrders = orders.filter((order) => {
     const keyword = searchText.toLowerCase();
@@ -270,7 +257,6 @@ export default function AdminOrdersPage() {
       order.line_id?.toLowerCase().includes(keyword) ||
       order.shipping_method?.toLowerCase().includes(keyword) ||
       order.customer_note?.toLowerCase().includes(keyword) ||
-      order.vip_level?.toLowerCase().includes(keyword) ||
       order.payment_status?.toLowerCase().includes(keyword) ||
       order.myship_url?.toLowerCase().includes(keyword);
 
@@ -366,6 +352,7 @@ export default function AdminOrdersPage() {
             .filter(([key]) =>
               [
                 "pending",
+                "deposit_paid",
                 "paid",
                 "ordered",
                 "vendor_shipped",
@@ -401,8 +388,6 @@ export default function AdminOrdersPage() {
             const items = Array.isArray(order.items) ? order.items : [];
             const paymentText = getPaymentText(order);
             const depositText = getDepositText(order);
-            const vipLevel = String(order.vip_level || "NORMAL").toUpperCase();
-            const vipSaved = getVipSaved(items);
             const displayOrderNo = order.order_no || order.id;
 
             return (
@@ -428,16 +413,6 @@ export default function AdminOrdersPage() {
                         )}`}
                       >
                         付款：{paymentText}
-                      </span>
-
-                      <span
-                        className={`rounded-full px-4 py-2 text-xs font-medium ${
-                          vipLevel === "NORMAL"
-                            ? "bg-[#f6f1ea] text-[#6b5c50]"
-                            : "bg-[#fff2e5] text-[#b07255]"
-                        }`}
-                      >
-                        {vipLevel}
                       </span>
 
                       {depositText && (
@@ -551,7 +526,8 @@ export default function AdminOrdersPage() {
                       className="w-full rounded-full border border-[#d8c5b0] bg-white px-4 py-3 text-sm text-[#4b4038]"
                     >
                       <option value="pending">待付款</option>
-                      <option value="paid">已付款</option>
+                      <option value="deposit_paid">已付訂金</option>
+                      <option value="paid">已付全額</option>
                       <option value="ordered">已送單</option>
                       <option value="vendor_shipped">廠商出貨</option>
                       <option value="arrived">已到貨</option>
@@ -577,6 +553,22 @@ export default function AdminOrdersPage() {
                     </select>
 
                     <div className="mt-3 grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => updateStatus(order.id, "deposit_paid")}
+                        className="rounded-full bg-[#fff2e5] px-3 py-2 text-xs text-[#b07255]"
+                      >
+                        已付訂金
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => updateStatus(order.id, "paid")}
+                        className="rounded-full bg-[#e9f7ef] px-3 py-2 text-xs text-[#2e7d32]"
+                      >
+                        已付全額
+                      </button>
+
                       <button
                         type="button"
                         onClick={() => updateStatus(order.id, "ordered")}
@@ -610,9 +602,7 @@ export default function AdminOrdersPage() {
                       </button>
                     </div>
 
-                    {vipSaved > 0 && (
-                      <p className="mt-4 text-right text-sm font-medium text-[#b07255]">
-                        VIP 優惠 - NT$ {vipSaved.toLocaleString()}
+                    
                       </p>
                     )}
 
@@ -671,19 +661,7 @@ export default function AdminOrdersPage() {
                             </span>
                           </div>
 
-                          {item.isVipPrice && (
-                            <>
-                              <p className="mt-1 text-xs text-[#b07255]">
-                                VIP 價已套用
-                              </p>
-
-                              {item.originalPrice &&
-                                item.originalPrice > item.price && (
-                                  <p className="mt-1 text-xs text-gray-400 line-through">
-                                    原價 NT${" "}
-                                    {Number(
-                                      item.originalPrice || 0
-                                    ).toLocaleString()}
+                          
                                   </p>
                                 )}
                             </>
@@ -719,3 +697,4 @@ export default function AdminOrdersPage() {
     </main>
   );
 }
+
