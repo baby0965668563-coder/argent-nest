@@ -8,6 +8,7 @@ type CartItem = {
   cartKey?: string;
   name: string;
   price: number;
+  payment_type?: string | null;
   originalPrice?: number;
   vipPrice?: number | null;
   vipLevel?: string;
@@ -44,30 +45,101 @@ export default function CheckoutPage() {
   });
 
   useEffect(() => {
-    setCart(JSON.parse(localStorage.getItem("cart") || "[]"));
+    async function initCheckout() {
+      const savedCart = JSON.parse(localStorage.getItem("cart") || "[]");
 
-    const savedUser = localStorage.getItem("argent_user");
+      const productIds = Array.from(
+        new Set(
+          savedCart
+            .map((item: CartItem) => item.id)
+            .filter(Boolean)
+        )
+      );
 
-    if (savedUser) {
-      try {
-        const parsedUser = JSON.parse(savedUser);
-        setMember(parsedUser);
+      if (productIds.length > 0) {
+        const { data, error } = await supabase
+          .from("products")
+          .select("id, payment_type")
+          .in("id", productIds);
 
-        setForm((prev) => ({
-          ...prev,
-          name: parsedUser?.name || "",
-          phone: parsedUser?.phone || "",
-          lineId: parsedUser?.line_user_id || parsedUser?.line_id || "",
-        }));
-      } catch {
-        localStorage.removeItem("argent_user");
+        if (!error && data) {
+          const paymentTypeMap = new Map(
+            data.map((product: any) => [
+              String(product.id),
+              product.payment_type || "all",
+            ])
+          );
+
+          const mergedCart = savedCart.map((item: CartItem) => ({
+            ...item,
+            payment_type:
+              item.payment_type ||
+              paymentTypeMap.get(String(item.id)) ||
+              "all",
+          }));
+
+          localStorage.setItem("cart", JSON.stringify(mergedCart));
+          setCart(mergedCart);
+        } else {
+          setCart(savedCart);
+        }
+      } else {
+        setCart(savedCart);
+      }
+
+      const savedUser = localStorage.getItem("argent_user");
+
+      if (savedUser) {
+        try {
+          const parsedUser = JSON.parse(savedUser);
+          setMember(parsedUser);
+
+          setForm((prev) => ({
+            ...prev,
+            name: parsedUser?.name || "",
+            phone: parsedUser?.phone || "",
+            lineId: parsedUser?.line_user_id || parsedUser?.line_id || "",
+          }));
+        } catch {
+          localStorage.removeItem("argent_user");
+        }
       }
     }
+
+    initCheckout();
   }, []);
 
   const memberVipLevel = String(
     member?.vip_level || member?.level || "NORMAL"
   ).toUpperCase();
+
+  const hasBankOnly = cart.some((item) => item.payment_type === "bank_only");
+  const hasDepositOnly = cart.some(
+    (item) => item.payment_type === "deposit_only"
+  );
+  const hasCodOnly = cart.some((item) => item.payment_type === "cod_only");
+
+  function getAllowedPaymentMethods() {
+    if (hasBankOnly) return ["全額匯款"];
+    if (hasDepositOnly) return ["先付一半訂金"];
+    if (hasCodOnly) return ["貨到付款"];
+
+    if (form.shippingMethod === "宅配") {
+      return ["先付一半訂金", "全額匯款"];
+    }
+
+    return ["貨到付款", "先付一半訂金", "全額匯款"];
+  }
+
+  const allowedPaymentMethods = getAllowedPaymentMethods();
+
+  function getPaymentLimitText() {
+    if (hasBankOnly) return "購物車內含匯款限定商品，因此本筆訂單僅能選擇全額匯款。";
+    if (hasDepositOnly) return "購物車內含50%訂金限定商品，因此本筆訂單僅能選擇先付一半訂金。";
+    if (hasCodOnly) return "購物車內含貨到付款限定商品，因此本筆訂單僅能選擇貨到付款。";
+    if (form.shippingMethod === "宅配") return "宅配目前僅接受全額匯款或先付一半訂金。";
+    return "";
+  }
 
   const subtotal = cart.reduce(
     (sum, item) =>
@@ -86,14 +158,30 @@ export default function CheckoutPage() {
   const vipSaved = originalSubtotal - subtotal;
 
   const shippingFee =
-    form.shippingMethod === "超商取貨-賣貨便下單"
-      ? 38
+    form.shippingMethod === "超商取貨"
+      ? 60
       : form.shippingMethod === "宅配"
       ? 250
       : 0;
 
   const total = subtotal + shippingFee;
   const depositAmount = Math.ceil(total / 2);
+
+  useEffect(() => {
+    if (allowedPaymentMethods.length === 0) return;
+
+    if (!allowedPaymentMethods.includes(form.paymentMethod)) {
+      setForm((prev) => ({
+        ...prev,
+        paymentMethod: allowedPaymentMethods[0],
+      }));
+    }
+  }, [
+    cart,
+    form.shippingMethod,
+    form.paymentMethod,
+    allowedPaymentMethods.join("|"),
+  ]);
 
   function updateForm(key: string, value: string) {
     setForm((prev) => {
@@ -102,10 +190,28 @@ export default function CheckoutPage() {
         [key]: value,
       };
 
-      if (key === "shippingMethod" && value === "宅配") {
-        if (next.paymentMethod === "貨到付款") {
-          next.paymentMethod = "全額匯款";
+      let nextAllowedPaymentMethods = allowedPaymentMethods;
+
+      if (key === "shippingMethod") {
+        if (hasBankOnly) {
+          nextAllowedPaymentMethods = ["全額匯款"];
+        } else if (hasDepositOnly) {
+          nextAllowedPaymentMethods = ["先付一半訂金"];
+        } else if (hasCodOnly) {
+          nextAllowedPaymentMethods = ["貨到付款"];
+        } else if (value === "宅配") {
+          nextAllowedPaymentMethods = ["先付一半訂金", "全額匯款"];
+        } else {
+          nextAllowedPaymentMethods = [
+            "貨到付款",
+            "先付一半訂金",
+            "全額匯款",
+          ];
         }
+      }
+
+      if (!nextAllowedPaymentMethods.includes(next.paymentMethod)) {
+        next.paymentMethod = nextAllowedPaymentMethods[0];
       }
 
       return next;
@@ -157,6 +263,11 @@ export default function CheckoutPage() {
       return;
     }
 
+    if (!allowedPaymentMethods.includes(form.paymentMethod)) {
+      alert("此購物車商品不支援目前選擇的付款方式");
+      return;
+    }
+
     if (form.shippingMethod === "宅配" && form.paymentMethod === "貨到付款") {
       alert("宅配目前只能選擇全額匯款或先付一半訂金");
       return;
@@ -170,7 +281,7 @@ export default function CheckoutPage() {
 
         const { data: productData } = await supabase
           .from("products")
-          .select("id, variants, sale_type")
+          .select("id, variants, sale_type, payment_type")
           .eq("id", item.id)
           .single();
 
@@ -267,7 +378,7 @@ export default function CheckoutPage() {
 
         const { data: productData } = await supabase
           .from("products")
-          .select("id, variants, sale_type")
+          .select("id, variants, sale_type, payment_type")
           .eq("id", item.id)
           .single();
 
@@ -383,12 +494,18 @@ export default function CheckoutPage() {
                 onChange={(e) => updateForm("paymentMethod", e.target.value)}
                 className="w-full rounded-2xl border border-[#e1d3c2] bg-white px-4 py-3 text-sm text-[#4b4038] outline-none"
               >
-                {form.shippingMethod !== "宅配" && (
-                  <option value="貨到付款">貨到付款</option>
-                )}
-                <option value="先付一半訂金">先付一半訂金</option>
-                <option value="全額匯款">全額匯款</option>
+                {allowedPaymentMethods.map((method) => (
+                  <option key={method} value={method}>
+                    {method}
+                  </option>
+                ))}
               </select>
+
+              {getPaymentLimitText() && (
+                <div className="rounded-3xl bg-[#fff7ef] p-4 text-sm leading-7 text-[#9b6b4f]">
+                  {getPaymentLimitText()}
+                </div>
+              )}
 
               {form.paymentMethod === "先付一半訂金" && (
                 <div className="rounded-3xl bg-[#fff7ef] p-4 text-sm leading-7 text-[#9b6b4f]">
@@ -473,6 +590,24 @@ export default function CheckoutPage() {
                       {item.selectedVariant?.name && (
                         <p className="mt-1 inline-flex rounded-full bg-[#f6efe7] px-3 py-1 text-xs text-[#9b6b4f]">
                           款式：{item.selectedVariant.name}
+                        </p>
+                      )}
+
+                      {item.payment_type === "bank_only" && (
+                        <p className="mt-2 inline-flex rounded-full bg-[#eef3ff] px-3 py-1 text-xs font-medium text-[#4f6596]">
+                          匯款限定
+                        </p>
+                      )}
+
+                      {item.payment_type === "deposit_only" && (
+                        <p className="mt-2 inline-flex rounded-full bg-[#fff2e5] px-3 py-1 text-xs font-medium text-[#b07255]">
+                          50%訂金限定
+                        </p>
+                      )}
+
+                      {item.payment_type === "cod_only" && (
+                        <p className="mt-2 inline-flex rounded-full bg-[#e9f7ef] px-3 py-1 text-xs font-medium text-[#2e7d32]">
+                          貨到付款限定
                         </p>
                       )}
 
