@@ -25,6 +25,9 @@ type OrderItem = {
 
 type Order = {
   id: string;
+  order_no?: string | null;
+  payment_status?: string | null;
+
   created_at: string;
   customer_name: string;
   phone: string;
@@ -39,30 +42,62 @@ type Order = {
 };
 
 const statusText: Record<string, string> = {
-  pending: "待確認",
-  deposit_pending: "待收訂金",
-  deposit_paid: "已收訂金",
+  pending: "待付款",
   paid: "已付款",
-  cod: "貨到付款",
-  ordered: "已訂貨",
+  ordered: "已送單",
+  vendor_shipped: "廠商出貨",
   arrived: "已到貨",
-  shipped: "已出貨",
+  shipped: "已寄出",
   done: "已完成",
   cancelled: "已取消",
+
+  // 舊狀態保留，避免舊訂單顯示壞掉
+  deposit_pending: "待收訂金",
+  deposit_paid: "已收訂金",
+  cod: "貨到付款",
 };
 
 const statusStyle: Record<string, string> = {
-  pending: "bg-[#f6efe7] text-[#9b6b4f]",
-  deposit_pending: "bg-[#fff2e5] text-[#b07255]",
-  deposit_paid: "bg-[#e9f7ef] text-[#2e7d32]",
+  pending: "bg-[#fff2e5] text-[#b07255]",
   paid: "bg-[#e9f7ef] text-[#2e7d32]",
-  cod: "bg-[#eef3ff] text-[#4f6596]",
   ordered: "bg-[#f6efe7] text-[#9b6b4f]",
+  vendor_shipped: "bg-[#eef3ff] text-[#4f6596]",
   arrived: "bg-[#eef3ff] text-[#4f6596]",
   shipped: "bg-[#ede7f6] text-[#6a4c93]",
   done: "bg-[#e9f7ef] text-[#2e7d32]",
   cancelled: "bg-gray-200 text-gray-500",
+
+  deposit_pending: "bg-[#fff2e5] text-[#b07255]",
+  deposit_paid: "bg-[#e9f7ef] text-[#2e7d32]",
+  cod: "bg-[#eef3ff] text-[#4f6596]",
 };
+
+const paymentStatusOptions = [
+  "待付款",
+  "已付訂金",
+  "已付全額",
+  "貨到付款",
+];
+
+function normalizePaymentStatus(value?: string | null) {
+  if (!value) return "待付款";
+
+  if (value === "unpaid") return "待付款";
+  if (value === "deposit_paid") return "已付訂金";
+  if (value === "paid") return "已付全額";
+  if (value === "cod") return "貨到付款";
+
+  return value;
+}
+
+function getPaymentStatusStyle(value?: string | null) {
+  const status = normalizePaymentStatus(value);
+
+  if (status === "已付全額") return "bg-[#e9f7ef] text-[#2e7d32]";
+  if (status === "已付訂金") return "bg-[#fff2e5] text-[#b07255]";
+  if (status === "貨到付款") return "bg-[#eef3ff] text-[#4f6596]";
+  return "bg-[#f6f1ea] text-[#6b5c50]";
+}
 
 export default function AdminOrdersPage() {
   const [authorized, setAuthorized] = useState(false);
@@ -117,7 +152,21 @@ export default function AdminOrdersPage() {
       .eq("id", id);
 
     if (error) {
-      alert("狀態更新失敗：" + error.message);
+      alert("訂單狀態更新失敗：" + error.message);
+      return;
+    }
+
+    fetchOrders();
+  }
+
+  async function updatePaymentStatus(id: string, paymentStatus: string) {
+    const { error } = await supabase
+      .from("orders")
+      .update({ payment_status: paymentStatus })
+      .eq("id", id);
+
+    if (error) {
+      alert("付款狀態更新失敗：" + error.message);
       return;
     }
 
@@ -134,17 +183,24 @@ export default function AdminOrdersPage() {
     });
   }
 
-  function getPaymentText(note?: string) {
-    if (!note) return "未標示";
-    if (note.includes("先付一半訂金")) return "先付一半訂金";
-    if (note.includes("全額匯款")) return "全額匯款";
+  function getPaymentText(order: Order) {
+    const status = normalizePaymentStatus(order.payment_status);
+
+    if (status) return status;
+
+    const note = order.customer_note || "";
+
+    if (note.includes("先付一半訂金")) return "待付款";
+    if (note.includes("全額匯款")) return "待付款";
     if (note.includes("貨到付款")) return "貨到付款";
-    return "未標示";
+
+    return "待付款";
   }
 
   function getDepositText(order: Order) {
-    const paymentText = getPaymentText(order.customer_note);
-    if (paymentText !== "先付一半訂金") return "";
+    const note = order.customer_note || "";
+
+    if (!note.includes("先付一半訂金")) return "";
 
     const amount = Math.ceil(Number(order.total || 0) / 2);
     return `訂金 NT$ ${amount.toLocaleString()}`;
@@ -162,15 +218,18 @@ export default function AdminOrdersPage() {
 
   const filteredOrders = orders.filter((order) => {
     const keyword = searchText.toLowerCase();
+    const orderNo = order.order_no || "";
 
     const matchKeyword =
+      orderNo.toLowerCase().includes(keyword) ||
       order.id?.toLowerCase().includes(keyword) ||
       order.customer_name?.toLowerCase().includes(keyword) ||
       order.phone?.toLowerCase().includes(keyword) ||
       order.line_id?.toLowerCase().includes(keyword) ||
       order.shipping_method?.toLowerCase().includes(keyword) ||
       order.customer_note?.toLowerCase().includes(keyword) ||
-      order.vip_level?.toLowerCase().includes(keyword);
+      order.vip_level?.toLowerCase().includes(keyword) ||
+      order.payment_status?.toLowerCase().includes(keyword);
 
     const matchStatus =
       statusFilter === "all" ? true : order.status === statusFilter;
@@ -208,7 +267,7 @@ export default function AdminOrdersPage() {
             </h1>
 
             <p className="mt-2 text-sm text-gray-500">
-              Argent Nest 訂單管理
+              Argent Nest 接單管理
             </p>
           </div>
 
@@ -217,7 +276,14 @@ export default function AdminOrdersPage() {
               href="/admin"
               className="rounded-full border border-[#d8c5b0] bg-white px-4 py-2 text-sm text-[#6b5c50]"
             >
-              返回商品後台
+              商品後台
+            </a>
+
+            <a
+              href="/admin/purchase"
+              className="rounded-full border border-[#d8c5b0] bg-white px-4 py-2 text-sm text-[#6b5c50]"
+            >
+              叫貨統計
             </a>
 
             <button
@@ -233,7 +299,7 @@ export default function AdminOrdersPage() {
         <div className="mb-6 grid grid-cols-1 gap-3 md:grid-cols-[1fr_220px]">
           <input
             className="w-full rounded-2xl border border-[#ddd] bg-white p-4 text-[#333]"
-            placeholder="搜尋訂單編號 / 姓名 / 電話 / LINE ID / VIP / 備註"
+            placeholder="搜尋訂單編號 / 姓名 / 電話 / LINE ID / 付款狀態 / 備註"
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
           />
@@ -243,7 +309,7 @@ export default function AdminOrdersPage() {
             onChange={(e) => setStatusFilter(e.target.value)}
             className="w-full rounded-2xl border border-[#ddd] bg-white p-4 text-[#333]"
           >
-            <option value="all">全部狀態</option>
+            <option value="all">全部訂單狀態</option>
             {Object.entries(statusText).map(([key, label]) => (
               <option key={key} value={key}>
                 {label}
@@ -252,35 +318,49 @@ export default function AdminOrdersPage() {
           </select>
         </div>
 
-        <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-5">
-          {Object.entries(statusText).map(([key, label]) => {
-            const count = orders.filter((order) => order.status === key).length;
+        <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">
+          {Object.entries(statusText)
+            .filter(([key]) =>
+              [
+                "pending",
+                "paid",
+                "ordered",
+                "vendor_shipped",
+                "arrived",
+                "shipped",
+                "done",
+                "cancelled",
+              ].includes(key)
+            )
+            .map(([key, label]) => {
+              const count = orders.filter((order) => order.status === key).length;
 
-            return (
-              <button
-                key={key}
-                type="button"
-                onClick={() => setStatusFilter(key)}
-                className={`rounded-2xl px-4 py-3 text-left text-sm shadow-sm ${
-                  statusFilter === key
-                    ? "bg-[#2e2e2e] text-white"
-                    : "bg-white text-[#6b5c50]"
-                }`}
-              >
-                <p className="font-medium">{label}</p>
-                <p className="mt-1 text-xs opacity-70">{count} 筆</p>
-              </button>
-            );
-          })}
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setStatusFilter(key)}
+                  className={`rounded-2xl px-4 py-3 text-left text-sm shadow-sm ${
+                    statusFilter === key
+                      ? "bg-[#2e2e2e] text-white"
+                      : "bg-white text-[#6b5c50]"
+                  }`}
+                >
+                  <p className="font-medium">{label}</p>
+                  <p className="mt-1 text-xs opacity-70">{count} 筆</p>
+                </button>
+              );
+            })}
         </div>
 
         <div className="space-y-5">
           {filteredOrders.map((order) => {
             const items = Array.isArray(order.items) ? order.items : [];
-            const paymentText = getPaymentText(order.customer_note);
+            const paymentText = getPaymentText(order);
             const depositText = getDepositText(order);
             const vipLevel = String(order.vip_level || "NORMAL").toUpperCase();
             const vipSaved = getVipSaved(items);
+            const displayOrderNo = order.order_no || order.id;
 
             return (
               <div
@@ -299,8 +379,12 @@ export default function AdminOrdersPage() {
                         {statusText[order.status] || order.status}
                       </span>
 
-                      <span className="rounded-full bg-[#f6f1ea] px-4 py-2 text-xs text-[#6b5c50]">
-                        {paymentText}
+                      <span
+                        className={`rounded-full px-4 py-2 text-xs font-medium ${getPaymentStatusStyle(
+                          paymentText
+                        )}`}
+                      >
+                        付款：{paymentText}
                       </span>
 
                       <span
@@ -322,9 +406,15 @@ export default function AdminOrdersPage() {
 
                     <p className="mt-4 text-xs text-gray-400">訂單編號</p>
 
-                    <p className="mt-1 break-all font-semibold text-[#4b4038]">
-                      {order.id}
+                    <p className="mt-1 break-all text-xl font-bold text-[#4b4038]">
+                      {displayOrderNo}
                     </p>
+
+                    {order.order_no && (
+                      <p className="mt-1 break-all text-xs text-gray-400">
+                        系統ID：{order.id}
+                      </p>
+                    )}
 
                     <p className="mt-2 text-sm text-[#8c7b70]">
                       {formatDate(order.created_at)}
@@ -337,6 +427,8 @@ export default function AdminOrdersPage() {
                         LINE ID：{order.line_id || "-"}
                       </p>
                       <p>取貨方式：{order.shipping_method || "-"}</p>
+                      <p>付款狀態：{paymentText}</p>
+                      <p>訂單狀態：{statusText[order.status] || order.status}</p>
                     </div>
 
                     {order.customer_note && (
@@ -346,15 +438,36 @@ export default function AdminOrdersPage() {
                     )}
                   </div>
 
-                  <div className="min-w-[210px]">
+                  <div className="min-w-[230px]">
+                    <p className="mb-2 text-xs text-gray-400">訂單狀態</p>
+
                     <select
                       value={order.status}
                       onChange={(e) => updateStatus(order.id, e.target.value)}
                       className="w-full rounded-full border border-[#d8c5b0] bg-white px-4 py-3 text-sm text-[#4b4038]"
                     >
-                      {Object.entries(statusText).map(([key, label]) => (
-                        <option key={key} value={key}>
-                          {label}
+                      <option value="pending">待付款</option>
+                      <option value="paid">已付款</option>
+                      <option value="ordered">已送單</option>
+                      <option value="vendor_shipped">廠商出貨</option>
+                      <option value="arrived">已到貨</option>
+                      <option value="shipped">已寄出</option>
+                      <option value="done">已完成</option>
+                      <option value="cancelled">已取消</option>
+                    </select>
+
+                    <p className="mb-2 mt-4 text-xs text-gray-400">付款狀態</p>
+
+                    <select
+                      value={paymentText}
+                      onChange={(e) =>
+                        updatePaymentStatus(order.id, e.target.value)
+                      }
+                      className="w-full rounded-full border border-[#d8c5b0] bg-white px-4 py-3 text-sm text-[#4b4038]"
+                    >
+                      {paymentStatusOptions.map((option) => (
+                        <option key={option} value={option}>
+                          {option}
                         </option>
                       ))}
                     </select>
@@ -362,30 +475,18 @@ export default function AdminOrdersPage() {
                     <div className="mt-3 grid grid-cols-2 gap-2">
                       <button
                         type="button"
-                        onClick={() =>
-                          updateStatus(order.id, "deposit_pending")
-                        }
-                        className="rounded-full bg-[#fff2e5] px-3 py-2 text-xs text-[#b07255]"
+                        onClick={() => updateStatus(order.id, "ordered")}
+                        className="rounded-full bg-[#f6efe7] px-3 py-2 text-xs text-[#9b6b4f]"
                       >
-                        待收訂金
+                        已送單
                       </button>
 
                       <button
                         type="button"
-                        onClick={() =>
-                          updateStatus(order.id, "deposit_paid")
-                        }
-                        className="rounded-full bg-[#e9f7ef] px-3 py-2 text-xs text-[#2e7d32]"
+                        onClick={() => updateStatus(order.id, "arrived")}
+                        className="rounded-full bg-[#eef3ff] px-3 py-2 text-xs text-[#4f6596]"
                       >
-                        已收訂金
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => updateStatus(order.id, "paid")}
-                        className="rounded-full bg-[#e9f7ef] px-3 py-2 text-xs text-[#2e7d32]"
-                      >
-                        已付款
+                        已到貨
                       </button>
 
                       <button
@@ -393,7 +494,15 @@ export default function AdminOrdersPage() {
                         onClick={() => updateStatus(order.id, "shipped")}
                         className="rounded-full bg-[#ede7f6] px-3 py-2 text-xs text-[#6a4c93]"
                       >
-                        已出貨
+                        已寄出
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => updateStatus(order.id, "done")}
+                        className="rounded-full bg-[#e9f7ef] px-3 py-2 text-xs text-[#2e7d32]"
+                      >
+                        已完成
                       </button>
                     </div>
 
