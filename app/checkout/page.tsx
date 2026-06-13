@@ -86,8 +86,8 @@ export default function CheckoutPage() {
   const vipSaved = originalSubtotal - subtotal;
 
   const shippingFee =
-    form.shippingMethod === "超商取貨"
-      ? 60
+    form.shippingMethod === "超商取貨-賣貨便下單"
+      ? 38
       : form.shippingMethod === "宅配"
       ? 250
       : 0;
