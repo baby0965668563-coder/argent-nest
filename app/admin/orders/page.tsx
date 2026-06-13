@@ -39,6 +39,7 @@ type Order = {
   status: string;
   order_token?: string;
   vip_level?: string;
+  myship_url?: string | null;
 };
 
 const statusText: Record<string, string> = {
@@ -173,6 +174,47 @@ export default function AdminOrdersPage() {
     fetchOrders();
   }
 
+  async function updateMyshipUrl(id: string, myshipUrl: string) {
+    const { error } = await supabase
+      .from("orders")
+      .update({ myship_url: myshipUrl })
+      .eq("id", id);
+
+    if (error) {
+      alert("賣貨便連結儲存失敗：" + error.message);
+      return;
+    }
+
+    fetchOrders();
+  }
+
+  function getMyshipMessage(order: Order) {
+    const orderNo = order.order_no || order.id;
+    const url = order.myship_url || "";
+
+    return [
+      "哈囉寶寶～商品已可以取貨囉 ☁️",
+      "",
+      `訂單編號：${orderNo}`,
+      `訂單金額：NT$ ${Number(order.total || 0).toLocaleString()}`,
+      "",
+      "請點以下賣貨便連結完成取貨：",
+      url,
+      "",
+      "完成後再跟我說一聲，謝謝妳 🤍",
+    ].join("\n");
+  }
+
+  async function copyMyshipMessage(order: Order) {
+    if (!order.myship_url) {
+      alert("請先輸入賣貨便連結");
+      return;
+    }
+
+    await navigator.clipboard.writeText(getMyshipMessage(order));
+    alert("已複製賣貨便通知文字 ☁️");
+  }
+
   function formatDate(date: string) {
     return new Date(date).toLocaleString("zh-TW", {
       year: "numeric",
@@ -229,7 +271,8 @@ export default function AdminOrdersPage() {
       order.shipping_method?.toLowerCase().includes(keyword) ||
       order.customer_note?.toLowerCase().includes(keyword) ||
       order.vip_level?.toLowerCase().includes(keyword) ||
-      order.payment_status?.toLowerCase().includes(keyword);
+      order.payment_status?.toLowerCase().includes(keyword) ||
+      order.myship_url?.toLowerCase().includes(keyword);
 
     const matchStatus =
       statusFilter === "all" ? true : order.status === statusFilter;
@@ -436,6 +479,67 @@ export default function AdminOrdersPage() {
                         訂單備註：{order.customer_note}
                       </div>
                     )}
+
+                    <div className="mt-4 rounded-2xl bg-[#fffdfb] p-4 ring-1 ring-[#f0e7dd]">
+                      <p className="mb-2 text-sm font-semibold text-[#4b4038]">
+                        賣貨便連結
+                      </p>
+
+                      <input
+                        defaultValue={order.myship_url || ""}
+                        placeholder="貼上賣貨便連結"
+                        className="w-full rounded-2xl border border-[#ddd] bg-white px-4 py-3 text-sm text-[#333]"
+                        onBlur={(e) =>
+                          updateMyshipUrl(order.id, e.target.value.trim())
+                        }
+                      />
+
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const input = prompt(
+                              "貼上賣貨便連結",
+                              order.myship_url || ""
+                            );
+
+                            if (input === null) return;
+
+                            updateMyshipUrl(order.id, input.trim());
+                          }}
+                          className="rounded-full bg-[#2e2e2e] px-4 py-2 text-xs text-white"
+                        >
+                          儲存連結
+                        </button>
+
+                        {order.myship_url && (
+                          <>
+                            <a
+                              href={order.myship_url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="rounded-full border border-[#d8c5b0] bg-white px-4 py-2 text-xs text-[#6b5c50]"
+                            >
+                              開啟賣貨便
+                            </a>
+
+                            <button
+                              type="button"
+                              onClick={() => copyMyshipMessage(order)}
+                              className="rounded-full bg-[#fff2e5] px-4 py-2 text-xs text-[#b07255]"
+                            >
+                              複製通知文字
+                            </button>
+                          </>
+                        )}
+                      </div>
+
+                      {order.myship_url && (
+                        <p className="mt-2 break-all text-xs text-[#8c7b70]">
+                          {order.myship_url}
+                        </p>
+                      )}
+                    </div>
                   </div>
 
                   <div className="min-w-[230px]">
