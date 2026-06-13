@@ -435,14 +435,14 @@ export default function OrderDetailPage() {
 
               <div className="rounded-2xl bg-white px-4 py-3">
                 <p className="font-medium text-[#9b6b4f]">匯款資訊</p>
-                <p className="mt-2">銀行：822 中國信託</p>
-                <p>帳號：123456789012</p>
+                <p className="mt-2">銀行：808 玉山銀行</p>
+                <p>帳號：0130979459621</p>
                 <p>戶名：芷葳 王</p>
               </div>
 
               <div className="rounded-2xl bg-white px-4 py-3">
                 <p className="font-medium text-[#9b6b4f]">匯款完成後</p>
-                <p className="mt-2">請私訊 LINE 提供：</p>
+                <p className="mt-2">請私訊 LINE @929santn 提供：</p>
                 <p>・訂單編號</p>
                 <p>・匯款後五碼</p>
               </div>
