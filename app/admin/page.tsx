@@ -6,7 +6,6 @@ import { supabase } from "@/lib/supabase";
 type Variant = {
   name: string;
   price: number;
-  vipPrice?: number | null;
   stock?: number;
 };
 
@@ -18,7 +17,6 @@ export default function AdminPage() {
   const [price, setPrice] = useState("");
   const [saleType, setSaleType] = useState("instock");
   const [paymentType, setPaymentType] = useState("all");
-  const [vipPrice, setVipPrice] = useState("");
   const [category, setCategory] = useState("");
   const [sortOrder, setSortOrder] = useState("0");
   const [stock, setStock] = useState("0");
@@ -152,7 +150,6 @@ export default function AdminPage() {
     const generated = names.map((variantName) => ({
       name: variantName,
       price: Number(price || 0),
-      vipPrice: Number(vipPrice || 0) || null,
       stock: Number(stock || 0),
     }));
 
@@ -180,7 +177,6 @@ export default function AdminPage() {
     setPrice("");
     setSaleType("instock");
     setPaymentType("all");
-    setVipPrice("");
     setCategory("");
     setSortOrder("0");
     setStock("0");
@@ -204,7 +200,6 @@ export default function AdminPage() {
     setPrice(String(product.price || ""));
     setSaleType(product.sale_type || "instock");
     setPaymentType(product.payment_type || "all");
-    setVipPrice(String(product.vip_price || ""));
     setCategory(product.category || "");
     setSortOrder(String(product.sort_order || 0));
     setStock(String(product.stock || 0));
@@ -345,7 +340,6 @@ export default function AdminPage() {
         price: Number(price || 0),
         sale_type: saleType,
         payment_type: paymentType,
-        vip_price: vipPrice ? Number(vipPrice) : null,
         category,
         sort_order: Number(sortOrder) || 0,
         stock: Number(stock) || 0,
@@ -404,7 +398,6 @@ export default function AdminPage() {
         price: Number(price || 0),
         sale_type: saleType,
         payment_type: paymentType,
-        vip_price: vipPrice ? Number(vipPrice) : null,
         category,
         sort_order: Number(sortOrder) || 0,
         stock: Number(stock) || 0,
@@ -561,13 +554,6 @@ export default function AdminPage() {
             onChange={(e) => setPrice(e.target.value)}
           />
 
-          <input
-            className="w-full rounded-2xl border border-[#ddd] bg-white p-4 text-[#333]"
-            placeholder="VIP 基礎價格，可不填"
-            value={vipPrice}
-            onChange={(e) => setVipPrice(e.target.value)}
-          />
-
           <select
             className="w-full rounded-2xl border border-[#ddd] bg-white p-4 text-[#333]"
             value={saleType}
@@ -702,7 +688,7 @@ export default function AdminPage() {
 
           <div className="rounded-3xl border border-[#ece3d7] bg-[#faf7f2] p-5">
             <h3 className="mb-4 text-lg font-semibold text-[#4b4038]">
-              款式價格 / VIP / 庫存
+              款式價格 / 庫存
             </h3>
 
             {variants.length === 0 ? (
@@ -732,17 +718,6 @@ export default function AdminPage() {
                         placeholder="一般價格"
                         className="rounded-2xl border border-[#ddd] p-3 text-sm"
                       />
-
-                      <input
-                        type="number"
-                        value={variant.vipPrice || 0}
-                        onChange={(e) =>
-                          updateVariant(index, "vipPrice", e.target.value)
-                        }
-                        placeholder="VIP價格"
-                        className="rounded-2xl border border-[#ddd] p-3 text-sm"
-                      />
-
                       <input
                         type="number"
                         value={variant.stock || 0}
@@ -973,14 +948,6 @@ export default function AdminPage() {
                     <p className="mt-2 font-bold">
                       NT$ {Number(product.price || 0).toLocaleString()}
                     </p>
-
-                    {product.vip_price && (
-                      <p className="mt-1 text-xs font-semibold text-[#b07255]">
-                        VIP NT${" "}
-                        {Number(product.vip_price || 0).toLocaleString()}
-                      </p>
-                    )}
-
                     <div className="mt-2 flex flex-wrap gap-2">
                       {product.is_featured && (
                         <span className="rounded-full bg-yellow-100 px-3 py-1 text-xs text-yellow-700">
@@ -1016,9 +983,6 @@ export default function AdminPage() {
                                 className="text-xs text-[#6b5c50]"
                               >
                                 {variant.name}｜NT${variant.price}
-                                {variant.vipPrice
-                                  ? `｜VIP NT$ ${variant.vipPrice}`
-                                  : ""}
                                 ｜庫存 {variant.stock}
                               </p>
                             ))}
