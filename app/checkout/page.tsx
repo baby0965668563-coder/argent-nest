@@ -112,6 +112,35 @@ export default function CheckoutPage() {
     });
   }
 
+  async function generateOrderNo() {
+    const now = new Date();
+    const yy = String(now.getFullYear()).slice(-2);
+    const mm = String(now.getMonth() + 1).padStart(2, "0");
+    const dd = String(now.getDate()).padStart(2, "0");
+    const dateCode = `${yy}${mm}${dd}`;
+    const prefix = `AN${dateCode}`;
+
+    const { data, error } = await supabase
+      .from("orders")
+      .select("order_no")
+      .like("order_no", `${prefix}%`)
+      .order("order_no", { ascending: false })
+      .limit(1);
+
+    if (error) {
+      console.error(error);
+    }
+
+    const latestOrderNo = data?.[0]?.order_no || "";
+    const latestNumber = latestOrderNo
+      ? Number(String(latestOrderNo).replace(prefix, "")) || 0
+      : 0;
+
+    const nextNumber = String(latestNumber + 1).padStart(3, "0");
+
+    return `${prefix}${nextNumber}`;
+  }
+
   async function handleSubmit() {
     if (!form.name || !form.phone) {
       alert("請填寫姓名與電話");
@@ -170,6 +199,7 @@ export default function CheckoutPage() {
 
       const orderId = crypto.randomUUID();
       const orderToken = crypto.randomUUID();
+      const orderNo = await generateOrderNo();
 
       const shippingNote =
         form.shippingMethod === "宅配"
@@ -194,6 +224,7 @@ export default function CheckoutPage() {
       const { error } = await supabase.from("orders").insert([
         {
           id: orderId,
+          order_no: orderNo,
           order_token: orderToken,
 
           customer_name: form.name,
@@ -219,6 +250,8 @@ export default function CheckoutPage() {
           items: orderItems,
           total,
           status: "pending",
+          payment_status:
+            form.paymentMethod === "貨到付款" ? "貨到付款" : "待付款",
         },
       ]);
 
