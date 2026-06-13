@@ -11,6 +11,8 @@ type CartItem = {
 
   price: number;
 
+  payment_type?: string | null;
+
   originalPrice?: number;
 
   image?: string;
@@ -30,13 +32,9 @@ type CartItem = {
   selectedVariant?: {
     name: string;
     price: number;
-    vipPrice?: number;
     stock?: number;
   } | null;
 
-  vipPrice?: number | null;
-
-  isVipPrice?: boolean;
 };
 
 export default function CartPage() {
@@ -99,6 +97,20 @@ export default function CartPage() {
     updateCart([]);
   }
 
+  function getPaymentTypeLabel(type?: string | null) {
+    if (type === "bank_only") return "匯款限定";
+    if (type === "deposit_only") return "50%訂金限定";
+    if (type === "cod_only") return "貨到付款限定";
+    return "全部付款方式";
+  }
+
+  function getPaymentTypeStyle(type?: string | null) {
+    if (type === "bank_only") return "bg-[#eef3ff] text-[#4f6596]";
+    if (type === "deposit_only") return "bg-[#fff2e5] text-[#b07255]";
+    if (type === "cod_only") return "bg-[#e9f7ef] text-[#2e7d32]";
+    return "bg-[#f6f1ea] text-[#6b5c50]";
+  }
+
   const total = cart.reduce(
     (sum, item) =>
       sum +
@@ -106,21 +118,6 @@ export default function CartPage() {
         Number(item.quantity || 1),
     0
   );
-
-  const originalTotal = cart.reduce(
-    (sum, item) =>
-      sum +
-      Number(
-        item.originalPrice ||
-          item.price ||
-          0
-      ) *
-        Number(item.quantity || 1),
-    0
-  );
-
-  const savedMoney =
-    originalTotal - total;
 
   return (
     <main className="min-h-screen bg-[#faf7f2] px-4 py-6 pb-40">
@@ -222,6 +219,16 @@ export default function CartPage() {
                           </div>
                         )}
 
+                        {item.payment_type && item.payment_type !== "all" && (
+                          <div
+                            className={`mt-2 inline-flex rounded-full px-3 py-1 text-xs font-medium ${getPaymentTypeStyle(
+                              item.payment_type
+                            )}`}
+                          >
+                            {getPaymentTypeLabel(item.payment_type)}
+                          </div>
+                        )}
+
                         {/* 規格 */}
                         {item.options &&
                           Object.entries(
@@ -283,37 +290,6 @@ export default function CartPage() {
                             ).toLocaleString()}
                           </p>
 
-                          {item.isVipPrice &&
-                            item.originalPrice &&
-                            item.originalPrice >
-                              item.price && (
-                              <>
-                                <p className="mt-1 text-sm text-gray-400 line-through">
-                                  原價 NT$
-                                  {" "}
-                                  {Number(
-                                    item.originalPrice
-                                  ).toLocaleString()}
-                                </p>
-
-                                <div className="mt-2 inline-flex rounded-full bg-[#fff2e5] px-3 py-1 text-xs font-medium text-[#b07255]">
-                                  VIP 價已套用 ☁️
-                                </div>
-                              </>
-                            )}
-
-                          {!item.isVipPrice &&
-                            item.vipPrice &&
-                            item.vipPrice >
-                              0 && (
-                              <p className="mt-2 text-xs text-[#b07255]">
-                                VIP NT$
-                                {" "}
-                                {Number(
-                                  item.vipPrice
-                                ).toLocaleString()}
-                              </p>
-                            )}
                         </div>
                       </div>
                     </div>
@@ -388,33 +364,6 @@ export default function CartPage() {
                   </span>
                 </div>
 
-                {savedMoney > 0 && (
-                  <>
-                    <div className="flex items-center justify-between text-sm text-gray-400">
-                      <span>
-                        原價總額
-                      </span>
-
-                      <span className="line-through">
-                        NT$
-                        {" "}
-                        {originalTotal.toLocaleString()}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center justify-between text-sm font-medium text-[#b07255]">
-                      <span>
-                        VIP 優惠
-                      </span>
-
-                      <span>
-                        - NT$
-                        {" "}
-                        {savedMoney.toLocaleString()}
-                      </span>
-                    </div>
-                  </>
-                )}
               </div>
 
               <div className="mt-5 border-t border-[#f0e7dd] pt-5">
