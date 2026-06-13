@@ -59,7 +59,6 @@ export default function ProductPage() {
   const params = useParams();
 
   const [product, setProduct] = useState<any>(null);
-  const [user, setUser] = useState<any>(null);
   const [selectedImage, setSelectedImage] = useState("");
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>(
     {}
@@ -69,45 +68,7 @@ export default function ProductPage() {
 
   useEffect(() => {
     fetchProduct();
-    fetchUser();
   }, []);
-
-  async function fetchUser() {
-    const savedUser = localStorage.getItem("argent_user");
-
-    if (!savedUser) return;
-
-    try {
-      const parsed = JSON.parse(savedUser);
-      const lineUserId = parsed.line_user_id || parsed.line_id;
-
-      if (!lineUserId) {
-        setUser(parsed);
-        return;
-      }
-
-      const { data } = await supabase
-        .from("users")
-        .select("*")
-        .eq("line_id", lineUserId)
-        .single();
-
-      if (data) {
-        const mergedUser = {
-          ...parsed,
-          ...data,
-          line_user_id: data.line_id || lineUserId,
-        };
-
-        localStorage.setItem("argent_user", JSON.stringify(mergedUser));
-        setUser(mergedUser);
-      } else {
-        setUser(parsed);
-      }
-    } catch {
-      localStorage.removeItem("argent_user");
-    }
-  }
 
   async function fetchProduct() {
     setLoading(true);
@@ -159,9 +120,6 @@ export default function ProductPage() {
     );
   }
 
-  const vipLevel = user?.vip_level || "NORMAL";
-  const isVip = vipLevel === "VIP";
-
   const productInactive = product.is_active === false;
   const productSoldOut = product.is_sold_out === true;
 
@@ -210,11 +168,7 @@ export default function ProductPage() {
     ? Number(selectedVariant.price || 0)
     : Number(product.price || 0);
 
-  const vipPrice = selectedVariant
-    ? Number(selectedVariant.vipPrice || 0)
-    : Number(product.vip_price || 0);
-
-  const displayPrice = isVip && vipPrice > 0 ? vipPrice : originalPrice;
+  const displayPrice = originalPrice;
 
   const disabled =
     productInactive ||
@@ -313,36 +267,12 @@ export default function ProductPage() {
                 已售完
               </span>
             )}
-
-            {isVip && (
-              <span className="rounded-full bg-[#fff2e5] px-3 py-1 text-xs font-medium text-[#b07255]">
-                VIP 價格已啟用 ☁️
-              </span>
-            )}
           </div>
 
           <div className="mt-5">
             <p className="text-2xl font-bold text-[#4b4038]">
               NT${displayPrice.toLocaleString()}
             </p>
-
-            {isVip && vipPrice > 0 && originalPrice > vipPrice && (
-              <>
-                <p className="mt-2 text-sm font-medium text-[#b07255]">
-                  VIP 會員價已套用 ☁️
-                </p>
-
-                <p className="mt-1 text-sm text-gray-400 line-through">
-                  原價 NT${originalPrice.toLocaleString()}
-                </p>
-              </>
-            )}
-
-            {!isVip && vipPrice > 0 && (
-              <p className="mt-2 text-sm font-medium text-[#b07255]">
-                VIP NT${vipPrice.toLocaleString()}
-              </p>
-            )}
 
             {(saleType === "instock" || saleType === "factory") && selectedVariant && (
               <p className="mt-2 text-sm text-[#8c7b70]">
@@ -442,9 +372,6 @@ export default function ProductPage() {
                 price: displayPrice,
                 finalPrice: displayPrice,
                 originalPrice,
-                finalVipPrice: vipPrice,
-                vipLevel,
-                isVipPrice: isVip && vipPrice > 0 && originalPrice > vipPrice,
                 selectedVariant: selectedVariant || null,
               }}
               selectedOptions={selectedOptions}
