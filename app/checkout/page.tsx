@@ -10,9 +10,6 @@ type CartItem = {
   price: number;
   payment_type?: string | null;
   originalPrice?: number;
-  vipPrice?: number | null;
-  vipLevel?: string;
-  isVipPrice?: boolean;
   image?: string;
   quantity: number;
   options?: Record<string, string>;
@@ -23,7 +20,6 @@ type CartItem = {
   selectedVariant?: {
     name: string;
     price: number;
-    vipPrice?: number;
     stock?: number;
   } | null;
 };
@@ -31,7 +27,6 @@ type CartItem = {
 export default function CheckoutPage() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(false);
-  const [member, setMember] = useState<any>(null);
 
   const [form, setForm] = useState({
     name: "",
@@ -92,8 +87,6 @@ export default function CheckoutPage() {
       if (savedUser) {
         try {
           const parsedUser = JSON.parse(savedUser);
-          setMember(parsedUser);
-
           setForm((prev) => ({
             ...prev,
             name: parsedUser?.name || "",
@@ -108,10 +101,6 @@ export default function CheckoutPage() {
 
     initCheckout();
   }, []);
-
-  const memberVipLevel = String(
-    member?.vip_level || member?.level || "NORMAL"
-  ).toUpperCase();
 
   const hasBankOnly = cart.some((item) => item.payment_type === "bank_only");
   const hasDepositOnly = cart.some(
@@ -146,16 +135,6 @@ export default function CheckoutPage() {
       sum + Number(item.price || 0) * Number(item.quantity || 1),
     0
   );
-
-  const originalSubtotal = cart.reduce(
-    (sum, item) =>
-      sum +
-      Number(item.originalPrice || item.price || 0) *
-        Number(item.quantity || 1),
-    0
-  );
-
-  const vipSaved = originalSubtotal - subtotal;
 
   const shippingFee =
     form.shippingMethod === "超商取貨"
@@ -326,8 +305,6 @@ export default function CheckoutPage() {
         ...item,
         price: Number(item.price || 0),
         originalPrice: Number(item.originalPrice || item.price || 0),
-        vipPrice: item.vipPrice ? Number(item.vipPrice) : null,
-        vipLevel: item.vipLevel || memberVipLevel,
         quantity: Number(item.quantity || 1),
         lineTotal: Number(item.price || 0) * Number(item.quantity || 1),
       }));
@@ -341,8 +318,6 @@ export default function CheckoutPage() {
           customer_name: form.name,
           phone: form.phone,
           line_id: member?.line_user_id || member?.line_id || form.lineId,
-
-          vip_level: memberVipLevel,
 
           shipping_method: `${form.shippingMethod}${
             form.shippingMethod === "超商取貨"
@@ -430,14 +405,7 @@ export default function CheckoutPage() {
 
           <h1 className="text-3xl font-bold text-[#4b4038]">
             填寫收件資料 ☁️
-          </h1>
-
-          {memberVipLevel !== "NORMAL" && (
-            <p className="mt-3 inline-flex rounded-full bg-[#fff2e5] px-4 py-2 text-sm font-medium text-[#b07255]">
-              會員等級：{memberVipLevel}，已套用會員價
-            </p>
-          )}
-        </div>
+          </h1>        </div>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_420px]">
           <section className="rounded-[32px] bg-white p-6 shadow-sm">
@@ -610,12 +578,6 @@ export default function CheckoutPage() {
                           貨到付款限定
                         </p>
                       )}
-
-                      {item.isVipPrice && (
-                        <p className="mt-2 inline-flex rounded-full bg-[#fff2e5] px-3 py-1 text-xs font-medium text-[#b07255]">
-                          VIP 價已套用
-                        </p>
-                      )}
                     </div>
                   </div>
 
@@ -630,15 +592,7 @@ export default function CheckoutPage() {
                       <p className="text-sm font-semibold text-[#4b4038]">
                         NT$ {Number(item.price || 0).toLocaleString()} ×{" "}
                         {item.quantity}
-                      </p>
-
-                      {item.originalPrice && item.originalPrice > item.price && (
-                        <p className="mt-1 text-xs text-gray-400 line-through">
-                          原價 NT${" "}
-                          {Number(item.originalPrice || 0).toLocaleString()}
-                        </p>
-                      )}
-                    </div>
+                      </p>                    </div>
 
                     <p className="text-sm font-bold text-[#4b4038]">
                       NT${" "}
@@ -652,22 +606,9 @@ export default function CheckoutPage() {
 
               <div className="space-y-3 border-t border-[#f0e7dd] pt-5 text-sm">
                 <div className="flex justify-between text-[#4b4038]">
-                  <span>會員等級</span>
-                  <span>{memberVipLevel}</span>
-                </div>
-
-                <div className="flex justify-between text-[#4b4038]">
                   <span>商品小計</span>
                   <span>NT$ {subtotal.toLocaleString()}</span>
                 </div>
-
-                {vipSaved > 0 && (
-                  <div className="flex justify-between font-medium text-[#b07255]">
-                    <span>VIP 優惠</span>
-                    <span>- NT$ {vipSaved.toLocaleString()}</span>
-                  </div>
-                )}
-
                 <div className="flex justify-between text-[#4b4038]">
                   <span>運費</span>
                   <span>NT$ {shippingFee.toLocaleString()}</span>
