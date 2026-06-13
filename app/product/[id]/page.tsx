@@ -34,6 +34,27 @@ function parseOptions(optionsText: string): OptionGroup[] {
     .filter((item): item is OptionGroup => item !== null);
 }
 
+function getPaymentTypeLabel(type?: string | null) {
+  if (type === "bank_only") return "匯款限定";
+  if (type === "deposit_only") return "50%訂金限定";
+  if (type === "cod_only") return "貨到付款限定";
+  return "全部付款方式";
+}
+
+function getPaymentTypeStyle(type?: string | null) {
+  if (type === "bank_only") return "bg-[#eef3ff] text-[#4f6596]";
+  if (type === "deposit_only") return "bg-[#fff2e5] text-[#b07255]";
+  if (type === "cod_only") return "bg-[#e9f7ef] text-[#2e7d32]";
+  return "bg-[#f6f1ea] text-[#6b5c50]";
+}
+
+function getPaymentTypeDescription(type?: string | null) {
+  if (type === "bank_only") return "此商品僅接受全額匯款。";
+  if (type === "deposit_only") return "此商品需先支付50%訂金，尾款可依約定方式付款。";
+  if (type === "cod_only") return "此商品僅接受貨到付款。";
+  return "此商品可依結帳頁選擇付款方式。";
+}
+
 export default function ProductPage() {
   const params = useParams();
 
@@ -146,6 +167,7 @@ export default function ProductPage() {
 
   const saleType = product.sale_type || "instock";
   const isPreorder = saleType === "preorder";
+  const paymentType = product.payment_type || "all";
 
   const images =
     typeof product.images === "string"
@@ -272,6 +294,14 @@ export default function ProductPage() {
               </span>
             )}
 
+            <span
+              className={`rounded-full px-3 py-1 text-xs font-medium ${getPaymentTypeStyle(
+                paymentType
+              )}`}
+            >
+              {getPaymentTypeLabel(paymentType)}
+            </span>
+
             {productInactive && (
               <span className="rounded-full bg-red-100 px-3 py-1 text-xs font-medium text-red-600">
                 已下架
@@ -331,6 +361,11 @@ export default function ProductPage() {
                 廠現商品｜約 4–6 天
               </p>
             )}
+
+            <div className="mt-3 rounded-3xl bg-[#fff7ef] px-4 py-3 text-sm leading-7 text-[#9b6b4f]">
+              <p className="font-medium">付款方式：{getPaymentTypeLabel(paymentType)}</p>
+              <p>{getPaymentTypeDescription(paymentType)}</p>
+            </div>
 
             {variantSoldOut && (
               <p className="mt-2 text-sm font-semibold text-red-500">
@@ -403,6 +438,7 @@ export default function ProductPage() {
               soldOut={Boolean(productSoldOut || variantSoldOut)}
               product={{
                 ...product,
+                payment_type: paymentType,
                 price: displayPrice,
                 finalPrice: displayPrice,
                 originalPrice,
@@ -439,3 +475,4 @@ export default function ProductPage() {
     </main>
   );
 }
+
